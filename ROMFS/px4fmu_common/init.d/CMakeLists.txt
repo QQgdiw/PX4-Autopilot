@@ -45,6 +45,8 @@ px4_add_romfs_files(
 	rc.balloon_apps
 	rc.balloon_defaults
 	rc.sysinit
+
+	rc.hybrid_apps
 )
 
 if(CONFIG_MODULES_AIRSHIP_ATT_CONTROL)

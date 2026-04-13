@@ -1,0 +1,56 @@
+#!/bin/sh
+#
+# @name Quad-Rover Hybrid (Custom 20001)
+#
+# @type Quadrotor x
+# @class Copter
+#
+# @output MAIN1 Multirotor Motor 1
+# @output MAIN2 Multirotor Motor 2
+# @output MAIN3 Multirotor Motor 3
+# @output MAIN4 Multirotor Motor 4
+# @output MAIN5 Rover Drive Motor
+# @output MAIN6 Rover Steering Servo
+# @output AUX1  Transformation Servo (变形机构)
+#
+# @maintainer Your Name <your.email@example.com>
+#
+# @board px4_fmu-v6x exclude
+#
+
+. ${R}etc/init.d/rc.mc_defaults
+. ${R}etc/init.d/rc.rover_differential_defaults
+
+# 1. 声明底层车辆基类
+set VEHICLE_TYPE hybrid
+
+# 2. 核心系统参数配置
+param set-default SYS_AUTOSTART 22001
+
+# 3. 动态控制分配 (Control Allocation) 基础配置
+# 开启 Control Allocation (1.16 默认开启，此处显式声明以防万一)
+param set-default SYS_CTRL_ALLOC 1
+
+# 6 个带动力的转子 (4个飞，2个跑)
+param set-default CA_ROTOR_COUNT 6
+
+# 2 个伺服/自定义控制通道 (用于变形双通道)
+param set-default CA_SV_CS_COUNT 2
+
+# 4. 传感器与飞行参数调整 (可选)
+# 混合载具通常比较重，或者气动外形不规则，你可以在这里预设较低的 PID 初始值保证首飞安全
+param set-default MC_ROLL_P 4.0
+param set-default MC_PITCH_P 4.0
+
+# 5. 漫游车参数预设 (Rover)
+# 虽然底层声明为 mc，但我们可以提前注入漫游车控制器的默认参数
+param set-default ROVER_MAX_THR 0.8
+param set-default ROVER_MAX_SPEED 2.0
+
+# --------------------------------------------------------
+# 6,伪装 MAVLink 载具类型
+# 22 代表 MAV_TYPE_VTOL_QUADROTOR。
+# 这不仅会让 QGC 出现固定翼/多旋翼的混合航线规划工具，
+# 还会改变心跳包的图标（虽然不是车，但至少能解锁功能）。
+# --------------------------------------------------------
+param set-default MAV_TYPE 22

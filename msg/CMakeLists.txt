@@ -113,6 +113,7 @@ set(msg_files
 	HealthReport.msg
 	HeaterStatus.msg
 	HoverThrustEstimate.msg
+	HybridVehicleStatus.msg
 	InputRc.msg
 	InternalCombustionEngineControl.msg
 	InternalCombustionEngineStatus.msg
@@ -190,6 +191,7 @@ set(msg_files
 	SensorBaro.msg
 	SensorCombined.msg
 	SensorCorrection.msg
+	SensorEncoder.msg
 	SensorGnssRelative.msg
 	SensorGps.msg
 	SensorGyro.msg

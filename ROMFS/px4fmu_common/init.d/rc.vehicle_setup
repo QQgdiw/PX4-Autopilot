@@ -33,6 +33,15 @@ then
 fi
 
 #
+# Hybrid setup.
+#
+if [ $VEHICLE_TYPE = hybrid ]
+then
+	# Start standard hybrid apps.
+	. ${R}etc/init.d/rc.hybrid_apps
+fi
+
+#
 # Differential Rover setup.
 #
 if [ $VEHICLE_TYPE = rover_differential ]
