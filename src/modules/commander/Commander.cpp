@@ -363,7 +363,6 @@ int Commander::custom_command(int argc, char *argv[])
 
 		return 0;
 	}
-
 	if (!strcmp(argv[0], "mode")) {
 		if (argc > 1) {
 
@@ -2582,7 +2581,40 @@ void Commander::updateControlMode()
 		    || _vehicle_control_mode.flag_control_position_enabled
 		    || _vehicle_control_mode.flag_control_velocity_enabled
 		    || _vehicle_control_mode.flag_control_acceleration_enabled);
+
+
+	// =================================================================
+	// [自定义注入] Quad-Rover 混合载具底层控制权掩码拦截 (Masking)
+	// =================================================================
+	hybrid_vehicle_status_s hybrid_status;
+	// 使用 copy() 获取最新数据，它非阻塞且非常高效
+	if (_hybrid_vehicle_status_sub.copy(&hybrid_status)) {
+
+		if (hybrid_status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING) {
+			// 1. 漫游车模式 (DRIVING)
+			// 关闭多旋翼专用的姿态和角速率控制，彻底切断四旋翼电机的动力源。
+			// 保留通用 position/velocity 标志位，交由 rover_pos_control 模块去响应。
+			_vehicle_control_mode.flag_control_attitude_enabled = false;
+			_vehicle_control_mode.flag_control_rates_enabled = false;
+			_vehicle_control_mode.flag_multicopter_position_control_enabled = false;
+
+		} else if (hybrid_status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING) {
+			// 2. 变形中模式 (TRANSITIONING)
+			// 最危险的阶段。关闭一切自动控制，防止飞行和行驶模块输出期望推力导致抽搐。
+			_vehicle_control_mode.flag_control_position_enabled = false;
+			_vehicle_control_mode.flag_control_velocity_enabled = false;
+			_vehicle_control_mode.flag_control_attitude_enabled = false;
+			_vehicle_control_mode.flag_control_rates_enabled = false;
+			_vehicle_control_mode.flag_multicopter_position_control_enabled = false;
+		}
+		// 3. 飞行模式 (FLYING)
+		// 不做任何修改
+	}
+	// =================================================================
+
+
 	_vehicle_control_mode.timestamp = hrt_absolute_time();
+	// Commander 以系统最高且唯一的合法身份，发布处理后的最终控制模式
 	_vehicle_control_mode_pub.publish(_vehicle_control_mode);
 }
 

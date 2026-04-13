@@ -1,0 +1,38 @@
+#!/bin/sh
+#
+# @name Hybrid (Quad-Rover) Apps
+# @description Starts the combined multicopter and rover control apps.
+#
+
+echo "[Hybrid] Starting Quad-Rover Hybrid Control Modules..."
+
+# ====================================================================
+# 1. 启动多旋翼 (Multicopter) 核心控制模块
+# ====================================================================
+# 注意：启动顺序通常从内环到外环
+mc_rate_control start
+mc_att_control start
+mc_pos_control start
+
+# 启动悬停推力估计器 (推荐开启，帮助飞机在携带不同载荷时自动适应起飞重量)
+mc_hover_thrust_estimator start
+
+# ====================================================================
+# 2. 启动漫游车 (Rover) 核心控制模块
+# ====================================================================
+rover_att_control start
+rover_pos_control start
+
+# ====================================================================
+# 3. 启动自定义变形仲裁模块
+# ====================================================================
+# 这是你接下来要用 C++ 写的核心大脑模块
+hybrid_vehicle_control start
+
+# ====================================================================
+# 4. 确保控制分配器运行 (Dynamic Control Allocation)
+# ====================================================================
+# 1.16.0 强依赖此模块将软件输出映射到物理电机/舵机
+control_allocator start
+
+echo "[Hybrid] All modules started successfully."

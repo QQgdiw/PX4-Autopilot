@@ -1,0 +1,12 @@
+menuconfig MODULES_HYBRID_VEHICLE_CONTROL
+	bool "hybrid_vehicle_control"
+	default n
+	---help---
+		Enable support for hybrid_vehicle_control
+
+menuconfig USER_HYBRID_VEHICLE_CONTROL
+	bool "hybrid_vehicle_control running as userspace module"
+	default n
+	depends on BOARD_PROTECTED && MODULES_HYBRID_VEHICLE_CONTROL
+	---help---
+		Put hybrid_vehicle_control in userspace memory
