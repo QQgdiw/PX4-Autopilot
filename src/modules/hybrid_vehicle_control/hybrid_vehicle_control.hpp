@@ -57,6 +57,7 @@
 #include <uORB/topics/hybrid_vehicle_status.h>
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/sensor_encoder.h>
+#include <uORB/topics/actuator_motors.h>
 
 // 定义混合载具的状态机枚举
 enum class HybridState {
@@ -117,11 +118,21 @@ private:
 	uORB::Subscription _vehicle_control_mode_sub{ORB_ID(vehicle_control_mode)};
 	uORB::Subscription _vehicle_command_sub{ORB_ID(vehicle_command)};
 	uORB::Subscription _encoder_sub{ORB_ID(sensor_encoder)};
+	// 监听多旋翼分配器发出的电机指令 (Motor 1-4)
+	uORB::Subscription _actuator_motors_mc_sub{ORB_ID(actuator_motors_mc)};
+	// 监听官方差速模块发出的车轮指令 (Motor 5-6)
+	uORB::Subscription _actuator_motors_rover_sub{ORB_ID(actuator_motors_rover)};
 
 	// === uORB 发布 (输出控制指令) ===
 	uORB::Publication<actuator_servos_s>      _actuator_servos_pub{ORB_ID(actuator_servos)};
 	uORB::Publication<hybrid_vehicle_status_s> _hybrid_status_pub{ORB_ID(hybrid_vehicle_status)};
 	uORB::Publication<vehicle_command_s>      _vehicle_command_pub{ORB_ID(vehicle_command)};
+	// 全系统唯一允许向最终物理引脚发送电机指令的模块
+	uORB::Publication<actuator_motors_s> _actuator_motors_final_pub{ORB_ID(actuator_motors)};
+
+	// 缓存结构体
+	actuator_motors_s _mc_motors{};
+	actuator_motors_s _rover_motors{};
 
 	// === 内部状态变量 ===
 	HybridState _current_state{HybridState::FLYING}; // 默认开机假定为飞行形态

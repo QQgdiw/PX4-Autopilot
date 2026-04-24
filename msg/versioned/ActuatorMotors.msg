@@ -1,3 +1,5 @@
+# TOPICS actuator_motors actuator_motors_mc actuator_motors_rover
+
 # Motor control message
 
 uint32 MESSAGE_VERSION = 0
