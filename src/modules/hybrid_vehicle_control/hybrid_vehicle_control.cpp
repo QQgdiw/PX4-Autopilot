@@ -158,6 +158,62 @@ void HybridVehicleControl::Run()
 		_current_state == HybridState::TRANSITION_TO_QUAD) {
 		control_transformation_actuators();
 	}
+
+	// ====================================================================
+	// [核心劫持逻辑] 旁路数据读取、仲裁与拼装发布
+	// ====================================================================
+
+	// 1. 从旁路抓取最新数据 (如果没有新数据，则使用上一次的缓存)
+	_actuator_motors_mc_sub.update(&_mc_motors);
+	_actuator_motors_rover_sub.update(&_rover_motors);
+
+
+	// 2. 准备最终要发往底层的数据包
+	actuator_motors_s final_motors{};
+	final_motors.timestamp = hrt_absolute_time();
+	final_motors.timestamp_sample = final_motors.timestamp;
+
+
+	// 默认将所有 12 个可能通道设为 NAN (在 PX4 中，NAN 代表该通道禁用/停转)
+	for (int i = 0; i < actuator_motors_s::NUM_CONTROLS; i++) {
+	final_motors.control[i] = NAN;
+	}
+
+
+	// 定义车轮在最终输出中的物理映射位置 (Motor 5 和 Motor 6)
+	// 这与 QGC 中 MAIN 5 和 MAIN 6 的分配相对应
+	const int ROVER_LEFT_IDX = 4;  // 数组索引 4 对应 Motor 5
+	const int ROVER_RIGHT_IDX = 5; // 数组索引 5 对应 Motor 6
+
+
+	// 3. 根据当前物理形态进行数据拼装
+	if (_current_state == HybridState::FLYING) {
+	// --- 飞行模式 ---
+	// 拷贝四旋翼的数据 (通常分配器占用前 4 个通道)
+	for (int i = 0; i < 4; i++) {
+	final_motors.control[i] = _mc_motors.control[i];
+	}
+	// 车轮通道保持为 NAN (静止)
+
+
+	} else if (_current_state == HybridState::DRIVING) {
+	// --- 漫游车模式 ---
+	// 官方的 RoverDifferential 始终将左轮算在 control[0]，右轮算在 control[1]
+	// 我们在这里把它们“搬运”到我们指定的 Motor 5 和 Motor 6 位置
+	final_motors.control[ROVER_LEFT_IDX] = _rover_motors.control[0];
+	final_motors.control[ROVER_RIGHT_IDX] = _rover_motors.control[1];
+	// 螺旋桨通道 (0-3) 保持为 NAN (锁死)
+
+
+	} else {
+	// --- 变形过渡态 (TRANSITION_TO_ROVER / TRANSITION_TO_QUAD) ---
+	// 为了极致的安全，变形期间所有动力电机（浆和轮）全部保持 NAN (断电停转)
+	// 变形舵机会由上方的 control_transformation_actuators() 透过 actuator_servos 独立控制
+	}
+
+
+	// 4. 终极发布！将加工好的安全数据推向物理针脚
+	_actuator_motors_final_pub.publish(final_motors);
 }
 
 // ==============================================================================
