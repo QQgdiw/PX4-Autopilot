@@ -135,7 +135,8 @@ void SystemChecks::checkAndReport(const Context &context, Report &reporter)
 		}
 
 		if (!circuit_breaker_enabled_by_val(_param_cbrk_vtolarming.get(), CBRK_VTOLARMING_KEY)
-		    && context.status().vehicle_type != vehicle_status_s::VEHICLE_TYPE_ROTARY_WING) {
+		    && context.status().vehicle_type != vehicle_status_s::VEHICLE_TYPE_ROTARY_WING
+			&& !context.status().is_quad_rover) {
 			/* EVENT
 			 * @description
 			 * <profile name="dev">

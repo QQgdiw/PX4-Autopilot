@@ -37,6 +37,10 @@ using namespace time_literals;
 
 void VtolChecks::checkAndReport(const Context &context, Report &reporter)
 {
+	if (context.status().is_quad_rover) {
+                return; // 直接返回，视为健康，彻底免疫本文件下的所有拦截！
+        }
+
 	vtol_vehicle_status_s vtol_vehicle_status;
 
 	if (_vtol_vehicle_status_sub.copy(&vtol_vehicle_status)) {

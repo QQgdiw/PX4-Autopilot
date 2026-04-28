@@ -84,7 +84,7 @@ void ManualControl::processInput(hrt_abstime now)
 			_armed = (vehicle_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED);
 			_system_id = vehicle_status.system_id;
 			_rotary_wing = (vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING);
-			_vtol = vehicle_status.is_vtol;
+			_vtol = vehicle_status.is_vtol && !vehicle_status.is_quad_rover;
 		}
 	}
 

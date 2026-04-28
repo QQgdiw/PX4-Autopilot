@@ -61,6 +61,20 @@ void RoverDifferential::updateParams()
 
 void RoverDifferential::Run()
 {
+	vehicle_status_s status{};
+	if (_vehicle_status_sub.copy(&status)) {
+		if (status.vehicle_type != vehicle_status_s::VEHICLE_TYPE_ROVER) {
+			actuator_motors_s stop_motors{};
+			stop_motors.timestamp = hrt_absolute_time();
+			stop_motors.reversible_flags = _param_r_rev.get();
+			for (int i = 0; i < actuator_motors_s::NUM_CONTROLS; i++) {
+				stop_motors.control[i] = NAN; // NaN 在底层 PWM 驱动中代表断电/不驱动
+			}
+			_actuator_motors_pub.publish(stop_motors);
+			return; // 立即退出，下方的所有解算逻辑统统跳过！
+		}
+	}
+
 	if (_parameter_update_sub.updated()) {
 		updateParams();
 	}
@@ -126,9 +140,28 @@ void RoverDifferential::generateActuatorSetpoint()
 		_rover_steering_setpoint_sub.copy(&_rover_steering_setpoint);
 	}
 
+	if (!PX4_ISFINITE(_current_throttle_body_x)) {
+		_current_throttle_body_x = 0.0f;
+	}
+
 	const float throttle_body_x = RoverControl::throttleControl(_throttle_body_x_setpoint,
 				      _rover_throttle_setpoint.throttle_body_x, _current_throttle_body_x, _param_ro_accel_limit.get(),
 				      _param_ro_decel_limit.get(), _param_ro_max_thr_speed.get(), _dt);
+
+	// // ==========================================================
+	// // [NaN 猎手探针] 每 50 次循环打印一次关键变量，抓出毒药源头！
+	// // ==========================================================
+	// static int nan_debug_cnt = 0;
+	// if (nan_debug_cnt++ % 50 == 0) {
+	// 	mavlink_log_info(&_mavlink_log_pub,
+	// 	"[Rover] T_SP:%.2f S_SP:%.2f cTX:%.2f fTX:%.2f",
+	// 	(double)_rover_throttle_setpoint.throttle_body_x,
+	// 	(double)_rover_steering_setpoint.normalized_speed_diff,
+	// 	(double)_current_throttle_body_x,
+	// 	(double)throttle_body_x);
+	// }
+	// // ==========================================================
+
 	actuator_motors_s actuator_motors{};
 	actuator_motors.reversible_flags = _param_r_rev.get();
 	computeInverseKinematics(throttle_body_x,

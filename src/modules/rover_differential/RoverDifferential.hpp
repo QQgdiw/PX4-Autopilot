@@ -43,6 +43,7 @@
 // Libraries
 #include <lib/rover_control/RoverControl.hpp>
 #include <lib/slew_rate/SlewRate.hpp>
+#include <systemlib/mavlink_log.h>
 
 // uORB includes
 #include <uORB/Subscription.hpp>
@@ -54,6 +55,7 @@
 #include <uORB/topics/rover_throttle_setpoint.h>
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/manual_control_setpoint.h>
+#include <uORB/topics/vehicle_status.h>
 
 // Local includes
 #include "DifferentialRateControl/DifferentialRateControl.hpp"
@@ -116,6 +118,7 @@ private:
 	uORB::Subscription _vehicle_control_mode_sub{ORB_ID(vehicle_control_mode)};
 	uORB::Subscription _manual_control_setpoint_sub{ORB_ID(manual_control_setpoint)};
 	uORB::Subscription _actuator_motors_sub{ORB_ID(actuator_motors)};
+	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
 	vehicle_control_mode_s _vehicle_control_mode{};
 	rover_steering_setpoint_s _rover_steering_setpoint{};
 	rover_throttle_setpoint_s _rover_throttle_setpoint{};
@@ -138,6 +141,9 @@ private:
 
 	// Controllers
 	SlewRate<float> _throttle_body_x_setpoint{0.f};
+
+	// 在类成员中定义或直接使用局部的
+	orb_advert_t _mavlink_log_pub = nullptr;
 
 	// Parameters
 	DEFINE_PARAMETERS(

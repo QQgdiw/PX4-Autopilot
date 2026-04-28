@@ -372,6 +372,14 @@ RoverPositionControl::Run()
 {
 	parameters_update(true);
 
+	vehicle_status_s status{};
+	if (_vehicle_status_sub.copy(&status)) {
+		// 如果是混合机型且当前处于非 Rover 模式（即处于 Flying 模式）
+		if (status.is_quad_rover && status.vehicle_type != vehicle_status_s::VEHICLE_TYPE_ROVER) {
+		return; // 强行退出！不运行任何位置/速度控制，不发布任何推力指令。
+		}
+	}
+
 	/* run controller on gyro changes */
 	vehicle_angular_velocity_s angular_velocity;
 

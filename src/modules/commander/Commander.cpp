@@ -1703,46 +1703,66 @@ void Commander::executeActionRequest(const action_request_s &action_request)
 	}
 }
 
-
 void Commander::updateParameters()
 {
-	// update parameters from storage
-	updateParams();
+        // update parameters from storage
+        updateParams();
 
-	int32_t value_int32 = 0;
+        int32_t value_int32 = 0;
 
-	// MAV_TYPE -> vehicle_status.system_type
-	if ((_param_mav_type != PARAM_INVALID) && (param_get(_param_mav_type, &value_int32) == PX4_OK)) {
-		_vehicle_status.system_type = value_int32;
-	}
+        // MAV_TYPE -> vehicle_status.system_type
+        if ((_param_mav_type != PARAM_INVALID) && (param_get(_param_mav_type, &value_int32) == PX4_OK)) {
+                _vehicle_status.system_type = value_int32;
+        }
 
-	_auto_disarm_killed.set_hysteresis_time_from(false, _param_com_kill_disarm.get() * 1_s);
+        _auto_disarm_killed.set_hysteresis_time_from(false, _param_com_kill_disarm.get() * 1_s);
 
-	const bool is_rotary = is_rotary_wing(_vehicle_status) || (is_vtol(_vehicle_status)
-			       && _vtol_vehicle_status.vehicle_vtol_state != vtol_vehicle_status_s::VEHICLE_VTOL_STATE_FW);
-	const bool is_fixed = is_fixed_wing(_vehicle_status) || (is_vtol(_vehicle_status)
-			      && _vtol_vehicle_status.vehicle_vtol_state == vtol_vehicle_status_s::VEHICLE_VTOL_STATE_FW);
-	const bool is_ground = is_ground_vehicle(_vehicle_status);
+        // ==========================================================
+        // [自定义注入]: 提前获取 Quad-Rover 身份
+        // ==========================================================
+        int32_t hybr_quad_rov = 0;
+        param_get(param_find("HYBR_QUAD_ROV"), &hybr_quad_rov);
+        // 如果开启了参数，且本身架构支持 VTOL，则确立 Quad-Rover 身份
+        const bool is_quad_rover = (hybr_quad_rov == 1) && is_vtol(_vehicle_status);
+        // ==========================================================
 
-	/* disable manual override for all systems that rely on electronic stabilization */
-	if (is_rotary) {
-		_vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROTARY_WING;
+        const bool is_rotary = is_rotary_wing(_vehicle_status) || (is_vtol(_vehicle_status)
+                               && _vtol_vehicle_status.vehicle_vtol_state != vtol_vehicle_status_s::VEHICLE_VTOL_STATE_FW);
+        const bool is_fixed = is_fixed_wing(_vehicle_status) || (is_vtol(_vehicle_status)
+                              && _vtol_vehicle_status.vehicle_vtol_state == vtol_vehicle_status_s::VEHICLE_VTOL_STATE_FW);
+        const bool is_ground = is_ground_vehicle(_vehicle_status);
 
-	} else if (is_fixed) {
-		_vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_FIXED_WING;
+        /* disable manual override for all systems that rely on electronic stabilization */
+        if (is_rotary) {
+                _vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROTARY_WING;
 
-	} else if (is_ground) {
-		_vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROVER;
-	}
+        } else if (is_fixed) {
+                // ==========================================================
+                // [自定义注入]: 核心状态篡改 (解决战役 2 的关键)
+                // ==========================================================
+                if (is_quad_rover) {
+                        // 系统处于 VTOL 的固定翼模式，但我们知道它是漫游车！
+                        // 强行将 vehicle_type 扭转为 ROVER！
+                        _vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROVER;
+                } else {
+                        // 普通 VTOL，保留原有固定翼逻辑
+                        _vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_FIXED_WING;
+                }
+                // ==========================================================
 
-	_vehicle_status.is_vtol = is_vtol(_vehicle_status);
-	_vehicle_status.is_vtol_tailsitter = is_vtol_tailsitter(_vehicle_status);
+        } else if (is_ground) {
+                _vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROVER;
+        }
 
-	// _mode_switch_mapped = (RC_MAP_FLTMODE > 0)
-	if (_param_rc_map_fltmode != PARAM_INVALID && (param_get(_param_rc_map_fltmode, &value_int32) == PX4_OK)) {
-		_mode_switch_mapped = (value_int32 > 0);
-	}
+        // 赋值到 uORB 消息结构体中广播给全系统
+        _vehicle_status.is_vtol = is_vtol(_vehicle_status);
+        _vehicle_status.is_vtol_tailsitter = is_vtol_tailsitter(_vehicle_status);
+        _vehicle_status.is_quad_rover = is_quad_rover; // [自定义注入] 广播新身份
 
+        // _mode_switch_mapped = (RC_MAP_FLTMODE > 0)
+        if (_param_rc_map_fltmode != PARAM_INVALID && (param_get(_param_rc_map_fltmode, &value_int32) == PX4_OK)) {
+                _mode_switch_mapped = (value_int32 > 0);
+        }
 }
 
 void Commander::run()
@@ -1910,6 +1930,30 @@ void Commander::run()
 			// publish actuator_armed first (used by output modules)
 			_actuator_armed.timestamp = hrt_absolute_time();
 			_actuator_armed_pub.publish(_actuator_armed);
+
+			// ==========================================================
+			// Quad-Rover 实时状态覆写
+			// Commander直接听命于 HybridVehicleControl！
+			// ==========================================================
+			if (_vehicle_status.is_quad_rover) {
+			// 实时获取 HybridVehicleControl 发布的最新状态
+			hybrid_vehicle_status_s hybrid_status;
+			if (_hybrid_vehicle_status_sub.update(&hybrid_status)) {
+			_current_hybrid_state = hybrid_status.current_state;
+			}
+
+			if (_current_hybrid_state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING) {
+			// 我们的自定义大脑说现在是车 -> 强制广播为漫游车！
+			_vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROVER;
+			}
+			else if (_current_hybrid_state == hybrid_vehicle_status_s::HYBRID_STATE_FLYING) {
+			// 我们的自定义大脑说现在是飞机 -> 强制广播为四旋翼！
+			_vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROTARY_WING;
+			}
+			// 变形过渡态 (TRANSITIONING) 保持当前形态，由底下的掩码切断动力
+			}
+			// ==========================================================
+
 
 			// update and publish vehicle_control_mode
 			updateControlMode();
@@ -2583,34 +2627,25 @@ void Commander::updateControlMode()
 		    || _vehicle_control_mode.flag_control_acceleration_enabled);
 
 
-	// =================================================================
-	// [自定义注入] Quad-Rover 混合载具底层控制权掩码拦截 (Masking)
-	// =================================================================
-	hybrid_vehicle_status_s hybrid_status;
-	// 使用 copy() 获取最新数据，它非阻塞且非常高效
-	if (_hybrid_vehicle_status_sub.copy(&hybrid_status)) {
+	// ==========================================================
+	// [自定义注入] Quad-Rover 底层控制权拦截
+	// ==========================================================
+	if (_vehicle_status.is_quad_rover) {
 
-		if (hybrid_status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING) {
-			// 1. 漫游车模式 (DRIVING)
-			// 关闭多旋翼专用的姿态和角速率控制，彻底切断四旋翼电机的动力源。
-			// 保留通用 position/velocity 标志位，交由 rover_pos_control 模块去响应。
-			_vehicle_control_mode.flag_control_attitude_enabled = false;
-			_vehicle_control_mode.flag_control_rates_enabled = false;
-			_vehicle_control_mode.flag_multicopter_position_control_enabled = false;
-
-		} else if (hybrid_status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING) {
-			// 2. 变形中模式 (TRANSITIONING)
-			// 最危险的阶段。关闭一切自动控制，防止飞行和行驶模块输出期望推力导致抽搐。
+		if (_current_hybrid_state == hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING) {
+			// 2. 变形中模式：最危险的阶段，强制关闭所有自动化和姿态控制
 			_vehicle_control_mode.flag_control_position_enabled = false;
 			_vehicle_control_mode.flag_control_velocity_enabled = false;
 			_vehicle_control_mode.flag_control_attitude_enabled = false;
 			_vehicle_control_mode.flag_control_rates_enabled = false;
+			_vehicle_control_mode.flag_control_altitude_enabled = false;
+			_vehicle_control_mode.flag_control_climb_rate_enabled = false;
+			_vehicle_control_mode.flag_control_acceleration_enabled = false;
+			_vehicle_control_mode.flag_control_allocation_enabled = false;
 			_vehicle_control_mode.flag_multicopter_position_control_enabled = false;
 		}
-		// 3. 飞行模式 (FLYING)
-		// 不做任何修改
 	}
-	// =================================================================
+	// ==========================================================
 
 
 	_vehicle_control_mode.timestamp = hrt_absolute_time();

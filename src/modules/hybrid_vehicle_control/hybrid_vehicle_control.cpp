@@ -153,66 +153,56 @@ void HybridVehicleControl::Run()
 	_hybrid_status_pub.publish(status_msg);
 	// ====================================================================
 
-	// 物理动作：在变形期间，直接驱动变形舵机 (这段保留)
-	if (_current_state == HybridState::TRANSITION_TO_ROVER ||
-		_current_state == HybridState::TRANSITION_TO_QUAD) {
-		control_transformation_actuators();
-	}
+	control_transformation_actuators();
 
 	// ====================================================================
-	// [核心劫持逻辑] 旁路数据读取、仲裁与拼装发布
+	// [终极硬件多路复用器] 数据搬运与安全隔离
 	// ====================================================================
 
-	// 1. 从旁路抓取最新数据 (如果没有新数据，则使用上一次的缓存)
+	// 1. 从两个旁路拉取最新数据 (由原生的 Allocator 和 Rover 模块计算得出)
 	_actuator_motors_mc_sub.update(&_mc_motors);
 	_actuator_motors_rover_sub.update(&_rover_motors);
 
-
-	// 2. 准备最终要发往底层的数据包
+	// 2. 准备发往底层物理针脚的空载体
 	actuator_motors_s final_motors{};
 	final_motors.timestamp = hrt_absolute_time();
 	final_motors.timestamp_sample = final_motors.timestamp;
 
-
-	// 默认将所有 12 个可能通道设为 NAN (在 PX4 中，NAN 代表该通道禁用/停转)
+	// 【安全第一】默认将所有通道设为 NAN (物理输出将被锁定在 Disarmed 安全低电平)
 	for (int i = 0; i < actuator_motors_s::NUM_CONTROLS; i++) {
-	final_motors.control[i] = NAN;
+		final_motors.control[i] = NAN;
 	}
 
+	// 映射表：根据你的 QGC MAIN 针脚分配，锁定车轮的数组索引
+	const int ROVER_LEFT_IDX = 4;  // MAIN 5
+	const int ROVER_RIGHT_IDX = 5; // MAIN 6
 
-	// 定义车轮在最终输出中的物理映射位置 (Motor 5 和 Motor 6)
-	// 这与 QGC 中 MAIN 5 和 MAIN 6 的分配相对应
-	const int ROVER_LEFT_IDX = 4;  // 数组索引 4 对应 Motor 5
-	const int ROVER_RIGHT_IDX = 5; // 数组索引 5 对应 Motor 6
-
-
-	// 3. 根据当前物理形态进行数据拼装
+	// 3. 根据系统当前形态，进行物理通道的“道岔”切换
 	if (_current_state == HybridState::FLYING) {
-	// --- 飞行模式 ---
-	// 拷贝四旋翼的数据 (通常分配器占用前 4 个通道)
-	for (int i = 0; i < 4; i++) {
-	final_motors.control[i] = _mc_motors.control[i];
-	}
-	// 车轮通道保持为 NAN (静止)
-
+		// --- 飞行模式 ---
+		// 仅接通多旋翼的动力 (前 4 个通道)
+		for (int i = 0; i < 4; i++) {
+			final_motors.control[i] = _mc_motors.control[i];
+		}
+		final_motors.reversible_flags = _mc_motors.reversible_flags;
+		// 此时车轮通道保持 NAN，在空中绝对静止
 
 	} else if (_current_state == HybridState::DRIVING) {
-	// --- 漫游车模式 ---
-	// 官方的 RoverDifferential 始终将左轮算在 control[0]，右轮算在 control[1]
-	// 我们在这里把它们“搬运”到我们指定的 Motor 5 和 Motor 6 位置
-	final_motors.control[ROVER_LEFT_IDX] = _rover_motors.control[0];
-	final_motors.control[ROVER_RIGHT_IDX] = _rover_motors.control[1];
-	// 螺旋桨通道 (0-3) 保持为 NAN (锁死)
-
+		// --- 漫游车模式 ---
+		// 仅接通车轮的动力
+		// 将原生 rover_differential 算好的左右轮转速，搬运到指定的物理通道
+		final_motors.control[ROVER_LEFT_IDX] = _rover_motors.control[0];
+		final_motors.control[ROVER_RIGHT_IDX] = _rover_motors.control[1];
+		final_motors.reversible_flags = _rover_motors.reversible_flags;
+		// 此时螺旋桨通道保持 NAN，在地上绝对锁死，防止削人
 
 	} else {
-	// --- 变形过渡态 (TRANSITION_TO_ROVER / TRANSITION_TO_QUAD) ---
-	// 为了极致的安全，变形期间所有动力电机（浆和轮）全部保持 NAN (断电停转)
-	// 变形舵机会由上方的 control_transformation_actuators() 透过 actuator_servos 独立控制
+		// --- 变形过渡态 (TRANSITIONING) ---
+		// 最危险的物理状态。不执行任何搬运，所有动力通道保持 NAN。
+		// 全车的无刷动力瞬间切断，仅由 actuator_servos 驱动变形舵机。
 	}
 
-
-	// 4. 终极发布！将加工好的安全数据推向物理针脚
+	// 4. 终极发布：将绝对安全的物理指令推向底层 PWM/DShot 驱动
 	_actuator_motors_final_pub.publish(final_motors);
 }
 
@@ -229,16 +219,31 @@ void HybridVehicleControl::update_state_machine()
 	bool is_in_auto_mode = _vcontrol_mode.flag_control_auto_enabled;
 
 	// =========================================================
-	// 来源 1：解析自动航线 (Mission) 中的 MAVLink 车辆指令
+	// 来源 1：解析 MAVLink 车辆指令 (航线节点 & QGC 滑块)
 	// =========================================================
 	vehicle_command_s vcmd{};
 	while (_vehicle_command_sub.update(&vcmd)) {
 		if (vcmd.command == vehicle_command_s::VEHICLE_CMD_DO_VTOL_TRANSITION) {
+
 			int transition_target = (int)(vcmd.param1 + 0.5f);
-			if (is_in_auto_mode) {
-				if (transition_target == 4) { request_rover = true; }
-				else if (transition_target == 3) { request_quad = true; }
+			// MAVLink 协议规定：3 = 切换到 MC (旋翼)，4 = 切换到 FW (我们的车)
+			if (transition_target == 4) {
+				request_rover = true;
+				PX4_INFO("[Hybrid] Mission/QGC Cmd: Transition to ROVER");
 			}
+			else if (transition_target == 3) {
+				request_quad = true;
+				PX4_INFO("[Hybrid] Mission/QGC Cmd: Transition to QUAD");
+			}
+
+			// 极度关键：必须向 QGC 回复确认 (ACK)，否则任务节点会卡死报错
+			vehicle_command_ack_s ack{};
+			ack.timestamp = hrt_absolute_time();
+			ack.command = vcmd.command;
+			ack.result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+			ack.target_system = vcmd.source_system;
+			ack.target_component = vcmd.source_component;
+			_vehicle_command_ack_pub.publish(ack);
 		}
 	}
 
@@ -247,15 +252,16 @@ void HybridVehicleControl::update_state_machine()
 	// =========================================================
 	manual_control_setpoint_s manual_control;
 	if (_manual_control_setpoint_sub.update(&manual_control)) {
-		float current_main_switch = -1.0f;
-		switch (_param_hybrid_rc_ch.get()) {
-			case 1: current_main_switch = manual_control.aux1; break;
-			case 2: current_main_switch = manual_control.aux2; break;
-			case 3: current_main_switch = manual_control.aux3; break;
-			case 4: current_main_switch = manual_control.aux4; break;
-			case 5: current_main_switch = manual_control.aux5; break;
-			case 6: current_main_switch = manual_control.aux6; break;
-			default: current_main_switch = manual_control.aux1; break;
+		float current_transfer_switch = -1.0f; // 默认值
+		// 将 QGC 里配置的 Channel 映射到 aux 变量
+		switch (_rc_map_trans_sw_val) {
+			case 5: current_transfer_switch = manual_control.aux1; break;
+			case 6: current_transfer_switch = manual_control.aux2; break;
+			case 7: current_transfer_switch = manual_control.aux3; break;
+			case 8: current_transfer_switch = manual_control.aux4; break;
+			case 9: current_transfer_switch = manual_control.aux5; break;
+			case 10: current_transfer_switch = manual_control.aux6; break;
+			default: break;
 		}
 		float current_manual_switch = -1.0f;
 		switch (_param_hybrid_man_ch.get()) {
@@ -268,7 +274,7 @@ void HybridVehicleControl::update_state_machine()
 			default: current_manual_switch = manual_control.aux1; break;
 		}
 
-		static float last_main_switch = current_main_switch;
+		_manual_rc_value = current_manual_switch; // 缓存当前的手动接管通道值，供状态机使用
 		static float last_manual_switch = current_manual_switch;
 
 		// --- 逻辑 A：手动接管通道发生跳变 ---
@@ -281,7 +287,7 @@ void HybridVehicleControl::update_state_machine()
 		}
 
 		// 检测到物理拨杆发生了跳变 (人工紧急介入)
-		if (fabsf(current_main_switch - last_main_switch) > 0.5f) {
+		if (fabsf(current_transfer_switch - last_transfer_switch) > 0.5f) {
 			PX4_INFO("[Hybrid] Main Mode Switch Changed!");
 
 			// 核心：一旦主开关动作，立刻解除手动接管状态
@@ -307,17 +313,18 @@ void HybridVehicleControl::update_state_machine()
 			}
 
 			// 覆盖航线请求，执行遥控器指定的变形方向
-			if (current_main_switch > 0.5f) {
+			if (current_transfer_switch > 0.5f && last_transfer_switch <= 0.5f) {
 				request_rover = true;
 				request_quad = false;
-			} else if (current_main_switch < -0.5f) {
+				PX4_INFO("[Hybrid] RC Switch Flipped: Transition to ROVER");
+			} else if (current_transfer_switch < -0.5f && last_transfer_switch >= -0.5f) {
 				request_quad = true;
 				request_rover = false;
+				PX4_INFO("[Hybrid] RC Switch Flipped: Transition to QUAD");
 			}
 		}
-		last_main_switch = current_main_switch;
+		last_transfer_switch = current_transfer_switch;
 		last_manual_switch = current_manual_switch;
-		_manual_rc_value = current_manual_switch;	// 缓存供底盘执行器使用
 	}
 
 	hrt_abstime now = hrt_absolute_time();
@@ -414,7 +421,7 @@ void HybridVehicleControl::control_transformation_actuators()
 
 		// 在手动接管期间，为了防止状态机死锁，强制不发送完成信号，
 		// 载具会一直处于 TRANSITIONING 状态直到主开关被切回。
-		_transformation_completed = false;
+		_transformation_completed = true;
 	}
 	else {
 		// 【自动闭环模式】
@@ -470,8 +477,24 @@ void HybridVehicleControl::control_transformation_actuators()
 	}
 
 	// 只有在变形态才发布舵机指令（非变形态时电机由状态机保持锁死，防止空耗电）
-	if (_current_state == HybridState::TRANSITION_TO_ROVER ||
+	if (_manual_override_active ||
+		_current_state == HybridState::TRANSITION_TO_ROVER ||
 		_current_state == HybridState::TRANSITION_TO_QUAD) {
 		_actuator_servos_pub.publish(servos);
+	}
+}
+
+void HybridVehicleControl::updateParams()
+{
+	// 官方默认的参数更新
+	ModuleParams::updateParams();
+
+	// 绑定我们劫持的 QGC UI 参数
+	if (_param_handle_rc_map_trans_sw == PARAM_INVALID) {
+		_param_handle_rc_map_trans_sw = param_find("RC_MAP_TRANS_SW");
+	}
+
+	if (_param_handle_rc_map_trans_sw != PARAM_INVALID) {
+		param_get(_param_handle_rc_map_trans_sw, &_rc_map_trans_sw_val);
 	}
 }

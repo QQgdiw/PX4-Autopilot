@@ -110,6 +110,22 @@ MulticopterRateControl::Run()
 
 	perf_begin(_loop_perf);
 
+	vehicle_status_s status{};
+	if (_vehicle_status_sub.copy(&status)) {
+		if (status.is_quad_rover && status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER) {
+
+			// 1. 【极其重要】读取并丢弃触发源数据，清除 update 标志位，防止调度器死锁！
+			vehicle_angular_velocity_s dummy_ang_vel;
+			_vehicle_angular_velocity_sub.update(&dummy_ang_vel);
+
+			// 2. 闭合性能统计器，保持系统健康
+			perf_end(_loop_perf);
+
+			// 3. 安全进入冬眠，绝不向下执行任何多旋翼控制逻辑
+			return;
+		}
+	}
+
 	// Check if parameters have changed
 	if (_parameter_update_sub.updated()) {
 		// clear update
@@ -304,6 +320,12 @@ int MulticopterRateControl::task_spawn(int argc, char *argv[])
 			vtol = true;
 		}
 	}
+
+	int32_t hybr_quad_rov = 0;
+        param_get(param_find("HYBR_QUAD_ROV"), &hybr_quad_rov);
+        if (hybr_quad_rov == 1) {
+                vtol = false;
+        }
 
 	MulticopterRateControl *instance = new MulticopterRateControl(vtol);
 

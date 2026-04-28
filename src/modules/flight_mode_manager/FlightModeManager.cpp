@@ -135,19 +135,25 @@ void FlightModeManager::updateParams()
 
 void FlightModeManager::start_flight_task()
 {
-	// Do not run any flight task for VTOLs in fixed-wing mode
-	if ((_vehicle_status_sub.get().vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING)
-	    || ((_vehicle_status_sub.get().nav_state >= vehicle_status_s::NAVIGATION_STATE_EXTERNAL1)
-		&& (_vehicle_status_sub.get().nav_state <= vehicle_status_s::NAVIGATION_STATE_EXTERNAL8))) {
-		switchTask(FlightTaskIndex::None);
-		return;
-	}
+	// ==========================================================
+	const bool is_standard_vtol = _vehicle_status_sub.get().is_vtol && !_vehicle_status_sub.get().is_quad_rover;
 
-	// Only run transition flight task if altitude control is enabled (e.g. in Altitdue, Position, Auto flight mode)
-	if (_vehicle_status_sub.get().in_transition_mode && _vehicle_control_mode_sub.get().flag_control_altitude_enabled) {
-		switchTask(FlightTaskIndex::Transition);
-		return;
+	// Do not run any flight task for VTOLs in fixed-wing mode (仅限传统 VTOL)
+	if (is_standard_vtol) {
+		if ((_vehicle_status_sub.get().vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING)
+		    || ((_vehicle_status_sub.get().nav_state >= vehicle_status_s::NAVIGATION_STATE_EXTERNAL1)
+			&& (_vehicle_status_sub.get().nav_state <= vehicle_status_s::NAVIGATION_STATE_EXTERNAL8))) {
+			switchTask(FlightTaskIndex::None);
+			return;
+		}
+
+		// Only run transition flight task if altitude control is enabled
+		if (_vehicle_status_sub.get().in_transition_mode && _vehicle_control_mode_sub.get().flag_control_altitude_enabled) {
+			switchTask(FlightTaskIndex::Transition);
+			return;
+		}
 	}
+	// ==========================================================
 
 	bool found_some_task = false;
 	bool matching_task_running = true;

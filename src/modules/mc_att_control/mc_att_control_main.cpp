@@ -258,7 +258,7 @@ MulticopterAttitudeControl::Run()
 
 			if (_vehicle_status_sub.copy(&vehicle_status)) {
 				_vehicle_type_rotary_wing = (vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING);
-				_vtol = vehicle_status.is_vtol;
+				_vtol = vehicle_status.is_vtol && !vehicle_status.is_quad_rover;
 				_vtol_in_transition_mode = vehicle_status.in_transition_mode;
 				_vtol_tailsitter = vehicle_status.is_vtol_tailsitter;
 
@@ -403,6 +403,12 @@ int MulticopterAttitudeControl::task_spawn(int argc, char *argv[])
 			vtol = true;
 		}
 	}
+
+	int32_t hybr_quad_rov = 0;
+        param_get(param_find("HYBR_QUAD_ROV"), &hybr_quad_rov);
+        if (hybr_quad_rov == 1) {
+                vtol = false;
+        }
 
 	MulticopterAttitudeControl *instance = new MulticopterAttitudeControl(vtol);
 

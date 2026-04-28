@@ -42,20 +42,6 @@ PARAM_DEFINE_FLOAT(HYBRID_TRANS_T, 6.0f);
 PARAM_DEFINE_FLOAT(HYBRID_MAX_Z, 0.5f);
 
 /**
- * Main Mode RC Switch Channel
- *
- * The auxiliary RC channel used to trigger the automatic transformation.
- * Maps directly to manual_control_setpoint AUX channels.
- * 1 = AUX1, 2 = AUX2, ..., 6 = AUX6.
- *
- * @group Hybrid Control
- * @min 1
- * @max 6
- * @reboot_required true
- */
-PARAM_DEFINE_INT32(HYBRID_RC_CH, 6);
-
-/**
  * Manual Override RC Switch Channel
  *
  * The auxiliary RC channel used to directly take over the transformation mechanism.
@@ -67,7 +53,7 @@ PARAM_DEFINE_INT32(HYBRID_RC_CH, 6);
  * @max 6
  * @reboot_required true
  */
-PARAM_DEFINE_INT32(HYBRID_MAN_CH, 5);
+PARAM_DEFINE_INT32(HYBRID_MAN_CH, 4);
 
 /**
  * Target Mechanism Angle (Rover Mode)

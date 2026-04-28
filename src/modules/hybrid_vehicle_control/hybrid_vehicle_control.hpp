@@ -58,6 +58,7 @@
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/sensor_encoder.h>
 #include <uORB/topics/actuator_motors.h>
+#include <uORB/topics/vehicle_command_ack.h>
 
 // 定义混合载具的状态机枚举
 enum class HybridState {
@@ -111,12 +112,13 @@ private:
 	 */
 	void control_transformation_actuators();
 
+	void updateParams() override;
+
 	// === uORB 订阅 (获取系统状态与遥控器输入) ===
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
 	uORB::Subscription _manual_control_setpoint_sub{ORB_ID(manual_control_setpoint)};
 	uORB::Subscription _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
 	uORB::Subscription _vehicle_control_mode_sub{ORB_ID(vehicle_control_mode)};
-	uORB::Subscription _vehicle_command_sub{ORB_ID(vehicle_command)};
 	uORB::Subscription _encoder_sub{ORB_ID(sensor_encoder)};
 	// 监听多旋翼分配器发出的电机指令 (Motor 1-4)
 	uORB::Subscription _actuator_motors_mc_sub{ORB_ID(actuator_motors_mc)};
@@ -129,6 +131,15 @@ private:
 	uORB::Publication<vehicle_command_s>      _vehicle_command_pub{ORB_ID(vehicle_command)};
 	// 全系统唯一允许向最终物理引脚发送电机指令的模块
 	uORB::Publication<actuator_motors_s> _actuator_motors_final_pub{ORB_ID(actuator_motors)};
+
+	// 监听 MAVLink 车辆指令 (用于响应航线中的切换节点和地面站滑块)
+	uORB::Subscription _vehicle_command_sub{ORB_ID(vehicle_command)};
+	// 用于向地面站回复 "指令已收到并执行"，避免 QGC 报错超时
+	uORB::Publication<vehicle_command_ack_s> _vehicle_command_ack_pub{ORB_ID(vehicle_command_ack)};
+
+	param_t _param_handle_rc_map_trans_sw{PARAM_INVALID};
+	int32_t _rc_map_trans_sw_val{0};
+	float last_transfer_switch{-1.0f};
 
 	// 缓存结构体
 	actuator_motors_s _mc_motors{};
@@ -153,8 +164,7 @@ private:
 	DEFINE_PARAMETERS(
 		(ParamFloat<px4::params::HYBRID_TRANS_T>) 	_param_hybrid_trans_t, // 变形动作所需的物理时间(秒)
 		(ParamFloat<px4::params::HYBRID_MAX_Z>)   	_param_hybrid_max_z,   // 允许变形为车模式的最大高度(米)
-		(ParamInt<px4::params::HYBRID_RC_CH>)     	_param_hybrid_rc_ch,    // 遥控器上触发变形的辅助通道号 (1-6)
-		(ParamInt<px4::params::HYBRID_MAN_CH>)    	_param_hybrid_man_ch,  // 手动接管机构的 AUX 通道 (如 5)
+		(ParamInt<px4::params::HYBRID_MAN_CH>)    	_param_hybrid_man_ch,  // 手动接管机构的 AUX 通道 (1-6)
 		(ParamFloat<px4::params::HYBRID_ANG_ROV>) 	_param_hybrid_ang_rov, // 车模式的机构目标角度 (rad)
 		(ParamFloat<px4::params::HYBRID_ANG_QUD>)	_param_hybrid_ang_qud  // 飞机模式的机构目标角度 (rad)
 	)
