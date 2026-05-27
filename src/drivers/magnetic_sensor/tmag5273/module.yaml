@@ -1,0 +1,45 @@
+module_name: tmag5273
+type: driver
+command_name: tmag5273
+
+category: sensor
+
+info:
+    description: |
+        I2C bus driver for the TMAG5273 3D linear Hall-effect magnetic sensor.
+
+        This driver communicates with the TMAG5273 over I2C to read the absolute
+        magnetic field strength (X, Y, and Z axes) in milli-Tesla (mT). It is
+        specifically designed for mechanism position detection, limit switches,
+        and hybrid vehicle transformation tracking.
+
+        The driver supports dynamic I2C address assignment, allowing multiple
+        sensors to operate seamlessly on the same bus. Data and trigger status
+        are published via the custom `magnetic_sensor` uORB topic.
+
+# I2CSPIDriverBase 基类会自动解析并处理以下标准命令
+commands:
+    - command: start
+      description: Start the driver and begin polling the sensor
+      args:
+          - name: -X
+            description: Start on external I2C bus (e.g., the GPS/Compass port)
+            optional: true
+          - name: -I
+            description: Start on internal I2C bus
+            optional: true
+          - name: -b
+            description: Specific I2C bus number to use (e.g., -b 1)
+            optional: true
+          - name: -a
+            description: Specific I2C device address (e.g., 0x22 for A1 version, 0x35 for A2 version). CRITICAL for multi-sensor setups.
+            optional: true
+          - name: -f
+            description: Polling frequency in Hz (determines the WorkQueue schedule, default 100Hz)
+            optional: true
+
+    - command: stop
+      description: Stop the driver and unpublish the uORB topic
+
+    - command: status
+      description: Print driver status, current Z-axis magnetic field reading, running frequency, and I2C error statistics

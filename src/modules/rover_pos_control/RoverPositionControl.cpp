@@ -134,7 +134,7 @@ RoverPositionControl::manual_control_setpoint_poll()
 					}
 
 					float yaw_body = _manual_yaw_sp;
-					_att_sp.thrust_body[0] = _manual_control_setpoint.throttle;
+					_att_sp.thrust_body[0] = _manual_control_setpoint.pitch;
 
 					const Quatf q(Eulerf(roll_body, pitch_body, yaw_body));
 					q.copyTo(_att_sp.q_d);
@@ -148,7 +148,7 @@ RoverPositionControl::manual_control_setpoint_poll()
 					// Set heading from the manual roll input channel
 					_yaw_control = _manual_control_setpoint.roll; // Nominally yaw: _manual_control_setpoint.yaw;
 					// Set throttle from the manual throttle channel
-					_throttle_control = _manual_control_setpoint.throttle;
+					_throttle_control = _manual_control_setpoint.pitch;
 					_reset_yaw_sp = true;
 				}
 

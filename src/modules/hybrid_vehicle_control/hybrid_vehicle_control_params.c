@@ -84,3 +84,46 @@ PARAM_DEFINE_FLOAT(HYBRID_ANG_ROV, 3.14f);
  * @increment 0.05
  */
 PARAM_DEFINE_FLOAT(HYBRID_ANG_QUD, 1.57f);
+
+/**
+ * Quad Mode Magnetic Sensor Device ID
+ *
+ * The unique device ID of the TMAG5273 sensor installed at the Quadcopter limit.
+ * (Check the device_id using `listener magnetic_sensor` in nsh).
+ *
+ * @group Hybrid Control
+ */
+PARAM_DEFINE_INT32(HYB_MAG_ID_QUD, 53);//0x35
+
+/**
+ * Rover Mode Magnetic Sensor Device ID
+ *
+ * The unique device ID of the TMAG5273 sensor installed at the Rover limit.
+ *
+ * @group Hybrid Control
+ */
+PARAM_DEFINE_INT32(HYB_MAG_ID_ROV, 34);//0x22
+
+/**
+ * Target Magnetic Field Threshold (Quad Mode)
+ *
+ * The absolute Z-axis magnetic field strength (in mT) required to confirm Quad mode transformation.
+ *
+ * @group Hybrid Control
+ * @min 0.0
+ * @max 100.0
+ * @decimal 1
+ */
+PARAM_DEFINE_FLOAT(HYB_MAG_THR_QUD, 5.0f);
+
+/**
+ * Target Magnetic Field Threshold (Rover Mode)
+ *
+ * The absolute Z-axis magnetic field strength (in mT) required to confirm Rover mode transformation.
+ *
+ * @group Hybrid Control
+ * @min 0.0
+ * @max 100.0
+ * @decimal 1
+ */
+PARAM_DEFINE_FLOAT(HYB_MAG_THR_ROV, 5.0f);

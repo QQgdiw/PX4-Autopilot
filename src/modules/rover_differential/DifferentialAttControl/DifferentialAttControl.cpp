@@ -109,7 +109,7 @@ void DifferentialAttControl::generateAttitudeAndThrottleSetpoint()
 
 			rover_throttle_setpoint_s rover_throttle_setpoint{};
 			rover_throttle_setpoint.timestamp = _timestamp;
-			rover_throttle_setpoint.throttle_body_x = manual_control_setpoint.throttle;
+			rover_throttle_setpoint.throttle_body_x = manual_control_setpoint.pitch;
 			rover_throttle_setpoint.throttle_body_y = 0.f;
 			_rover_throttle_setpoint_pub.publish(rover_throttle_setpoint);
 

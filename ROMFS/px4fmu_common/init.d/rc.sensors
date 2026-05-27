@@ -244,3 +244,9 @@ if param compare SENS_EN_AS5600 1
 then
 	as5600 -X -q  start
 fi
+
+if param compare SENS_EN_TMAG5273 1
+then
+	tmag5273 start -X -b 3 -a 0x35
+	tmag5273 start -X -b 3 -a 0x22
+fi

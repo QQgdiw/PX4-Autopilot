@@ -45,6 +45,7 @@
 #include <px4_platform_common/module_params.h>
 #include <px4_platform_common/posix.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
+#include <uORB/SubscriptionMultiArray.hpp>
 
 // uORB 发布与订阅
 #include <uORB/Publication.hpp>
@@ -59,6 +60,7 @@
 #include <uORB/topics/sensor_encoder.h>
 #include <uORB/topics/actuator_motors.h>
 #include <uORB/topics/vehicle_command_ack.h>
+#include <uORB/topics/magnetic_sensor.h>
 
 // 定义混合载具的状态机枚举
 enum class HybridState {
@@ -120,6 +122,7 @@ private:
 	uORB::Subscription _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
 	uORB::Subscription _vehicle_control_mode_sub{ORB_ID(vehicle_control_mode)};
 	uORB::Subscription _encoder_sub{ORB_ID(sensor_encoder)};
+	uORB::SubscriptionMultiArray<magnetic_sensor_s, 2> _magnetic_subs{ORB_ID::magnetic_sensor};
 	// 监听多旋翼分配器发出的电机指令 (Motor 1-4)
 	uORB::Subscription _actuator_motors_mc_sub{ORB_ID(actuator_motors_mc)};
 	// 监听官方差速模块发出的车轮指令 (Motor 5-6)
@@ -155,6 +158,10 @@ private:
 
 	float _current_mechanism_angle{0.0f};   // 当前变形机构的角度 (rad)
 	uint64_t _last_encoder_timestamp{0};    // 上一次收到编码器数据的时间戳
+	float _current_mag_z_qud{0.0f};
+    	float _current_mag_z_rov{0.0f};
+    	hrt_abstime _last_mag_timestamp_qud{0};
+    	hrt_abstime _last_mag_timestamp_rov{0};
 	float _manual_rc_value{0.0f};           // 缓存手动接管通道的值
 
 	vehicle_control_mode_s _vcontrol_mode{};         // 缓存控制模式数据
@@ -166,7 +173,11 @@ private:
 		(ParamFloat<px4::params::HYBRID_MAX_Z>)   	_param_hybrid_max_z,   // 允许变形为车模式的最大高度(米)
 		(ParamInt<px4::params::HYBRID_MAN_CH>)    	_param_hybrid_man_ch,  // 手动接管机构的 AUX 通道 (1-6)
 		(ParamFloat<px4::params::HYBRID_ANG_ROV>) 	_param_hybrid_ang_rov, // 车模式的机构目标角度 (rad)
-		(ParamFloat<px4::params::HYBRID_ANG_QUD>)	_param_hybrid_ang_qud  // 飞机模式的机构目标角度 (rad)
+		(ParamFloat<px4::params::HYBRID_ANG_QUD>)	_param_hybrid_ang_qud,  // 飞机模式的机构目标角度 (rad)
+		(ParamInt<px4::params::HYB_MAG_ID_QUD>) 	_param_hyb_mag_id_qud,
+        	(ParamInt<px4::params::HYB_MAG_ID_ROV>) 	_param_hyb_mag_id_rov,
+        	(ParamFloat<px4::params::HYB_MAG_THR_QUD>) 	_param_hyb_mag_thr_qud,
+        	(ParamFloat<px4::params::HYB_MAG_THR_ROV>) 	_param_hyb_mag_thr_rov
 	)
 };
 

@@ -394,94 +394,145 @@ bool HybridVehicleControl::check_safe_to_transform(bool to_rover)
 
 void HybridVehicleControl::control_transformation_actuators()
 {
-	actuator_servos_s servos{};
-	servos.timestamp = hrt_absolute_time();
+    actuator_servos_s servos{};
+    servos.timestamp = hrt_absolute_time();
+    hrt_abstime now = servos.timestamp;
 
-	// =======================================================
-	// 1. 获取并检查传感器状态 (超时机制)
-	// =======================================================
-	sensor_encoder_s encoder_data;
-	if (_encoder_sub.update(&encoder_data)) {
-		_current_mechanism_angle = encoder_data.position_rad;
-		_last_encoder_timestamp = encoder_data.timestamp;
-	}
+    // =======================================================
+    // 1. 获取并分配传感器状态 (动态检测与 ID 路由)
+    // =======================================================
 
-	// 判断传感器是否失效 (超过 300ms 没有收到新数据即认为丢失)
-	bool sensor_valid = (hrt_elapsed_time(&_last_encoder_timestamp) < 300000.0f);
+    // 1.1 读取 AS5600 数据
+    sensor_encoder_s encoder_data;
+    if (_encoder_sub.update(&encoder_data)) {
+        _current_mechanism_angle = encoder_data.position_rad;
+        _last_encoder_timestamp = encoder_data.timestamp;
+    }
 
-	// =======================================================
-	// 2. 动力输出仲裁逻辑
-	// =======================================================
+    // 1.2 遍历读取所有 TMAG5273 数据，并根据 ID 参数路由给上/下限位
+    for (int i = 0; i < _magnetic_subs.size(); i++) {
+        magnetic_sensor_s mag_data;
+        if (_magnetic_subs[i].update(&mag_data)) {
+            // 通过比对地面站设定的 Device ID，确认是哪一个限位器的数据
+            if (mag_data.device_id == (uint32_t)_param_hyb_mag_id_qud.get()) {
+                _current_mag_z_qud = mag_data.mag_z;
+                _last_mag_timestamp_qud = mag_data.timestamp;
+            } else if (mag_data.device_id == (uint32_t)_param_hyb_mag_id_rov.get()) {
+                _current_mag_z_rov = mag_data.mag_z;
+                _last_mag_timestamp_rov = mag_data.timestamp;
+            }
+        }
+    }
 
-	if (_manual_override_active) {
-		// 【最高优先级】物理拨杆直接接管
-		// 将 _manual_rc_value (范围 -1 到 1) 互补输出
-		servos.control[0] = _manual_rc_value;
-		servos.control[1] = -_manual_rc_value;
+    // 1.3 判断哪些传感器是在线的 (300ms 超时判定)
+    bool encoder_valid = (_last_encoder_timestamp != 0) && (now - _last_encoder_timestamp < 300_ms);
+    bool mag_qud_valid = (_last_mag_timestamp_qud != 0) && (now - _last_mag_timestamp_qud < 300_ms);
+    bool mag_rov_valid = (_last_mag_timestamp_rov != 0) && (now - _last_mag_timestamp_rov < 300_ms);
 
-		// 在手动接管期间，为了防止状态机死锁，强制不发送完成信号，
-		// 载具会一直处于 TRANSITIONING 状态直到主开关被切回。
-		_transformation_completed = true;
-	}
-	else {
-		// 【自动闭环模式】
-		if (!sensor_valid) {
-			// [传感器失效/丢失保护]
-			// 立即停止电机，防止机构撞毁
-			servos.control[0] = -1.0f;
-			servos.control[1] = -1.0f;
+    // =======================================================
+    // 2. 动力输出仲裁逻辑
+    // =======================================================
 
-			// 限制报警频率，防止刷屏
-			static hrt_abstime last_warn_time = 0;
-			if (hrt_elapsed_time(&last_warn_time) > 2_s) {
-				PX4_ERR("[Hybrid] ENCODER LOST! Auto-transform aborted. Use Manual Override!");
-				last_warn_time = hrt_absolute_time();
-			}
-			_transformation_completed = false;
-		}
-		else {
-			// [传感器正常：执行闭环位置控制 (Bang-Bang 控制示例)]
-			// 容差设定 (例如 0.05 rad，约 3度)，防止在目标位置震荡
-			const float tolerance = 0.05f;
+    if (_manual_override_active) {
+        // 【最高优先级】物理拨杆直接接管
+        servos.control[0] = _manual_rc_value;
+        servos.control[1] = -_manual_rc_value;
+        _transformation_completed = true;
+    }
+    else {
+        // 【自动闭环模式】仲裁机制：优先使用 AS5600 绝对编码器，如果没有则降级使用磁限位开关
 
-			if (_current_state == HybridState::TRANSITION_TO_ROVER) {
+        if (encoder_valid) {
+            // ---------------------------------------------------
+            // 模式 A: AS5600 连续角度闭环 (原有逻辑保留)
+            // ---------------------------------------------------
+            const float tolerance = 0.05f;
 
-				float target_angle = _param_hybrid_ang_rov.get();
-				if (fabsf(_current_mechanism_angle - target_angle) > tolerance) {
-					// 未到达位置，输出正向动力
-					servos.control[0] = 1.0f;
-					servos.control[1] = -1.0f;
-				} else {
-					// 到达目标！刹车并标记完成
-					servos.control[0] = -1.0f;
-					servos.control[1] = -1.0f;
-					_transformation_completed = true;
-				}
+            if (_current_state == HybridState::TRANSITION_TO_ROVER) {
+                float target_angle = _param_hybrid_ang_rov.get();
+                if (fabsf(_current_mechanism_angle - target_angle) > tolerance) {
+                    servos.control[0] = 1.0f;
+                    servos.control[1] = -1.0f;
+                } else {
+                    servos.control[0] = -1.0f;
+                    servos.control[1] = -1.0f;
+                    _transformation_completed = true;
+                }
+            }
+            else if (_current_state == HybridState::TRANSITION_TO_QUAD) {
+                float target_angle = _param_hybrid_ang_qud.get();
+                if (fabsf(_current_mechanism_angle - target_angle) > tolerance) {
+                    servos.control[0] = -1.0f;
+                    servos.control[1] = 1.0f;
+                } else {
+                    servos.control[0] = -1.0f;
+                    servos.control[1] = -1.0f;
+                    _transformation_completed = true;
+                }
+            }
+        }
+        else if (mag_qud_valid || mag_rov_valid) {
+            // ---------------------------------------------------
+            // 模式 B: TMAG5273 离散双限位开环/半闭环
+            // ---------------------------------------------------
 
-			}
-			else if (_current_state == HybridState::TRANSITION_TO_QUAD) {
+            if (_current_state == HybridState::TRANSITION_TO_ROVER) {
+                // 确保目标方向的传感器没有掉线
+                if (!mag_rov_valid) {
+                    servos.control[0] = -1.0f; servos.control[1] = -1.0f;
+                    _transformation_completed = false;
+                }
+                // 判定：使用 fabsf 获取绝对强度，防止 N/S 极装反导致读数为负
+                else if (fabsf(_current_mag_z_rov) < _param_hyb_mag_thr_rov.get()) {
+                    // 未到达限位，硬写死正向动力
+                    servos.control[0] = 1.0f;
+                    servos.control[1] = -1.0f;
+                } else {
+                    // 磁场强度超越阈值，刹车并确认到达
+                    servos.control[0] = -1.0f;
+                    servos.control[1] = -1.0f;
+                    _transformation_completed = true;
+                }
+            }
+            else if (_current_state == HybridState::TRANSITION_TO_QUAD) {
+                if (!mag_qud_valid) {
+                    servos.control[0] = -1.0f; servos.control[1] = -1.0f;
+                    _transformation_completed = false;
+                }
+                else if (fabsf(_current_mag_z_qud) < _param_hyb_mag_thr_qud.get()) {
+                    // 未到达限位，硬写死反向动力
+                    servos.control[0] = -1.0f;
+                    servos.control[1] = 1.0f;
+                } else {
+                    // 磁场强度超越阈值，刹车并确认到达
+                    servos.control[0] = -1.0f;
+                    servos.control[1] = -1.0f;
+                    _transformation_completed = true;
+                }
+            }
+        }
+        else {
+            // ---------------------------------------------------
+            // 模式 C: 传感器全军覆没 (丢失保护)
+            // ---------------------------------------------------
+            servos.control[0] = -1.0f;
+            servos.control[1] = -1.0f;
 
-				float target_angle = _param_hybrid_ang_qud.get();
-				if (fabsf(_current_mechanism_angle - target_angle) > tolerance) {
-					// 未到达位置，输出反向动力
-					servos.control[0] = -1.0f;
-					servos.control[1] = 1.0f;
-				} else {
-					// 到达目标！刹车并标记完成
-					servos.control[0] = -1.0f;
-					servos.control[1] = -1.0f;
-					_transformation_completed = true;
-				}
-			}
-		}
-	}
+            static hrt_abstime last_warn_time = 0;
+            if (hrt_elapsed_time(&last_warn_time) > 2_s) {
+                PX4_ERR("[Hybrid] ALL SENSORS LOST! Auto-transform aborted. Use Manual Override!");
+                last_warn_time = hrt_absolute_time();
+            }
+            _transformation_completed = false;
+        }
+    }
 
-	// 只有在变形态才发布舵机指令（非变形态时电机由状态机保持锁死，防止空耗电）
-	if (_manual_override_active ||
-		_current_state == HybridState::TRANSITION_TO_ROVER ||
-		_current_state == HybridState::TRANSITION_TO_QUAD) {
-		_actuator_servos_pub.publish(servos);
-	}
+    // 只有在变形态才发布舵机指令（非变形态时电机由状态机保持锁死，防止空耗电）
+    if (_manual_override_active ||
+        _current_state == HybridState::TRANSITION_TO_ROVER ||
+        _current_state == HybridState::TRANSITION_TO_QUAD) {
+        _actuator_servos_pub.publish(servos);
+    }
 }
 
 void HybridVehicleControl::updateParams()
