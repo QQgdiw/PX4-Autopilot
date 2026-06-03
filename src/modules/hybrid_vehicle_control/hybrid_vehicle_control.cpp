@@ -330,8 +330,39 @@ void HybridVehicleControl::update_state_machine()
 	hrt_abstime now = hrt_absolute_time();
 	hrt_abstime transition_duration_us = (hrt_abstime)(_param_hybrid_trans_t.get() * 1000000.0f);
 
+	if (_manual_override_active) {
+		// _manual_rc_value 是当前手动接管通道的值 (-1.0 到 1.0)
+		// 假设：拨杆打到正向 (> 0.5) 是变成漫游车，反向 (< -0.5) 是变成多旋翼
+		if (_manual_rc_value > 0.5f) {
+			if (_current_state != HybridState::DRIVING) {
+				PX4_WARN("[Hybrid] Manual Override: Forcing state to DRIVING!");
+				_current_state = HybridState::DRIVING;
+				_transformation_completed = true; // 强制宣告物理变形已完成
+			}
+		}
+		else if (_manual_rc_value < -0.5f) {
+			if (_current_state != HybridState::FLYING) {
+				PX4_WARN("[Hybrid] Manual Override: Forcing state to FLYING!");
+				_current_state = HybridState::FLYING;
+				_transformation_completed = true;
+			}
+		}
+		else {
+			// 拨杆在中间过程，强制将状态置为过渡态
+			if (_current_state == HybridState::FLYING || _current_state == HybridState::DRIVING) {
+				PX4_INFO("[Hybrid] Manual Override: Forcing state to TRANSITION!");
+				_current_state = HybridState::TRANSITION_TO_ROVER;
+				_transformation_completed = false;
+			}
+		}
+
+		// 极度关键：在手动模式下，状态完全由物理拨杆主宰，直接 return 返回！
+		// 绝不执行下方的 switch 自动闭环逻辑，防止状态机互相打架。
+		return;
+	}
+
 	// ---------------------------------------------------------
-	// 执行状态机切换
+	// 执行状态机切换 (自动闭环/主开关模式)
 	// ---------------------------------------------------------
 	switch (_current_state) {
 		case HybridState::FLYING:

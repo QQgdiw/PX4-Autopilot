@@ -144,6 +144,8 @@ private:
 	bool _vtol{false};
 	bool _vtol_tailsitter{false};
 	bool _vtol_in_transition_mode{false};
+	bool _is_quad_rover{false};
+	bool _in_rover_mode{false};
 
 	uint8_t _quat_reset_counter{0};
 

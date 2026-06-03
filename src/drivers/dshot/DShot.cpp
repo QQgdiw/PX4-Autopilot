@@ -269,7 +269,7 @@ void DShot::publish_esc_status(void)
 
 	if (_bidirectional_dshot_enabled) {
 		for (unsigned i = 0; i < _num_outputs; i++) {
-			if (_mixing_output.isFunctionSet(i)) {
+			if ((_mixing_output.isFunctionSet(i))) {
 				if (up_bdshot_channel_status(i)) {
 					esc_status.esc_online_flags |= 1 << i;
 

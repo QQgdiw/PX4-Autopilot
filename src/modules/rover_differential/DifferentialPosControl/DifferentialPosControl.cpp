@@ -148,7 +148,7 @@ void DifferentialPosControl::manualPositionMode()
 	manual_control_setpoint_s manual_control_setpoint{};
 	_manual_control_setpoint_sub.copy(&manual_control_setpoint);
 
-	const float speed_body_x_setpoint = math::interpolate<float>(manual_control_setpoint.throttle,
+	const float speed_body_x_setpoint = math::interpolate<float>(manual_control_setpoint.pitch,
 					    -1.f, 1.f, -_param_ro_speed_limit.get(), _param_ro_speed_limit.get());
 	const float bearing_scaling = math::min(_max_yaw_rate / _param_ro_yaw_p.get(),
 						_param_rd_trans_drv_trn.get() - FLT_EPSILON);

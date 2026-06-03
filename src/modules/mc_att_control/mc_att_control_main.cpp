@@ -257,6 +257,9 @@ MulticopterAttitudeControl::Run()
 			vehicle_status_s vehicle_status;
 
 			if (_vehicle_status_sub.copy(&vehicle_status)) {
+				_is_quad_rover = vehicle_status.is_vtol && vehicle_status.is_quad_rover;
+				_in_rover_mode = vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER;
+
 				_vehicle_type_rotary_wing = (vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING);
 				_vtol = vehicle_status.is_vtol && !vehicle_status.is_quad_rover;
 				_vtol_in_transition_mode = vehicle_status.in_transition_mode;
@@ -289,7 +292,8 @@ MulticopterAttitudeControl::Run()
 		const bool is_tailsitter_transition = (_vtol_tailsitter && _vtol_in_transition_mode);
 
 		const bool run_att_ctrl = _vehicle_control_mode.flag_control_attitude_enabled
-					  && (is_hovering || is_tailsitter_transition);
+					  && (is_hovering || is_tailsitter_transition)
+					  && !(_is_quad_rover && _in_rover_mode);;
 
 		if (run_att_ctrl) {
 			// Generate the attitude setpoint from stick inputs if we are in Manual/Stabilized mode
@@ -299,6 +303,7 @@ MulticopterAttitudeControl::Run()
 			    !_vehicle_control_mode.flag_control_position_enabled) {
 
 				generate_attitude_setpoint(q, dt);
+
 
 			} else {
 				_man_roll_input_filter.reset(0.f);
