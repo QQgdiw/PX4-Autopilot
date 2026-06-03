@@ -113,18 +113,17 @@ void DifferentialAttControl::generateAttitudeAndThrottleSetpoint()
 			rover_throttle_setpoint.throttle_body_y = 0.f;
 			_rover_throttle_setpoint_pub.publish(rover_throttle_setpoint);
 
-			const float yaw_delta = math::interpolate<float>(math::deadzone(manual_control_setpoint.roll,
-						_param_ro_yaw_stick_dz.get()), -1.f, 1.f, -_max_yaw_rate / _param_ro_yaw_p.get(),
-						_max_yaw_rate / _param_ro_yaw_p.get());
+			const float steering_input = math::deadzone(manual_control_setpoint.roll, _param_ro_yaw_stick_dz.get());
+			const float yaw_rate_setpoint = math::interpolate<float>(steering_input, -1.f, 1.f, -_max_yaw_rate,
+							_max_yaw_rate);
 
-			if (fabsf(yaw_delta) > FLT_EPSILON
-			    || fabsf(rover_throttle_setpoint.throttle_body_x) < FLT_EPSILON) { // Closed loop yaw rate control
+			if (fabsf(yaw_rate_setpoint) > FLT_EPSILON
+			    || fabsf(rover_throttle_setpoint.throttle_body_x) < FLT_EPSILON) {
 				_stab_yaw_ctl = false;
-				const float yaw_setpoint = matrix::wrap_pi(_vehicle_yaw + yaw_delta);
-				rover_attitude_setpoint_s rover_attitude_setpoint{};
-				rover_attitude_setpoint.timestamp = _timestamp;
-				rover_attitude_setpoint.yaw_setpoint = yaw_setpoint;
-				_rover_attitude_setpoint_pub.publish(rover_attitude_setpoint);
+				rover_rate_setpoint_s rover_rate_setpoint{};
+				rover_rate_setpoint.timestamp = _timestamp;
+				rover_rate_setpoint.yaw_rate_setpoint = yaw_rate_setpoint;
+				_rover_rate_setpoint_pub.publish(rover_rate_setpoint);
 
 			} else { // Closed loop yaw control if the yaw rate input is zero (keep current yaw)
 				if (!_stab_yaw_ctl) {

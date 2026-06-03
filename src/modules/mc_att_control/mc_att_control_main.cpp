@@ -213,6 +213,27 @@ MulticopterAttitudeControl::Run()
 
 	perf_begin(_loop_perf);
 
+	vehicle_status_s status{};
+	if (_vehicle_status_sub.copy(&status)) {
+	if (status.is_quad_rover && status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER) {
+		// Rover模式下完全跳过姿态控制
+		_yaw_setpoint_stabilized = NAN;
+		_man_roll_input_filter.reset(0.f);
+		_man_pitch_input_filter.reset(0.f);
+
+		// 清空已发布的 rates setpoint，避免 MC 接收到旧值
+		vehicle_rates_setpoint_s empty_rates{};
+		empty_rates.timestamp = hrt_absolute_time();
+		memset(&empty_rates.roll, 0, sizeof(empty_rates.roll));
+		memset(&empty_rates.pitch, 0, sizeof(empty_rates.pitch));
+		memset(&empty_rates.yaw, 0, sizeof(empty_rates.yaw));
+		_vehicle_rates_setpoint_pub.publish(empty_rates);
+
+		perf_end(_loop_perf);
+		return; // 完全跳过 MC 控制逻辑
+	}
+	}
+
 	// Check if parameters have changed
 	if (_parameter_update_sub.updated()) {
 		// clear update
@@ -292,8 +313,7 @@ MulticopterAttitudeControl::Run()
 		const bool is_tailsitter_transition = (_vtol_tailsitter && _vtol_in_transition_mode);
 
 		const bool run_att_ctrl = _vehicle_control_mode.flag_control_attitude_enabled
-					  && (is_hovering || is_tailsitter_transition)
-					  && !(_is_quad_rover && _in_rover_mode);;
+					  && (is_hovering || is_tailsitter_transition);
 
 		if (run_att_ctrl) {
 			// Generate the attitude setpoint from stick inputs if we are in Manual/Stabilized mode

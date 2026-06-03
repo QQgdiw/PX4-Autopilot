@@ -62,7 +62,10 @@ void RoverDifferential::updateParams()
 void RoverDifferential::Run()
 {
 	vehicle_status_s status{};
+
 	if (_vehicle_status_sub.copy(&status)) {
+		_vehicle_status = status;
+
 		if (status.vehicle_type != vehicle_status_s::VEHICLE_TYPE_ROVER) {
 			actuator_motors_s stop_motors{};
 			stop_motors.timestamp = hrt_absolute_time();
@@ -164,8 +167,30 @@ void RoverDifferential::generateActuatorSetpoint()
 
 	actuator_motors_s actuator_motors{};
 	actuator_motors.reversible_flags = _param_r_rev.get();
-	computeInverseKinematics(throttle_body_x,
-				 _rover_steering_setpoint.normalized_speed_diff).copyTo(actuator_motors.control);
+	const Vector2f wheel_commands = computeInverseKinematics(throttle_body_x,
+					_rover_steering_setpoint.normalized_speed_diff);
+	wheel_commands.copyTo(actuator_motors.control);
+
+	if (fabsf(_rover_steering_setpoint.normalized_speed_diff) > 0.05f) {
+		static hrt_abstime last_debug_print{0};
+
+		if (hrt_elapsed_time(&last_debug_print) > 250_ms) {
+			last_debug_print = hrt_absolute_time();
+			PX4_INFO("[RD_MIX_DBG] nav:%u type:%u quad:%d mode m:%d p:%d a:%d r:%d thr=%.3f steer=%.3f L=%.3f R=%.3f",
+				 (unsigned)_vehicle_status.nav_state,
+				 (unsigned)_vehicle_status.vehicle_type,
+				 (int)_vehicle_status.is_quad_rover,
+				 (int)_vehicle_control_mode.flag_control_manual_enabled,
+				 (int)_vehicle_control_mode.flag_control_position_enabled,
+				 (int)_vehicle_control_mode.flag_control_attitude_enabled,
+				 (int)_vehicle_control_mode.flag_control_rates_enabled,
+				 (double)throttle_body_x,
+				 (double)_rover_steering_setpoint.normalized_speed_diff,
+				 (double)wheel_commands(0),
+				 (double)wheel_commands(1));
+		}
+	}
+
 	actuator_motors.timestamp = _timestamp;
 	_actuator_motors_pub.publish(actuator_motors);
 }

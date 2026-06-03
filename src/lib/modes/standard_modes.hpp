@@ -76,6 +76,10 @@ static inline StandardMode getStandardModeFromNavState(uint8_t nav_state, uint8_
 		break;
 
 	case vehicle_status_s::NAVIGATION_STATE_POSCTL:
+		if (vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER) {
+			return StandardMode::POSITION_HOLD;
+		}
+
 		if (!is_vtol && vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING) {
 			return StandardMode::POSITION_HOLD;
 		}
@@ -121,6 +125,10 @@ static inline uint8_t getNavStateFromStandardMode(StandardMode mode, uint8_t veh
 		break;
 
 	case StandardMode::POSITION_HOLD:
+		if (vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER) {
+			return vehicle_status_s::NAVIGATION_STATE_POSCTL;
+		}
+
 		if (!is_vtol && vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING) {
 			return vehicle_status_s::NAVIGATION_STATE_POSCTL;
 		}

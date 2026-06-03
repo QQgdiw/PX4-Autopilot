@@ -154,6 +154,21 @@ void DifferentialRateControl::generateSteeringSetpoint()
 					_max_yaw_decel, _param_rd_wheel_track.get(), _dt);
 	}
 
+	if (_vehicle_control_mode.flag_control_manual_enabled
+	    && _vehicle_control_mode.flag_control_rates_enabled
+	    && fabsf(_rover_rate_setpoint.yaw_rate_setpoint) > 0.05f) {
+		static hrt_abstime last_debug_print{0};
+
+		if (hrt_elapsed_time(&last_debug_print) > 250_ms) {
+			last_debug_print = hrt_absolute_time();
+			PX4_INFO("[RD_RATE_DBG] yaw_sp=%.3f yaw=%.3f diff=%.3f int=%.3f",
+				 (double)_rover_rate_setpoint.yaw_rate_setpoint,
+				 (double)_vehicle_yaw_rate,
+				 (double)speed_diff_normalized,
+				 (double)_pid_yaw_rate.getIntegral());
+		}
+	}
+
 	rover_steering_setpoint_s rover_steering_setpoint{};
 	rover_steering_setpoint.timestamp = _timestamp;
 	rover_steering_setpoint.normalized_speed_diff = speed_diff_normalized;

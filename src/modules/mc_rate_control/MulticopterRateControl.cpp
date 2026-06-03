@@ -112,17 +112,26 @@ MulticopterRateControl::Run()
 
 	vehicle_status_s status{};
 	if (_vehicle_status_sub.copy(&status)) {
+		// --- 新增：Quad-Rover Rover模式保护 ---
 		if (status.is_quad_rover && status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER) {
 
-			// 1. 【极其重要】读取并丢弃触发源数据，清除 update 标志位，防止调度器死锁！
-			vehicle_angular_velocity_s dummy_ang_vel;
-			_vehicle_angular_velocity_sub.update(&dummy_ang_vel);
+		// 丢弃陀螺仪更新，防止闭环计算
+		vehicle_angular_velocity_s dummy_ang_vel{};
+		_vehicle_angular_velocity_sub.update(&dummy_ang_vel);
 
-			// 2. 闭合性能统计器，保持系统健康
-			perf_end(_loop_perf);
+		// 清空扭矩和推力 setpoint
+		vehicle_torque_setpoint_s torque{};
+		torque.timestamp = hrt_absolute_time();
+		memset(&torque.xyz, 0, sizeof(torque.xyz));
+		_vehicle_torque_setpoint_pub.publish(torque);
 
-			// 3. 安全进入冬眠，绝不向下执行任何多旋翼控制逻辑
-			return;
+		vehicle_thrust_setpoint_s thrust{};
+		thrust.timestamp = hrt_absolute_time();
+		memset(&thrust.xyz, 0, sizeof(thrust.xyz));
+		_vehicle_thrust_setpoint_pub.publish(thrust);
+
+		perf_end(_loop_perf);
+		return; // 完全跳过 MC 控制逻辑
 		}
 	}
 
