@@ -1,5 +1,11 @@
 uint64 timestamp                       # time since system start (microseconds)
 
+uint32 DRIVE_FAULT_NONE = 0
+uint32 DRIVE_FAULT_LEFT_FEEDBACK = 1
+uint32 DRIVE_FAULT_RIGHT_FEEDBACK = 2
+uint32 DRIVE_FAULT_CAN = 4
+uint32 DRIVE_FAULT_COMMAND = 8
+
 # Array index 0 is the left motor (C610 ID 1).
 # Array index 1 is the right motor (C610 ID 2).
 uint64[2] feedback_timestamp           # last valid feedback time (microseconds)
