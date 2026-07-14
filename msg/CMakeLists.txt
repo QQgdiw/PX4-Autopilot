@@ -130,6 +130,7 @@ set(msg_files
 	MagneticSensor.msg
 	MagnetometerBiasEstimate.msg
 	MagWorkerData.msg
+	M2006MotorStatus.msg
 	ManualControlSwitches.msg
 	MavlinkLog.msg
 	MavlinkTunnel.msg

@@ -129,6 +129,9 @@ add_custom_command(OUTPUT px4_uavcan_dsdlc_run.stamp
 )
 add_custom_target(px4_uavcan_dsdlc DEPENDS px4_uavcan_dsdlc_run.stamp)
 
+# Register standalone M2006/C610 parameters before driver integration.
+set_property(GLOBAL APPEND PROPERTY PX4_MODULE_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/m2006_can)
+
 px4_add_module(
 	MODULE drivers__uavcan
 	MAIN uavcan

@@ -12,10 +12,10 @@
  */
 
 /**
- * Transformation Duration (Fallback)
+ * Maximum Transformation Duration
  *
- * The physical time previously required for open-loop transformation.
- * In closed-loop mode with encoders, this serves as a fallback timeout.
+ * With position sensors enabled, expiry is a transition fault. With sensors
+ * disabled, expiry completes the open-loop transition.
  *
  * @group Hybrid Control
  * @unit s
@@ -25,6 +25,84 @@
  * @increment 0.1
  */
 PARAM_DEFINE_FLOAT(HYBRID_TRANS_T, 6.0f);
+
+/**
+ * Enable transformation position sensors
+ *
+ * Enables AS5600 and TMAG5273 endpoint completion checks. Runtime sensor
+ * faults do not fall back to open-loop operation.
+ *
+ * @boolean
+ * @group Hybrid Control
+ */
+PARAM_DEFINE_INT32(HYB_SENS_EN, 1);
+
+/**
+ * Configured startup shape
+ *
+ * This persistent operator configuration is used as the startup assumption
+ * only when position sensors are disabled. Runtime transitions do not update it.
+ *
+ * @value 0 Quad
+ * @value 1 Rover
+ * @group Hybrid Control
+ */
+PARAM_DEFINE_INT32(HYB_BOOT_ST, 0);
+
+/**
+ * Quad shape Servo 1 target
+ *
+ * @min -1.0
+ * @max 1.0
+ * @decimal 3
+ * @group Hybrid Control
+ */
+PARAM_DEFINE_FLOAT(HYB_SV_QUD, 0.0f);
+
+/**
+ * Rover shape Servo 1 target
+ *
+ * @min -1.0
+ * @max 1.0
+ * @decimal 3
+ * @group Hybrid Control
+ */
+PARAM_DEFINE_FLOAT(HYB_SV_ROV, 0.0f);
+
+/**
+ * AS5600 endpoint angle tolerance
+ *
+ * @unit rad
+ * @min 0.0
+ * @max 3.14
+ * @decimal 3
+ * @group Hybrid Control
+ */
+PARAM_DEFINE_FLOAT(HYB_ANG_TOL, 0.05f);
+
+/**
+ * Transformation position feedback timeout
+ *
+ * @unit s
+ * @min 0.01
+ * @max 5.0
+ * @decimal 2
+ * @group Hybrid Control
+ */
+PARAM_DEFINE_FLOAT(HYB_SENS_TO, 0.30f);
+
+/**
+ * Endpoint confirmation time
+ *
+ * Position feedback must continuously confirm an endpoint for this duration.
+ *
+ * @unit s
+ * @min 0.0
+ * @max 2.0
+ * @decimal 2
+ * @group Hybrid Control
+ */
+PARAM_DEFINE_FLOAT(HYB_DBNC_T, 0.10f);
 
 /**
  * Maximum Transformation Altitude
