@@ -58,6 +58,7 @@ bool M2006Can::init()
 		return false;
 	}
 
+	(void)UAVCAN_DRIVER::SystemClock::instance();
 	const int can_result = _can.init(1000000);
 
 	if (can_result < 0) {

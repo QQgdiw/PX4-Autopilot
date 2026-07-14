@@ -26,7 +26,7 @@ bool M2006DriveGate::update(const DriveGateInput &input)
 				    && input.now_us >= _both_healthy_since
 				    && input.now_us - _both_healthy_since >= feedback_health_delay_us;
 
-	if (input.armed) {
+	if (input.armed && input.driving) {
 		if (!input.feedback_healthy[0]) {
 			_fault_bits |= DriveFaultLeftFeedback;
 		}
