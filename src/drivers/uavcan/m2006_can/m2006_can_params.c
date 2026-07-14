@@ -16,6 +16,8 @@ PARAM_DEFINE_INT32(M2K_EN, 1);
 /**
  * Left motor C610 ID
  *
+ * This hardware integration supports only left ID 1 and right ID 2.
+ *
  * @min 1
  * @max 4
  * @reboot_required true
@@ -25,6 +27,8 @@ PARAM_DEFINE_INT32(M2K_L_ID, 1);
 
 /**
  * Right motor C610 ID
+ *
+ * This hardware integration supports only left ID 1 and right ID 2.
  *
  * @min 1
  * @max 4

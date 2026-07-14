@@ -102,6 +102,10 @@ target_include_directories(uavcan_${UAVCAN_DRIVER}_driver PUBLIC
 	${LIBDRONECAN_DIR}/libuavcan/include/dsdlc_generated
 )
 
+if(CONFIG_UAVCAN_M2006_CAN)
+	add_subdirectory(m2006_can)
+endif()
+
 
 # generated DSDL
 set(DSDLC_INPUTS
@@ -129,7 +133,7 @@ add_custom_command(OUTPUT px4_uavcan_dsdlc_run.stamp
 )
 add_custom_target(px4_uavcan_dsdlc DEPENDS px4_uavcan_dsdlc_run.stamp)
 
-# Register standalone M2006/C610 parameters before driver integration.
+# Register standalone M2006/C610 parameters.
 set_property(GLOBAL APPEND PROPERTY PX4_MODULE_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/m2006_can)
 
 px4_add_module(
