@@ -3,4 +3,6 @@ px4_add_module(
 	MAIN hybrid_vehicle_control
 	SRCS
 		hybrid_vehicle_control.cpp
+	DEPENDS
+		hybrid_control
 	)

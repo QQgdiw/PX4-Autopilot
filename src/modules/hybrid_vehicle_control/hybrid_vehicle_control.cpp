@@ -2,56 +2,79 @@
  *
  * Copyright (c) 2026 PX4 Development Team. All rights reserved.
  *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ * 3. Neither the name PX4 nor the names of its contributors may be used
+ *    to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  ****************************************************************************/
 
 #include "hybrid_vehicle_control.hpp"
 
-#include <px4_platform_common/getopt.h>
+#include <cmath>
+
 #include <px4_platform_common/cli.h>
-#include <px4_platform_common/events.h>
+#include <px4_platform_common/getopt.h>
 
 using namespace time_literals;
+using hybrid_control::HybridState;
+using hybrid_control::HybridTarget;
+using hybrid_control::SensorSource;
+using hybrid_control::TransformFault;
+using hybrid_control::TransformationConfig;
+using hybrid_control::TransformationInput;
 
-// ==============================================================================
-// 构造函数与析构函数
-// ==============================================================================
+namespace
+{
+bool timestamp_fresh(uint64_t timestamp, hrt_abstime now, uint64_t timeout_us)
+{
+	return timestamp != 0 && now >= timestamp && now - timestamp <= timeout_us;
+}
+
+float clamp_servo(float value)
+{
+	return fmaxf(-1.f, fminf(value, 1.f));
+}
+} // namespace
 
 HybridVehicleControl::HybridVehicleControl() :
 	ModuleParams(nullptr),
-	// 将此模块挂载到 nav_and_controllers (导航与控制器) 工作队列中
-	// 这与 vtol_att_control 和 mc_pos_control 运行在同一个线程池，保证数据同步
 	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::nav_and_controllers)
 {
-	// 初始化时强制更新一次参数
 	updateParams();
 }
 
-HybridVehicleControl::~HybridVehicleControl()
-{
-	// 模块退出时的清理工作（如果有的话）
-}
-
-// ==============================================================================
-// 初始化与调度
-// ==============================================================================
+HybridVehicleControl::~HybridVehicleControl() = default;
 
 bool HybridVehicleControl::init()
 {
-	// 设定主循环的运行频率。
-	// 对于状态机和模式仲裁，50Hz (20ms) 是一个非常平衡且标准的频率。
-	// 具体的姿态控制由底层的 mc_att_control (高频，如 400Hz) 负责，我们不需要那么快。
 	ScheduleOnInterval(20_ms);
-
 	return true;
 }
 
-// ==============================================================================
-// PX4 标准命令行接口 (CLI)
-// ==============================================================================
-
 int HybridVehicleControl::task_spawn(int argc, char *argv[])
 {
-	// 实例化模块对象
 	HybridVehicleControl *instance = new HybridVehicleControl();
 
 	if (instance) {
@@ -61,59 +84,104 @@ int HybridVehicleControl::task_spawn(int argc, char *argv[])
 		if (instance->init()) {
 			return PX4_OK;
 		}
-
-		// 如果初始化失败，清理内存
-		PX4_ERR("alloc failed");
 	}
 
 	delete instance;
 	_object.store(nullptr);
 	_task_id = -1;
-
 	return PX4_ERROR;
 }
 
 int HybridVehicleControl::custom_command(int argc, char *argv[])
 {
-	// 如果你以后想在终端输入 "hybrid_vehicle_control force_rover" 之类的自定义命令，
-	// 可以写在这个函数里。目前返回未识别。
 	return print_usage("unrecognized command");
 }
 
 int HybridVehicleControl::print_usage(const char *reason)
 {
 	if (reason) {
-		PX4_WARN("%s\n", reason);
+		PX4_WARN("%s", reason);
 	}
 
 	PRINT_MODULE_DESCRIPTION(
 		R"DESCR_STR(
 ### Description
 Hybrid vehicle control module (Quad-Rover).
-Handles the state machine and control allocation transition between
-multicopter and rover modes.
+Arbitrates native multicopter and differential-rover outputs and controls the
+positional transformation servo.
 )DESCR_STR");
 
 	PRINT_MODULE_USAGE_NAME("hybrid_vehicle_control", "controller");
 	PRINT_MODULE_USAGE_COMMAND("start");
 	PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
-
 	return 0;
 }
 
-// ==============================================================================
-// 系统入口函数
-// ==============================================================================
-
 extern "C" __EXPORT int hybrid_vehicle_control_main(int argc, char *argv[])
 {
-	// 直接调用 ModuleBase 提供的默认主函数逻辑
 	return HybridVehicleControl::main(argc, argv);
 }
 
-// ==============================================================================
-// 核心工作循环 (运行在 Work Queue 中)
-// ==============================================================================
+TransformationConfig HybridVehicleControl::transformation_config() const
+{
+	return {
+		_param_hyb_sens_en.get(),
+		_param_hyb_boot_st.get() == 1 ? HybridState::Driving : HybridState::Flying,
+		_param_hyb_sv_qud.get(),
+		_param_hyb_sv_rov.get(),
+		_param_hybrid_ang_qud.get(),
+		_param_hybrid_ang_rov.get(),
+		_param_hyb_ang_tol.get(),
+		static_cast<uint64_t>(_param_hyb_sens_to.get() * 1_s),
+		static_cast<uint64_t>(_param_hyb_dbnc_t.get() * 1_s),
+		static_cast<uint64_t>(_param_hybrid_trans_t.get() * 1_s)
+	};
+}
+
+TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstime now)
+{
+	sensor_encoder_s encoder{};
+
+	if (_encoder_sub.update(&encoder)) {
+		_current_mechanism_angle = encoder.position_rad;
+		_last_encoder_timestamp = encoder.timestamp;
+		_encoder_healthy = encoder.status_flags == 0;
+	}
+
+	for (size_t i = 0; i < _magnetic_subs.size(); ++i) {
+		magnetic_sensor_s magnetic{};
+
+		if (_magnetic_subs[i].update(&magnetic)) {
+			if (magnetic.device_id == static_cast<uint32_t>(_param_hyb_mag_id_qud.get())) {
+				_current_mag_z_qud = magnetic.mag_z;
+				_last_mag_timestamp_qud = magnetic.timestamp;
+			}
+
+			if (magnetic.device_id == static_cast<uint32_t>(_param_hyb_mag_id_rov.get())) {
+				_current_mag_z_rov = magnetic.mag_z;
+				_last_mag_timestamp_rov = magnetic.timestamp;
+			}
+		}
+	}
+
+	const uint64_t sensor_timeout_us = static_cast<uint64_t>(_param_hyb_sens_to.get() * 1_s);
+	const bool encoder_valid = timestamp_fresh(_last_encoder_timestamp, now, sensor_timeout_us)
+				   && _encoder_healthy && std::isfinite(_current_mechanism_angle);
+	const bool tmag_quad_valid = timestamp_fresh(_last_mag_timestamp_qud, now, sensor_timeout_us)
+				    && std::isfinite(_current_mag_z_qud);
+	const bool tmag_rover_valid = timestamp_fresh(_last_mag_timestamp_rov, now, sensor_timeout_us)
+				     && std::isfinite(_current_mag_z_rov);
+
+	return {
+		now,
+		encoder_valid,
+		_current_mechanism_angle,
+		tmag_quad_valid,
+		tmag_quad_valid && fabsf(_current_mag_z_qud) >= _param_hyb_mag_thr_qud.get(),
+		tmag_rover_valid,
+		tmag_rover_valid && fabsf(_current_mag_z_rov) >= _param_hyb_mag_thr_rov.get()
+	};
+}
 
 void HybridVehicleControl::Run()
 {
@@ -124,454 +192,285 @@ void HybridVehicleControl::Run()
 	}
 
 	updateParams();
-
-	vehicle_status_s vehicle_status;
-	if (_vehicle_status_sub.update(&vehicle_status)) {
-		_is_armed = (vehicle_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED);
-	}
-
-	// 仅监听当前的模式状态，绝不覆写
+	_actuator_armed_sub.update(&_actuator_armed);
 	_vehicle_control_mode_sub.update(&_vcontrol_mode);
 
-	// 核心：执行状态机与模式切换逻辑 (遥控器与航线解析)
-	update_state_machine();
+	const hrt_abstime now = hrt_absolute_time();
+	const TransformationInput input = update_transformation_input(now);
 
-	// ====================================================================
-	// [全新逻辑] 广播当前的物理形态，让 Commander 决定如何分配动力
-	// ====================================================================
-	hybrid_vehicle_status_s status_msg{};
-	status_msg.timestamp = hrt_absolute_time();
-
-	if (_current_state == HybridState::FLYING) {
-		status_msg.current_state = hybrid_vehicle_status_s::HYBRID_STATE_FLYING;
-	} else if (_current_state == HybridState::DRIVING) {
-		status_msg.current_state = hybrid_vehicle_status_s::HYBRID_STATE_DRIVING;
-	} else {
-		// 正在变车或变飞机，都属于过渡态
-		status_msg.current_state = hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING;
-	}
-	_hybrid_status_pub.publish(status_msg);
-	// ====================================================================
-
-	control_transformation_actuators();
-
-	// ====================================================================
-	// [终极硬件多路复用器] 数据搬运与安全隔离
-	// ====================================================================
-
-	// 1. 从两个旁路拉取最新数据 (由原生的 Allocator 和 Rover 模块计算得出)
-	_actuator_motors_mc_sub.update(&_mc_motors);
-	_actuator_motors_rover_sub.update(&_rover_motors);
-
-	// 2. 准备发往底层物理针脚的空载体
-	actuator_motors_s final_motors{};
-	final_motors.timestamp = hrt_absolute_time();
-	final_motors.timestamp_sample = final_motors.timestamp;
-
-	// 【安全第一】默认将所有通道设为 NAN (物理输出将被锁定在 Disarmed 安全低电平)
-	for (int i = 0; i < actuator_motors_s::NUM_CONTROLS; i++) {
-		final_motors.control[i] = NAN;
+	if (!_transformation_initialized) {
+		_transformation_output = _transformation.initialize(transformation_config(), input);
+		_transformation_initialized = true;
 	}
 
-	// 映射表：根据你的 QGC MAIN 针脚分配，锁定车轮的数组索引
-	const int ROVER_LEFT_IDX = 4;  // MAIN 5
-	const int ROVER_RIGHT_IDX = 5; // MAIN 6
-
-	// 3. 根据系统当前形态，进行物理通道的“道岔”切换
-	if (_current_state == HybridState::FLYING) {
-		// --- 飞行模式 ---
-		// 仅接通多旋翼的动力 (前 4 个通道)
-		for (int i = 0; i < 4; i++) {
-			final_motors.control[i] = _mc_motors.control[i];
-		}
-		final_motors.reversible_flags = _mc_motors.reversible_flags;
-		// 此时车轮通道保持 NAN，在空中绝对静止
-
-	} else if (_current_state == HybridState::DRIVING) {
-		// --- 漫游车模式 ---
-		// 仅接通车轮的动力
-		// 将原生 rover_differential 算好的左右轮转速，搬运到指定的物理通道
-		final_motors.control[ROVER_LEFT_IDX] = _rover_motors.control[0];
-		final_motors.control[ROVER_RIGHT_IDX] = _rover_motors.control[1];
-		final_motors.reversible_flags = _rover_motors.reversible_flags;
-		// 此时螺旋桨通道保持 NAN，在地上绝对锁死，防止削人
-
-	} else {
-		// --- 变形过渡态 (TRANSITIONING) ---
-		// 最危险的物理状态。不执行任何搬运，所有动力通道保持 NAN。
-		// 全车的无刷动力瞬间切断，仅由 actuator_servos 驱动变形舵机。
-	}
-
-	// 4. 终极发布：将绝对安全的物理指令推向底层 PWM/DShot 驱动
-	_actuator_motors_final_pub.publish(final_motors);
+	update_state_machine(input);
+	publish_status(input, now);
+	publish_servo(now);
+	publish_motor_outputs(now);
 }
 
-// ==============================================================================
-// 状态机逻辑
-// ==============================================================================
-
-void HybridVehicleControl::update_state_machine()
+void HybridVehicleControl::update_state_machine(const TransformationInput &input)
 {
 	bool request_rover = false;
-	bool request_quad  = false;
+	bool request_quad = false;
 
-	// 获取当前是否在自动航线模式
-	bool is_in_auto_mode = _vcontrol_mode.flag_control_auto_enabled;
+	vehicle_command_s command{};
 
-	// =========================================================
-	// 来源 1：解析 MAVLink 车辆指令 (航线节点 & QGC 滑块)
-	// =========================================================
-	vehicle_command_s vcmd{};
-	while (_vehicle_command_sub.update(&vcmd)) {
-		if (vcmd.command == vehicle_command_s::VEHICLE_CMD_DO_VTOL_TRANSITION) {
-
-			int transition_target = (int)(vcmd.param1 + 0.5f);
-			// MAVLink 协议规定：3 = 切换到 MC (旋翼)，4 = 切换到 FW (我们的车)
-			if (transition_target == 4) {
-				request_rover = true;
-				PX4_INFO("[Hybrid] Mission/QGC Cmd: Transition to ROVER");
-			}
-			else if (transition_target == 3) {
-				request_quad = true;
-				PX4_INFO("[Hybrid] Mission/QGC Cmd: Transition to QUAD");
-			}
-
-			// 极度关键：必须向 QGC 回复确认 (ACK)，否则任务节点会卡死报错
-			vehicle_command_ack_s ack{};
-			ack.timestamp = hrt_absolute_time();
-			ack.command = vcmd.command;
-			ack.result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
-			ack.target_system = vcmd.source_system;
-			ack.target_component = vcmd.source_component;
-			_vehicle_command_ack_pub.publish(ack);
+	while (_vehicle_command_sub.update(&command)) {
+		if (command.command != vehicle_command_s::VEHICLE_CMD_DO_VTOL_TRANSITION) {
+			continue;
 		}
+
+		const int target = static_cast<int>(command.param1 + 0.5f);
+		request_rover = target == 4;
+		request_quad = target == 3;
+
+		vehicle_command_ack_s ack{};
+		ack.timestamp = input.now_us;
+		ack.command = command.command;
+		ack.result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+		ack.target_system = command.source_system;
+		ack.target_component = command.source_component;
+		_vehicle_command_ack_pub.publish(ack);
 	}
 
-	// =========================================================
-	// 来源 2：解析遥控器拨杆 (跳变检测 + 主动降级)
-	// =========================================================
-	manual_control_setpoint_s manual_control;
-	if (_manual_control_setpoint_sub.update(&manual_control)) {
-		float current_transfer_switch = -1.0f; // 默认值
-		// 将 QGC 里配置的 Channel 映射到 aux 变量
+	manual_control_setpoint_s manual{};
+
+	if (_manual_control_setpoint_sub.update(&manual)) {
+		float transfer_switch = -1.f;
+
 		switch (_rc_map_trans_sw_val) {
-			case 5: current_transfer_switch = manual_control.aux1; break;
-			case 6: current_transfer_switch = manual_control.aux2; break;
-			case 7: current_transfer_switch = manual_control.aux3; break;
-			case 8: current_transfer_switch = manual_control.aux4; break;
-			case 9: current_transfer_switch = manual_control.aux5; break;
-			case 10: current_transfer_switch = manual_control.aux6; break;
-			default: break;
+		case 5: transfer_switch = manual.aux1; break;
+		case 6: transfer_switch = manual.aux2; break;
+		case 7: transfer_switch = manual.aux3; break;
+		case 8: transfer_switch = manual.aux4; break;
+		case 9: transfer_switch = manual.aux5; break;
+		case 10: transfer_switch = manual.aux6; break;
+		default: break;
 		}
-		float current_manual_switch = -1.0f;
+
 		switch (_param_hybrid_man_ch.get()) {
-			case 1: current_manual_switch = manual_control.aux1; break;
-			case 2: current_manual_switch = manual_control.aux2; break;
-			case 3: current_manual_switch = manual_control.aux3; break;
-			case 4: current_manual_switch = manual_control.aux4; break;
-			case 5: current_manual_switch = manual_control.aux5; break;
-			case 6: current_manual_switch = manual_control.aux6; break;
-			default: current_manual_switch = manual_control.aux1; break;
+		case 1: _manual_rc_value = manual.aux1; break;
+		case 2: _manual_rc_value = manual.aux2; break;
+		case 3: _manual_rc_value = manual.aux3; break;
+		case 4: _manual_rc_value = manual.aux4; break;
+		case 5: _manual_rc_value = manual.aux5; break;
+		case 6: _manual_rc_value = manual.aux6; break;
+		default: _manual_rc_value = 0.f; break;
 		}
 
-		_manual_rc_value = current_manual_switch; // 缓存当前的手动接管通道值，供状态机使用
-		static float last_manual_switch = current_manual_switch;
-
-		// --- 逻辑 A：手动接管通道发生跳变 ---
-		// 阈值设为 0.5f 以过滤电位器轻微噪声
-		if (fabsf(current_manual_switch - last_manual_switch) > 0.5f) {
-			if (!_manual_override_active) {
-				PX4_WARN("[Hybrid] MANUAL OVERRIDE ENGAGED!");
-				_manual_override_active = true;
+		if (std::isfinite(_manual_rc_value)) {
+			if (_manual_value_initialized
+			    && fabsf(_manual_rc_value - _last_manual_value) > 0.5f
+			    && !_actuator_armed.armed && _actuator_armed.prearmed) {
+				_manual_commissioning_active = true;
 			}
+
+			_manual_value_initialized = true;
+			_last_manual_value = _manual_rc_value;
 		}
 
-		// 检测到物理拨杆发生了跳变 (人工紧急介入)
-		if (fabsf(current_transfer_switch - last_transfer_switch) > 0.5f) {
-			PX4_INFO("[Hybrid] Main Mode Switch Changed!");
+		if (std::isfinite(transfer_switch) && fabsf(transfer_switch - last_transfer_switch) > 0.5f) {
+			_manual_commissioning_active = false;
 
-			// 核心：一旦主开关动作，立刻解除手动接管状态
-			if (_manual_override_active) {
-				PX4_INFO("[Hybrid] Manual Override Released.");
-				_manual_override_active = false;
+			if (_vcontrol_mode.flag_control_auto_enabled) {
+				vehicle_command_s mode_command{};
+				mode_command.timestamp = input.now_us;
+				mode_command.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;
+				mode_command.param1 = 1.f;
+				mode_command.param2 = 3.f;
+				_vehicle_command_pub.publish(mode_command);
 			}
 
-			// 如果当前正在执行自动航线，立刻将其踢回 Position 模式
-			if (is_in_auto_mode) {
-				PX4_WARN("[Hybrid] Aborting Mission! Downgrading to Position Mode.");
-
-				vehicle_command_s mode_cmd{};
-				mode_cmd.timestamp = hrt_absolute_time();
-				mode_cmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;
-				// 参数 1：1 代表自定义模式 (Custom Mode)
-				mode_cmd.param1 = 1.0f;
-				// 参数 2：PX4 的 Main Mode 设为 3 (代表 Position 模式)
-				mode_cmd.param2 = 3.0f; // PX4_CUSTOM_MAIN_MODE_POSCTL
-
-				// 发布模式切换指令，系统 Commander 收到后会立刻接管并切断 Auto
-				_vehicle_command_pub.publish(mode_cmd);
-			}
-
-			// 覆盖航线请求，执行遥控器指定的变形方向
-			if (current_transfer_switch > 0.5f && last_transfer_switch <= 0.5f) {
+			if (transfer_switch > 0.5f && last_transfer_switch <= 0.5f) {
 				request_rover = true;
 				request_quad = false;
-				PX4_INFO("[Hybrid] RC Switch Flipped: Transition to ROVER");
-			} else if (current_transfer_switch < -0.5f && last_transfer_switch >= -0.5f) {
+
+			} else if (transfer_switch < -0.5f && last_transfer_switch >= -0.5f) {
 				request_quad = true;
 				request_rover = false;
-				PX4_INFO("[Hybrid] RC Switch Flipped: Transition to QUAD");
 			}
 		}
-		last_transfer_switch = current_transfer_switch;
-		last_manual_switch = current_manual_switch;
+
+		if (std::isfinite(transfer_switch)) {
+			last_transfer_switch = transfer_switch;
+		}
 	}
 
-	hrt_abstime now = hrt_absolute_time();
-	hrt_abstime transition_duration_us = (hrt_abstime)(_param_hybrid_trans_t.get() * 1000000.0f);
-
-	if (_manual_override_active) {
-		// _manual_rc_value 是当前手动接管通道的值 (-1.0 到 1.0)
-		// 假设：拨杆打到正向 (> 0.5) 是变成漫游车，反向 (< -0.5) 是变成多旋翼
-		if (_manual_rc_value > 0.5f) {
-			if (_current_state != HybridState::DRIVING) {
-				PX4_WARN("[Hybrid] Manual Override: Forcing state to DRIVING!");
-				_current_state = HybridState::DRIVING;
-				_transformation_completed = true; // 强制宣告物理变形已完成
-			}
-		}
-		else if (_manual_rc_value < -0.5f) {
-			if (_current_state != HybridState::FLYING) {
-				PX4_WARN("[Hybrid] Manual Override: Forcing state to FLYING!");
-				_current_state = HybridState::FLYING;
-				_transformation_completed = true;
-			}
-		}
-		else {
-			// 拨杆在中间过程，强制将状态置为过渡态
-			if (_current_state == HybridState::FLYING || _current_state == HybridState::DRIVING) {
-				PX4_INFO("[Hybrid] Manual Override: Forcing state to TRANSITION!");
-				_current_state = HybridState::TRANSITION_TO_ROVER;
-				_transformation_completed = false;
-			}
-		}
-
-		// 极度关键：在手动模式下，状态完全由物理拨杆主宰，直接 return 返回！
-		// 绝不执行下方的 switch 自动闭环逻辑，防止状态机互相打架。
-		return;
+	if (_actuator_armed.armed || !_actuator_armed.prearmed) {
+		_manual_commissioning_active = false;
 	}
 
-	// ---------------------------------------------------------
-	// 执行状态机切换 (自动闭环/主开关模式)
-	// ---------------------------------------------------------
-	switch (_current_state) {
-		case HybridState::FLYING:
-			if (request_rover) {
-				if (check_safe_to_transform(true)) {
-					PX4_INFO("[Hybrid] Start transition: Flying -> Rover");
-					_transition_start_time = now;
-					_transformation_completed = false;
-					_current_state = HybridState::TRANSITION_TO_ROVER;
-				}
-			}
-			break;
+	HybridTarget requested_target = HybridTarget::None;
 
-		case HybridState::TRANSITION_TO_ROVER:
-			if ((now - _transition_start_time > transition_duration_us) || _transformation_completed) {
-				PX4_INFO("[Hybrid] Sensor Confirmed: DRIVING mode.");
-				_current_state = HybridState::DRIVING;
-			}
-			break;
+	if (request_rover && check_safe_to_transform(true)) {
+		requested_target = HybridTarget::Driving;
 
-		case HybridState::DRIVING:
-			if (request_quad) {
-				PX4_INFO("[Hybrid] Start transition: Rover -> Flying");
-				_transition_start_time = now;
-				_transformation_completed = false;
-				_current_state = HybridState::TRANSITION_TO_QUAD;
-			}
-			break;
-
-		case HybridState::TRANSITION_TO_QUAD:
-			if ((now - _transition_start_time > transition_duration_us) || _transformation_completed) {
-				PX4_INFO("[Hybrid] Sensor Confirmed: FLYING mode.");
-				_current_state = HybridState::FLYING;
-			}
-			break;
+	} else if (request_quad) {
+		requested_target = HybridTarget::Flying;
 	}
+
+	if (requested_target != HybridTarget::None) {
+		_manual_commissioning_active = false;
+
+		if (_transformation_output.state == HybridState::Fault && !_actuator_armed.armed) {
+			_transformation_output = _transformation.clearFault(true);
+		}
+
+		const HybridState previous_state = _transformation_output.state;
+		_transformation_output = _transformation.request(requested_target, input.now_us);
+
+		if (_transformation_output.state != previous_state
+		    && (_transformation_output.state == HybridState::TransitionToQuad
+			|| _transformation_output.state == HybridState::TransitionToRover)) {
+			_transition_start_time = input.now_us;
+			_transition_timing_active = true;
+		}
+	}
+
+	_transformation_output = _transformation.update(input);
 }
-
-// ==============================================================================
-// 辅助控制与安全检查函数
-// ==============================================================================
 
 bool HybridVehicleControl::check_safe_to_transform(bool to_rover)
 {
 	if (to_rover) {
-		vehicle_local_position_s local_pos{};
-		if (_vehicle_local_position_sub.copy(&local_pos)) {
-			// 在 PX4 的 NED 坐标系中，Z 轴向下为正。
-			// 因此高度 (海拔之上) 实际上是负值。-local_pos.z 即为相对地面的正高度。
-			float current_alt = -local_pos.z;
+		vehicle_local_position_s local_position{};
 
-			// 如果当前高度大于允许的极限高度，则拒绝变形，防止高空断电摔机
-			if (local_pos.z_valid && current_alt > _param_hybrid_max_z.get()) {
-				return false;
-			}
+		if (_vehicle_local_position_sub.copy(&local_position)
+		    && local_position.z_valid && -local_position.z > _param_hybrid_max_z.get()) {
+			return false;
 		}
 	}
+
 	return true;
 }
 
-void HybridVehicleControl::control_transformation_actuators()
+void HybridVehicleControl::publish_status(const TransformationInput &input, hrt_abstime now)
 {
-    actuator_servos_s servos{};
-    servos.timestamp = hrt_absolute_time();
-    hrt_abstime now = servos.timestamp;
+	hybrid_vehicle_status_s status{};
+	status.timestamp = now;
+	status.as5600_valid = input.as5600_valid;
+	status.tmag_quad_valid = input.tmag_quad_valid;
+	status.tmag_rover_valid = input.tmag_rover_valid;
 
-    // =======================================================
-    // 1. 获取并分配传感器状态 (动态检测与 ID 路由)
-    // =======================================================
+	if (_manual_commissioning_active) {
+		status.current_state = hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN;
+		status.target_state = hybrid_vehicle_status_s::TARGET_NONE;
+		status.sensor_source = hybrid_vehicle_status_s::SENSOR_NONE;
+		status.fault_reason = hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE;
 
-    // 1.1 读取 AS5600 数据
-    sensor_encoder_s encoder_data;
-    if (_encoder_sub.update(&encoder_data)) {
-        _current_mechanism_angle = encoder_data.position_rad;
-        _last_encoder_timestamp = encoder_data.timestamp;
-    }
+	} else {
+		switch (_transformation_output.state) {
+		case HybridState::Flying:
+			status.current_state = hybrid_vehicle_status_s::HYBRID_STATE_FLYING;
+			break;
+		case HybridState::Driving:
+			status.current_state = hybrid_vehicle_status_s::HYBRID_STATE_DRIVING;
+			break;
+		case HybridState::TransitionToQuad:
+		case HybridState::TransitionToRover:
+			status.current_state = hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING;
+			break;
+		case HybridState::Unknown:
+			status.current_state = hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN;
+			break;
+		case HybridState::Fault:
+			status.current_state = hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT;
+			break;
+		}
 
-    // 1.2 遍历读取所有 TMAG5273 数据，并根据 ID 参数路由给上/下限位
-    for (int i = 0; i < _magnetic_subs.size(); i++) {
-        magnetic_sensor_s mag_data;
-        if (_magnetic_subs[i].update(&mag_data)) {
-            // 通过比对地面站设定的 Device ID，确认是哪一个限位器的数据
-            if (mag_data.device_id == (uint32_t)_param_hyb_mag_id_qud.get()) {
-                _current_mag_z_qud = mag_data.mag_z;
-                _last_mag_timestamp_qud = mag_data.timestamp;
-            } else if (mag_data.device_id == (uint32_t)_param_hyb_mag_id_rov.get()) {
-                _current_mag_z_rov = mag_data.mag_z;
-                _last_mag_timestamp_rov = mag_data.timestamp;
-            }
-        }
-    }
+		switch (_transformation_output.target) {
+		case HybridTarget::None: status.target_state = hybrid_vehicle_status_s::TARGET_NONE; break;
+		case HybridTarget::Flying: status.target_state = hybrid_vehicle_status_s::TARGET_FLYING; break;
+		case HybridTarget::Driving: status.target_state = hybrid_vehicle_status_s::TARGET_DRIVING; break;
+		}
 
-    // 1.3 判断哪些传感器是在线的 (300ms 超时判定)
-    bool encoder_valid = (_last_encoder_timestamp != 0) && (now - _last_encoder_timestamp < 300_ms);
-    bool mag_qud_valid = (_last_mag_timestamp_qud != 0) && (now - _last_mag_timestamp_qud < 300_ms);
-    bool mag_rov_valid = (_last_mag_timestamp_rov != 0) && (now - _last_mag_timestamp_rov < 300_ms);
+		switch (_transformation_output.source) {
+		case SensorSource::None: status.sensor_source = hybrid_vehicle_status_s::SENSOR_NONE; break;
+		case SensorSource::As5600: status.sensor_source = hybrid_vehicle_status_s::SENSOR_AS5600; break;
+		case SensorSource::Tmag5273: status.sensor_source = hybrid_vehicle_status_s::SENSOR_TMAG5273; break;
+		}
 
-    // =======================================================
-    // 2. 动力输出仲裁逻辑
-    // =======================================================
+		status.fault_reason = static_cast<uint8_t>(_transformation_output.fault);
+	}
 
-    if (_manual_override_active) {
-        // 【最高优先级】物理拨杆直接接管
-        servos.control[0] = _manual_rc_value;
-        servos.control[1] = -_manual_rc_value;
-        _transformation_completed = true;
-    }
-    else {
-        // 【自动闭环模式】仲裁机制：优先使用 AS5600 绝对编码器，如果没有则降级使用磁限位开关
+	const bool transitioning = _transformation_output.state == HybridState::TransitionToQuad
+				   || _transformation_output.state == HybridState::TransitionToRover;
 
-        if (encoder_valid) {
-            // ---------------------------------------------------
-            // 模式 A: AS5600 连续角度闭环 (原有逻辑保留)
-            // ---------------------------------------------------
-            const float tolerance = 0.05f;
+	if (!_manual_commissioning_active && _transition_timing_active
+	    && (transitioning || _transformation_output.state == HybridState::Fault)) {
+		status.transition_elapsed = now - _transition_start_time;
 
-            if (_current_state == HybridState::TRANSITION_TO_ROVER) {
-                float target_angle = _param_hybrid_ang_rov.get();
-                if (fabsf(_current_mechanism_angle - target_angle) > tolerance) {
-                    servos.control[0] = 1.0f;
-                    servos.control[1] = -1.0f;
-                } else {
-                    servos.control[0] = -1.0f;
-                    servos.control[1] = -1.0f;
-                    _transformation_completed = true;
-                }
-            }
-            else if (_current_state == HybridState::TRANSITION_TO_QUAD) {
-                float target_angle = _param_hybrid_ang_qud.get();
-                if (fabsf(_current_mechanism_angle - target_angle) > tolerance) {
-                    servos.control[0] = -1.0f;
-                    servos.control[1] = 1.0f;
-                } else {
-                    servos.control[0] = -1.0f;
-                    servos.control[1] = -1.0f;
-                    _transformation_completed = true;
-                }
-            }
-        }
-        else if (mag_qud_valid || mag_rov_valid) {
-            // ---------------------------------------------------
-            // 模式 B: TMAG5273 离散双限位开环/半闭环
-            // ---------------------------------------------------
+	} else {
+		status.transition_elapsed = 0;
 
-            if (_current_state == HybridState::TRANSITION_TO_ROVER) {
-                // 确保目标方向的传感器没有掉线
-                if (!mag_rov_valid) {
-                    servos.control[0] = -1.0f; servos.control[1] = -1.0f;
-                    _transformation_completed = false;
-                }
-                // 判定：使用 fabsf 获取绝对强度，防止 N/S 极装反导致读数为负
-                else if (fabsf(_current_mag_z_rov) < _param_hyb_mag_thr_rov.get()) {
-                    // 未到达限位，硬写死正向动力
-                    servos.control[0] = 1.0f;
-                    servos.control[1] = -1.0f;
-                } else {
-                    // 磁场强度超越阈值，刹车并确认到达
-                    servos.control[0] = -1.0f;
-                    servos.control[1] = -1.0f;
-                    _transformation_completed = true;
-                }
-            }
-            else if (_current_state == HybridState::TRANSITION_TO_QUAD) {
-                if (!mag_qud_valid) {
-                    servos.control[0] = -1.0f; servos.control[1] = -1.0f;
-                    _transformation_completed = false;
-                }
-                else if (fabsf(_current_mag_z_qud) < _param_hyb_mag_thr_qud.get()) {
-                    // 未到达限位，硬写死反向动力
-                    servos.control[0] = -1.0f;
-                    servos.control[1] = 1.0f;
-                } else {
-                    // 磁场强度超越阈值，刹车并确认到达
-                    servos.control[0] = -1.0f;
-                    servos.control[1] = -1.0f;
-                    _transformation_completed = true;
-                }
-            }
-        }
-        else {
-            // ---------------------------------------------------
-            // 模式 C: 传感器全军覆没 (丢失保护)
-            // ---------------------------------------------------
-            servos.control[0] = -1.0f;
-            servos.control[1] = -1.0f;
+		if (!transitioning) {
+			_transition_timing_active = false;
+		}
+	}
 
-            static hrt_abstime last_warn_time = 0;
-            if (hrt_elapsed_time(&last_warn_time) > 2_s) {
-                PX4_ERR("[Hybrid] ALL SENSORS LOST! Auto-transform aborted. Use Manual Override!");
-                last_warn_time = hrt_absolute_time();
-            }
-            _transformation_completed = false;
-        }
-    }
+	_hybrid_status_pub.publish(status);
+}
 
-    // 只有在变形态才发布舵机指令（非变形态时电机由状态机保持锁死，防止空耗电）
-    if (_manual_override_active ||
-        _current_state == HybridState::TRANSITION_TO_ROVER ||
-        _current_state == HybridState::TRANSITION_TO_QUAD) {
-        _actuator_servos_pub.publish(servos);
-    }
+void HybridVehicleControl::publish_servo(hrt_abstime now)
+{
+	actuator_servos_s servos{};
+	servos.timestamp = now;
+	servos.timestamp_sample = now;
+
+	for (int i = 0; i < actuator_servos_s::NUM_CONTROLS; ++i) {
+		servos.control[i] = NAN;
+	}
+
+	const bool outputs_enabled = (_actuator_armed.armed || _actuator_armed.prearmed)
+				     && !_actuator_armed.lockdown && !_actuator_armed.manual_lockdown
+				     && !_actuator_armed.force_failsafe;
+
+	if (outputs_enabled && _manual_commissioning_active && std::isfinite(_manual_rc_value)) {
+		servos.control[0] = clamp_servo(_manual_rc_value);
+
+	} else if (outputs_enabled && _transformation_output.servo_enabled) {
+		servos.control[0] = _transformation_output.servo_value;
+	}
+
+	_actuator_servos_pub.publish(servos);
+}
+
+void HybridVehicleControl::publish_motor_outputs(hrt_abstime now)
+{
+	_actuator_motors_mc_sub.update(&_mc_motors);
+	_actuator_motors_rover_sub.update(&_rover_motors);
+
+	actuator_motors_s motors{};
+	motors.timestamp = now;
+	motors.timestamp_sample = now;
+
+	for (int i = 0; i < actuator_motors_s::NUM_CONTROLS; ++i) {
+		motors.control[i] = NAN;
+	}
+
+	if (!_manual_commissioning_active && _transformation_output.state == HybridState::Flying) {
+		for (int i = 0; i < 4; ++i) {
+			motors.control[i] = _mc_motors.control[i];
+		}
+
+		motors.reversible_flags = _mc_motors.reversible_flags & 0x0f;
+
+	} else if (!_manual_commissioning_active && _transformation_output.state == HybridState::Driving) {
+		// RoverDifferential owns mixing: right is source 1 -> final 4, left is source 0 -> final 5.
+		motors.control[4] = _rover_motors.control[1];
+		motors.control[5] = _rover_motors.control[0];
+		motors.reversible_flags = ((_rover_motors.reversible_flags & (1u << 1)) ? (1u << 4) : 0)
+					  | ((_rover_motors.reversible_flags & (1u << 0)) ? (1u << 5) : 0);
+	}
+
+	_actuator_motors_final_pub.publish(motors);
 }
 
 void HybridVehicleControl::updateParams()
 {
-	// 官方默认的参数更新
 	ModuleParams::updateParams();
 
-	// 绑定我们劫持的 QGC UI 参数
 	if (_param_handle_rc_map_trans_sw == PARAM_INVALID) {
 		_param_handle_rc_map_trans_sw = param_find("RC_MAP_TRANS_SW");
 	}
