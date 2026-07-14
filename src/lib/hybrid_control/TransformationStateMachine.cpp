@@ -129,19 +129,16 @@ TransformationOutput TransformationStateMachine::request(HybridTarget target, ui
 		return _output;
 	}
 
+	if ((target == HybridTarget::Flying && _output.state == HybridState::Flying)
+	    || (target == HybridTarget::Driving && _output.state == HybridState::Driving)) {
+		return _output;
+	}
+
 	_output.target = target;
 	_output.fault = TransformFault::None;
 	_output.source = SensorSource::None;
 	_target_detection_active = false;
 	_transition_started_us = now_us;
-
-	if (target == HybridTarget::Flying && _output.state == HybridState::Flying) {
-		return _output;
-	}
-
-	if (target == HybridTarget::Driving && _output.state == HybridState::Driving) {
-		return _output;
-	}
 
 	_output.state = target == HybridTarget::Flying ? HybridState::TransitionToQuad : HybridState::TransitionToRover;
 	refreshServoOutput();
@@ -158,8 +155,8 @@ bool TransformationStateMachine::targetDetected(const TransformationInput &input
 	}
 
 	const bool target_tmag = wanted == Endpoint::Quad
-		? input.tmag_quad_valid && input.tmag_quad_active
-		: input.tmag_rover_valid && input.tmag_rover_active;
+				 ? input.tmag_quad_valid && input.tmag_quad_active
+				 : input.tmag_rover_valid && input.tmag_rover_active;
 	_output.source = target_tmag ? SensorSource::Tmag5273 : SensorSource::None;
 	return target_tmag;
 }
@@ -176,7 +173,7 @@ TransformationOutput TransformationStateMachine::update(const TransformationInpu
 	}
 
 	const bool transitioning = _output.state == HybridState::TransitionToQuad
-		|| _output.state == HybridState::TransitionToRover;
+				   || _output.state == HybridState::TransitionToRover;
 
 	if (!transitioning) {
 		if (_config.sensors_enabled && _output.state == HybridState::Unknown) {
@@ -204,7 +201,7 @@ TransformationOutput TransformationStateMachine::update(const TransformationInpu
 	if (!_config.sensors_enabled) {
 		if (elapsed >= _config.max_transition_us) {
 			setStable(_output.target == HybridTarget::Flying ? HybridState::Flying : HybridState::Driving,
-				SensorSource::None);
+				  SensorSource::None);
 		}
 
 		return _output;
@@ -220,7 +217,7 @@ TransformationOutput TransformationStateMachine::update(const TransformationInpu
 
 		if (input.now_us - _target_detected_us >= _config.debounce_us) {
 			setStable(_output.target == HybridTarget::Flying ? HybridState::Flying : HybridState::Driving,
-				_output.source);
+				  _output.source);
 			return _output;
 		}
 
@@ -240,7 +237,7 @@ TransformationOutput TransformationStateMachine::update(const TransformationInpu
 
 TransformationOutput TransformationStateMachine::clearFault(bool disarmed)
 {
-	if (_output.state != HybridState::Fault || !disarmed) {
+	if (_output.state != HybridState::Fault || !disarmed || _output.fault == TransformFault::InvalidServoConfig) {
 		return _output;
 	}
 

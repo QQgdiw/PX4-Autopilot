@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <limits>
+
 #include "TransformationStateMachine.hpp"
 
 using namespace hybrid_control;
@@ -153,4 +155,47 @@ TEST(TransformationStateMachine, InvalidServoConfigFaults)
 	invalid = config(false);
 	invalid.rover_servo = invalid.quad_servo + 0.09f;
 	EXPECT_EQ(machine.initialize(invalid, input()).fault, TransformFault::InvalidServoConfig);
+}
+
+TEST(TransformationStateMachine, OutOfRangeServoConfigCannotClearFault)
+{
+	TransformationStateMachine machine;
+	auto invalid = config(false);
+	invalid.rover_servo = 1.1f;
+	ASSERT_EQ(machine.initialize(invalid, input()).fault, TransformFault::InvalidServoConfig);
+
+	auto output = machine.clearFault(true);
+	EXPECT_EQ(output.state, HybridState::Fault);
+	EXPECT_EQ(output.fault, TransformFault::InvalidServoConfig);
+	EXPECT_FALSE(output.servo_enabled);
+}
+
+TEST(TransformationStateMachine, NonFiniteServoConfigCannotClearFault)
+{
+	TransformationStateMachine machine;
+	auto invalid = config(false);
+	invalid.quad_servo = std::numeric_limits<float>::quiet_NaN();
+	ASSERT_EQ(machine.initialize(invalid, input()).fault, TransformFault::InvalidServoConfig);
+
+	auto output = machine.clearFault(true);
+	EXPECT_EQ(output.state, HybridState::Fault);
+	EXPECT_EQ(output.fault, TransformFault::InvalidServoConfig);
+	EXPECT_FALSE(output.servo_enabled);
+}
+
+TEST(TransformationStateMachine, StableSameTargetRequestPreservesOutput)
+{
+	TransformationStateMachine machine;
+	auto sensed = input();
+	sensed.as5600_valid = true;
+	sensed.as5600_angle = 10.f;
+	const auto before = machine.initialize(config(), sensed);
+	ASSERT_EQ(before.state, HybridState::Flying);
+	ASSERT_EQ(before.source, SensorSource::As5600);
+
+	const auto after = machine.request(HybridTarget::Flying, 123456);
+	EXPECT_EQ(after.state, before.state);
+	EXPECT_EQ(after.source, before.source);
+	EXPECT_EQ(after.servo_enabled, before.servo_enabled);
+	EXPECT_FLOAT_EQ(after.servo_value, before.servo_value);
 }

@@ -64,7 +64,7 @@ private:
 
 	TransformationConfig _config{};
 	TransformationOutput _output{HybridState::Unknown, HybridTarget::None, SensorSource::None,
-		TransformFault::None, false, 0.f};
+				     TransformFault::None, false, 0.f};
 	uint64_t _transition_started_us{0};
 	uint64_t _target_detected_us{0};
 	bool _target_detection_active{false};
