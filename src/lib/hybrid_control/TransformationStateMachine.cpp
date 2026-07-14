@@ -47,18 +47,46 @@ uint64_t secondsToMicroseconds(float seconds)
 }
 }
 
-void TransformationConfigTracker::initialize(const TransformationConfig &config)
+TransformFault validateTransformationConfig(const TransformationConfig &config)
 {
-	_active = config;
-	_pending = config;
-	_initialized = true;
-	_has_pending = false;
+	if (!std::isfinite(config.quad_servo) || !std::isfinite(config.rover_servo)
+	    || config.quad_servo < -1.f || config.quad_servo > 1.f
+	    || config.rover_servo < -1.f || config.rover_servo > 1.f
+	    || std::fabs(config.quad_servo - config.rover_servo) < 0.1f) {
+		return TransformFault::InvalidServoConfig;
+	}
+
+	if ((config.configured_boot_state != 0 && config.configured_boot_state != 1)
+	    || !inRange(config.quad_angle, 0.f, 6.28f)
+	    || !inRange(config.rover_angle, 0.f, 6.28f)
+	    || !inRange(config.angle_tolerance, 0.f, 3.14f)
+	    || !inRange(config.sensor_timeout_s, 0.01f, 5.f)
+	    || !inRange(config.debounce_s, 0.f, 2.f)
+	    || !inRange(config.max_transition_s, 0.1f, 10.f)
+	    || config.tmag_quad_device_id < 0
+	    || config.tmag_rover_device_id < 0
+	    || config.tmag_quad_device_id == config.tmag_rover_device_id
+	    || !inRange(config.tmag_quad_threshold, 0.f, 100.f)
+	    || !inRange(config.tmag_rover_threshold, 0.f, 100.f)) {
+		return TransformFault::InvalidConfiguration;
+	}
+
+	return TransformFault::None;
 }
 
 bool TransformationConfigTracker::update(const TransformationConfig &requested, bool safe_to_apply)
 {
-	if (!_initialized) {
-		initialize(requested);
+	if (!_has_active) {
+		_pending = requested;
+		_has_pending = true;
+
+		if (!safe_to_apply) {
+			return false;
+		}
+
+		_active = _pending;
+		_has_active = true;
+		_has_pending = false;
 		return true;
 	}
 
@@ -77,6 +105,38 @@ bool TransformationConfigTracker::update(const TransformationConfig &requested, 
 	_active = _pending;
 	_has_pending = false;
 	return true;
+}
+
+void ManualControlCache::update(uint64_t timestamp, float value, uint64_t now_us, uint64_t timeout_us)
+{
+	if (timestamp != 0 && now_us >= timestamp && now_us - timestamp <= timeout_us && std::isfinite(value)) {
+		_timestamp = timestamp;
+		_value = value;
+
+	} else {
+		_timestamp = 0;
+		_value = 0.f;
+	}
+}
+
+bool ManualControlCache::fresh(uint64_t now_us, uint64_t timeout_us) const
+{
+	return _timestamp != 0 && now_us >= _timestamp && now_us - _timestamp <= timeout_us;
+}
+
+void TmagSampleCache::update(uint32_t device_id, float value, uint64_t timestamp)
+{
+	_device_id = device_id;
+	_value = value;
+	_timestamp = timestamp;
+	_initialized = true;
+}
+
+bool TmagSampleCache::validFor(int32_t device_id, uint64_t now_us, uint64_t timeout_us) const
+{
+	return _initialized && device_id >= 0 && _device_id == static_cast<uint32_t>(device_id)
+	       && _timestamp != 0 && now_us >= _timestamp && now_us - _timestamp <= timeout_us
+	       && std::isfinite(_value);
 }
 
 TransformationStateMachine::Endpoint TransformationStateMachine::as5600Endpoint(const TransformationInput &input) const
@@ -158,24 +218,10 @@ TransformationOutput TransformationStateMachine::initialize(const Transformation
 	_output = {HybridState::Unknown, HybridTarget::None, SensorSource::None, TransformFault::None, false, 0.f};
 	_target_detection_active = false;
 
-	if (!std::isfinite(config.quad_servo) || !std::isfinite(config.rover_servo)
-	    || config.quad_servo < -1.f || config.quad_servo > 1.f
-	    || config.rover_servo < -1.f || config.rover_servo > 1.f
-	    || std::fabs(config.quad_servo - config.rover_servo) < 0.1f) {
-		enterFault(TransformFault::InvalidServoConfig);
-		return _output;
-	}
+	const TransformFault configuration_fault = validateTransformationConfig(config);
 
-	if ((config.configured_boot_state != 0 && config.configured_boot_state != 1)
-	    || !inRange(config.quad_angle, 0.f, 6.28f)
-	    || !inRange(config.rover_angle, 0.f, 6.28f)
-	    || !inRange(config.angle_tolerance, 0.f, 3.14f)
-	    || !inRange(config.sensor_timeout_s, 0.01f, 5.f)
-	    || !inRange(config.debounce_s, 0.f, 2.f)
-	    || !inRange(config.max_transition_s, 0.1f, 10.f)
-	    || !inRange(config.tmag_quad_threshold, 0.f, 100.f)
-	    || !inRange(config.tmag_rover_threshold, 0.f, 100.f)) {
-		enterFault(TransformFault::InvalidConfiguration);
+	if (configuration_fault != TransformFault::None) {
+		enterFault(configuration_fault);
 		return _output;
 	}
 

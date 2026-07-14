@@ -152,7 +152,7 @@ TEST(TransformationStateMachine, ConfigurationChangesApplyOnlyWhenSafe)
 {
 	TransformationConfigTracker tracker;
 	auto active = config(false);
-	tracker.initialize(active);
+	ASSERT_TRUE(tracker.update(active, true));
 
 	auto changed = active;
 	changed.rover_servo = 0.9f;
@@ -168,11 +168,24 @@ TEST(TransformationStateMachine, ConfigurationChangesApplyOnlyWhenSafe)
 	EXPECT_FLOAT_EQ(tracker.active().tmag_rover_threshold, 8.f);
 }
 
+TEST(TransformationStateMachine, InitialConfigurationWaitsForSafeState)
+{
+	TransformationConfigTracker tracker;
+	const auto requested = config(false);
+
+	EXPECT_FALSE(tracker.update(requested, false));
+	EXPECT_FALSE(tracker.hasActive());
+	EXPECT_TRUE(tracker.hasPending());
+	EXPECT_TRUE(tracker.update(requested, true));
+	EXPECT_TRUE(tracker.hasActive());
+	EXPECT_FALSE(tracker.hasPending());
+}
+
 TEST(TransformationStateMachine, RevertedPendingConfigurationIsNotApplied)
 {
 	TransformationConfigTracker tracker;
 	const auto active = config(false);
-	tracker.initialize(active);
+	ASSERT_TRUE(tracker.update(active, true));
 	auto changed = active;
 	changed.quad_angle = 2.f;
 
@@ -210,6 +223,10 @@ TEST(TransformationStateMachine, InvalidGeneralConfigurationFaultsAndReleasesSer
 	EXPECT_EQ(machine.initialize(invalid, input()).fault, TransformFault::InvalidConfiguration);
 
 	invalid = config(false);
+	invalid.sensor_timeout_s = std::numeric_limits<float>::max();
+	EXPECT_EQ(validateTransformationConfig(invalid), TransformFault::InvalidConfiguration);
+
+	invalid = config(false);
 	invalid.quad_angle = std::numeric_limits<float>::infinity();
 	EXPECT_EQ(machine.initialize(invalid, input()).fault, TransformFault::InvalidConfiguration);
 
@@ -233,6 +250,37 @@ TEST(TransformationStateMachine, InvalidGeneralConfigurationFaultsAndReleasesSer
 	output = machine.initialize(invalid, input());
 	EXPECT_EQ(output.fault, TransformFault::InvalidConfiguration);
 	EXPECT_EQ(machine.clearFault(true).fault, TransformFault::InvalidConfiguration);
+}
+
+TEST(TransformationStateMachine, InvalidTmagDeviceIdsAreConfigurationFaults)
+{
+	auto invalid = config(false);
+	invalid.tmag_rover_device_id = invalid.tmag_quad_device_id;
+	EXPECT_EQ(validateTransformationConfig(invalid), TransformFault::InvalidConfiguration);
+
+	invalid = config(false);
+	invalid.tmag_quad_device_id = -1;
+	EXPECT_EQ(validateTransformationConfig(invalid), TransformFault::InvalidConfiguration);
+}
+
+TEST(TransformationStateMachine, FreshNonFiniteManualValueClearsPreviousValidSample)
+{
+	ManualControlCache cache;
+	cache.update(100, 0.75f, 100, 1000000);
+	ASSERT_TRUE(cache.fresh(500000, 1000000));
+	ASSERT_FLOAT_EQ(cache.value(), 0.75f);
+
+	cache.update(500000, std::numeric_limits<float>::quiet_NaN(), 500000, 1000000);
+	EXPECT_FALSE(cache.fresh(500000, 1000000));
+	EXPECT_FLOAT_EQ(cache.value(), 0.f);
+}
+
+TEST(TransformationStateMachine, TmagCacheRejectsOldDeviceAfterIdChange)
+{
+	TmagSampleCache cache;
+	cache.update(53, 8.f, 100);
+	ASSERT_TRUE(cache.validFor(53, 500000, 1000000));
+	EXPECT_FALSE(cache.validFor(54, 500000, 1000000));
 }
 
 TEST(TransformationStateMachine, FaultClearsOnlyDisarmedWithExplicitRequest)

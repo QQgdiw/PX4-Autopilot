@@ -163,34 +163,29 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 
 		if (_magnetic_subs[i].update(&magnetic)) {
 			if (magnetic.device_id == static_cast<uint32_t>(config.tmag_quad_device_id)) {
-				_current_mag_z_qud = magnetic.mag_z;
-				_last_mag_timestamp_qud = magnetic.timestamp;
+				_tmag_quad_cache.update(magnetic.device_id, magnetic.mag_z, magnetic.timestamp);
 			}
 
 			if (magnetic.device_id == static_cast<uint32_t>(config.tmag_rover_device_id)) {
-				_current_mag_z_rov = magnetic.mag_z;
-				_last_mag_timestamp_rov = magnetic.timestamp;
+				_tmag_rover_cache.update(magnetic.device_id, magnetic.mag_z, magnetic.timestamp);
 			}
 		}
 	}
 
-	const uint64_t sensor_timeout_us = std::isfinite(config.sensor_timeout_s) && config.sensor_timeout_s >= 0.f
-					   ? static_cast<uint64_t>(config.sensor_timeout_s * 1_s) : 0;
+	const uint64_t sensor_timeout_us = static_cast<uint64_t>(config.sensor_timeout_s * 1_s);
 	const bool encoder_valid = timestamp_fresh(_last_encoder_timestamp, now, sensor_timeout_us)
 				   && _encoder_healthy && std::isfinite(_current_mechanism_angle);
-	const bool tmag_quad_valid = timestamp_fresh(_last_mag_timestamp_qud, now, sensor_timeout_us)
-				    && std::isfinite(_current_mag_z_qud);
-	const bool tmag_rover_valid = timestamp_fresh(_last_mag_timestamp_rov, now, sensor_timeout_us)
-				     && std::isfinite(_current_mag_z_rov);
+	const bool tmag_quad_valid = _tmag_quad_cache.validFor(config.tmag_quad_device_id, now, sensor_timeout_us);
+	const bool tmag_rover_valid = _tmag_rover_cache.validFor(config.tmag_rover_device_id, now, sensor_timeout_us);
 
 	return {
 		now,
 		encoder_valid,
 		_current_mechanism_angle,
 		tmag_quad_valid,
-		tmag_quad_valid && fabsf(_current_mag_z_qud) >= config.tmag_quad_threshold,
+		tmag_quad_valid && fabsf(_tmag_quad_cache.value()) >= config.tmag_quad_threshold,
 		tmag_rover_valid,
-		tmag_rover_valid && fabsf(_current_mag_z_rov) >= config.tmag_rover_threshold
+		tmag_rover_valid && fabsf(_tmag_rover_cache.value()) >= config.tmag_rover_threshold
 	};
 }
 
@@ -208,20 +203,23 @@ void HybridVehicleControl::Run()
 
 	const hrt_abstime now = hrt_absolute_time();
 	const TransformationConfig requested_config = transformation_config();
-	bool configuration_applied = false;
+	const bool safe_to_apply = !_actuator_armed.armed && !_actuator_armed.prearmed;
+	const bool configuration_applied = _transformation_config_tracker.update(requested_config, safe_to_apply);
+	TransformationInput input{now, false, 0.f, false, false, false, false};
 
-	if (!_transformation_config_initialized) {
-		_transformation_config_tracker.initialize(requested_config);
-		_transformation_config_initialized = true;
-		configuration_applied = true;
-
-	} else {
-		const bool safe_to_apply = !_actuator_armed.armed && !_actuator_armed.prearmed;
-		configuration_applied = _transformation_config_tracker.update(requested_config, safe_to_apply);
+	if (!_transformation_config_tracker.hasActive()) {
+		publish_status(input, now);
+		publish_servo(now);
+		publish_motor_outputs(now);
+		return;
 	}
 
 	const TransformationConfig &active_config = _transformation_config_tracker.active();
-	const TransformationInput input = update_transformation_input(now, active_config);
+	const TransformFault configuration_fault = hybrid_control::validateTransformationConfig(active_config);
+
+	if (configuration_fault == TransformFault::None) {
+		input = update_transformation_input(now, active_config);
+	}
 
 	if (!_transformation_initialized || configuration_applied) {
 		_transformation_output = _transformation.initialize(active_config, input);
@@ -268,10 +266,6 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 		float manual_rc_value = 0.f;
 		const bool manual_sample_fresh = timestamp_fresh(manual.timestamp, input.now_us, MANUAL_CONTROL_TIMEOUT);
 
-		if (manual_sample_fresh) {
-			_last_manual_control_timestamp = manual.timestamp;
-		}
-
 		switch (_rc_map_trans_sw_val) {
 		case 5: transfer_switch = manual.aux1; break;
 		case 6: transfer_switch = manual.aux2; break;
@@ -292,17 +286,19 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 		default: manual_rc_value = 0.f; break;
 		}
 
-		if (manual_sample_fresh && std::isfinite(manual_rc_value)) {
-			_manual_rc_value = manual_rc_value;
+		_manual_control_cache.update(manual.timestamp, manual_rc_value, input.now_us, MANUAL_CONTROL_TIMEOUT);
+
+		if (_manual_control_cache.fresh(input.now_us, MANUAL_CONTROL_TIMEOUT)) {
+			const float current_manual_value = _manual_control_cache.value();
 
 			if (_manual_value_initialized
-			    && fabsf(_manual_rc_value - _last_manual_value) > 0.5f
+			    && fabsf(current_manual_value - _last_manual_value) > 0.5f
 			    && !_actuator_armed.armed && _actuator_armed.prearmed) {
 				_manual_commissioning_active = true;
 			}
 
 			_manual_value_initialized = true;
-			_last_manual_value = _manual_rc_value;
+			_last_manual_value = current_manual_value;
 		}
 
 		if (manual_sample_fresh && std::isfinite(transfer_switch)
@@ -333,8 +329,7 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 		}
 	}
 
-	const bool manual_control_fresh = timestamp_fresh(_last_manual_control_timestamp, input.now_us,
-					  MANUAL_CONTROL_TIMEOUT) && std::isfinite(_manual_rc_value);
+	const bool manual_control_fresh = _manual_control_cache.fresh(input.now_us, MANUAL_CONTROL_TIMEOUT);
 
 	if (!manual_control_fresh) {
 		_manual_commissioning_active = false;
@@ -470,8 +465,9 @@ void HybridVehicleControl::publish_servo(hrt_abstime now)
 				     && !_actuator_armed.lockdown && !_actuator_armed.manual_lockdown
 				     && !_actuator_armed.force_failsafe;
 
-	if (outputs_enabled && _manual_commissioning_active && std::isfinite(_manual_rc_value)) {
-		servos.control[0] = clamp_servo(_manual_rc_value);
+	if (outputs_enabled && _manual_commissioning_active
+	    && _manual_control_cache.fresh(now, MANUAL_CONTROL_TIMEOUT)) {
+		servos.control[0] = clamp_servo(_manual_control_cache.value());
 
 	} else if (outputs_enabled && _transformation_output.servo_enabled) {
 		servos.control[0] = _transformation_output.servo_value;

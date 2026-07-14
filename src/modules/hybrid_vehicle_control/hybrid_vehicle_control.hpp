@@ -140,9 +140,10 @@ private:
 	// === 内部状态变量 ===
 	hybrid_control::TransformationStateMachine _transformation;
 	hybrid_control::TransformationConfigTracker _transformation_config_tracker;
-	hybrid_control::TransformationOutput _transformation_output{};
+	hybrid_control::TransformationOutput _transformation_output{hybrid_control::HybridState::Unknown,
+			       hybrid_control::HybridTarget::None, hybrid_control::SensorSource::None,
+			       hybrid_control::TransformFault::None, false, 0.f};
 	bool _transformation_initialized{false};
-	bool _transformation_config_initialized{false};
 	hrt_abstime _transition_start_time{0};
 	bool _transition_timing_active{false};
 	actuator_armed_s _actuator_armed{};
@@ -150,16 +151,13 @@ private:
 	bool _manual_commissioning_active{false};
 	bool _manual_value_initialized{false};
 	float _last_manual_value{0.f};
-	hrt_abstime _last_manual_control_timestamp{0};
+	hybrid_control::ManualControlCache _manual_control_cache;
 
 	float _current_mechanism_angle{0.0f};   // 当前变形机构的角度 (rad)
 	uint64_t _last_encoder_timestamp{0};    // 上一次收到编码器数据的时间戳
 	bool _encoder_healthy{false};
-	float _current_mag_z_qud{0.0f};
-	float _current_mag_z_rov{0.0f};
-	hrt_abstime _last_mag_timestamp_qud{0};
-	hrt_abstime _last_mag_timestamp_rov{0};
-	float _manual_rc_value{0.0f};
+	hybrid_control::TmagSampleCache _tmag_quad_cache;
+	hybrid_control::TmagSampleCache _tmag_rover_cache;
 
 	vehicle_control_mode_s _vcontrol_mode{};         // 缓存控制模式数据
 

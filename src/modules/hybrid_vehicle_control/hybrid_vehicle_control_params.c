@@ -170,6 +170,8 @@ PARAM_DEFINE_FLOAT(HYBRID_ANG_QUD, 1.57f);
  * (Check the device_id using `listener magnetic_sensor` in nsh).
  *
  * @group Hybrid Control
+ * @min 0
+ * @max 2147483647
  */
 PARAM_DEFINE_INT32(HYB_MAG_ID_QUD, 53);//0x35
 
@@ -179,6 +181,8 @@ PARAM_DEFINE_INT32(HYB_MAG_ID_QUD, 53);//0x35
  * The unique device ID of the TMAG5273 sensor installed at the Rover limit.
  *
  * @group Hybrid Control
+ * @min 0
+ * @max 2147483647
  */
 PARAM_DEFINE_INT32(HYB_MAG_ID_ROV, 34);//0x22
 

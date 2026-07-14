@@ -35,19 +35,47 @@ struct TransformationConfig {
 	float tmag_rover_threshold;
 };
 
+TransformFault validateTransformationConfig(const TransformationConfig &config);
+
 class TransformationConfigTracker
 {
 public:
-	void initialize(const TransformationConfig &config);
 	bool update(const TransformationConfig &requested, bool safe_to_apply);
 	const TransformationConfig &active() const { return _active; }
+	bool hasActive() const { return _has_active; }
 	bool hasPending() const { return _has_pending; }
 
 private:
 	TransformationConfig _active{};
 	TransformationConfig _pending{};
-	bool _initialized{false};
+	bool _has_active{false};
 	bool _has_pending{false};
+};
+
+class ManualControlCache
+{
+public:
+	void update(uint64_t timestamp, float value, uint64_t now_us, uint64_t timeout_us);
+	bool fresh(uint64_t now_us, uint64_t timeout_us) const;
+	float value() const { return _value; }
+
+private:
+	uint64_t _timestamp{0};
+	float _value{0.f};
+};
+
+class TmagSampleCache
+{
+public:
+	void update(uint32_t device_id, float value, uint64_t timestamp);
+	bool validFor(int32_t device_id, uint64_t now_us, uint64_t timeout_us) const;
+	float value() const { return _value; }
+
+private:
+	uint32_t _device_id{0};
+	float _value{0.f};
+	uint64_t _timestamp{0};
+	bool _initialized{false};
 };
 
 struct TransformationInput {
