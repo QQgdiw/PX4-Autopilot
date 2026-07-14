@@ -9,20 +9,45 @@ enum class HybridState : uint8_t { Flying, TransitionToRover, Driving, Transitio
 enum class HybridTarget : uint8_t { None, Flying, Driving };
 enum class SensorSource : uint8_t { None, As5600, Tmag5273 };
 enum class TransformFault : uint8_t {
-	None, NoSensor, SensorConflict, SensorTimeout, TransitionTimeout, InvalidServoConfig
+	None = 0,
+	NoSensor = 1,
+	SensorConflict = 2,
+	SensorTimeout = 3,
+	TransitionTimeout = 4,
+	InvalidServoConfig = 5,
+	InvalidConfiguration = 6
 };
 
 struct TransformationConfig {
 	bool sensors_enabled;
-	HybridState configured_boot_state;
+	int32_t configured_boot_state;
 	float quad_servo;
 	float rover_servo;
 	float quad_angle;
 	float rover_angle;
 	float angle_tolerance;
-	uint64_t sensor_timeout_us;
-	uint64_t debounce_us;
-	uint64_t max_transition_us;
+	float sensor_timeout_s;
+	float debounce_s;
+	float max_transition_s;
+	int32_t tmag_quad_device_id;
+	int32_t tmag_rover_device_id;
+	float tmag_quad_threshold;
+	float tmag_rover_threshold;
+};
+
+class TransformationConfigTracker
+{
+public:
+	void initialize(const TransformationConfig &config);
+	bool update(const TransformationConfig &requested, bool safe_to_apply);
+	const TransformationConfig &active() const { return _active; }
+	bool hasPending() const { return _has_pending; }
+
+private:
+	TransformationConfig _active{};
+	TransformationConfig _pending{};
+	bool _initialized{false};
+	bool _has_pending{false};
 };
 
 struct TransformationInput {

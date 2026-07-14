@@ -10,8 +10,8 @@ namespace
 {
 TransformationConfig config(bool sensors_enabled = true)
 {
-	return {sensors_enabled, HybridState::Flying, -0.7f, 0.8f, 10.f, 170.f, 2.f,
-		1000000, 100000, 3000000};
+	return {sensors_enabled, 0, -0.7f, 0.8f, 0.5f, 3.f, 0.05f,
+		1.f, 0.1f, 3.f, 53, 34, 5.f, 5.f};
 }
 
 TransformationInput input(uint64_t now_us = 0)
@@ -25,13 +25,13 @@ TEST(TransformationStateMachine, As5600CompletesAfterDebounce)
 	TransformationStateMachine machine;
 	auto initial = input();
 	initial.as5600_valid = true;
-	initial.as5600_angle = 10.f;
+	initial.as5600_angle = 0.5f;
 	EXPECT_EQ(machine.initialize(config(), initial).state, HybridState::Flying);
 	EXPECT_EQ(machine.request(HybridTarget::Driving, 0).state, HybridState::TransitionToRover);
 
 	auto sensed = input();
 	sensed.as5600_valid = true;
-	sensed.as5600_angle = 170.f;
+	sensed.as5600_angle = 3.f;
 	EXPECT_EQ(machine.update(sensed).state, HybridState::TransitionToRover);
 	sensed.now_us = 99999;
 	EXPECT_EQ(machine.update(sensed).state, HybridState::TransitionToRover);
@@ -63,7 +63,7 @@ TEST(TransformationStateMachine, SensorConflictFaultsAndReleasesServo)
 	machine.request(HybridTarget::Driving, 0);
 	auto sensed = input();
 	sensed.as5600_valid = true;
-	sensed.as5600_angle = 170.f;
+	sensed.as5600_angle = 3.f;
 	sensed.tmag_quad_valid = true;
 	sensed.tmag_quad_active = true;
 	auto output = machine.update(sensed);
@@ -111,7 +111,7 @@ TEST(TransformationStateMachine, DisabledSensorsCompleteByTime)
 TEST(TransformationStateMachine, StartupUsesConfiguredStateOnlyWhenSensorsDisabled)
 {
 	auto boot_driving = config(false);
-	boot_driving.configured_boot_state = HybridState::Driving;
+	boot_driving.configured_boot_state = 1;
 	TransformationStateMachine without_sensors;
 	EXPECT_EQ(without_sensors.initialize(boot_driving, input()).state, HybridState::Driving);
 
@@ -120,8 +120,119 @@ TEST(TransformationStateMachine, StartupUsesConfiguredStateOnlyWhenSensorsDisabl
 	EXPECT_EQ(with_sensors.initialize(boot_driving, input()).state, HybridState::Unknown);
 	auto actual = input();
 	actual.as5600_valid = true;
-	actual.as5600_angle = 10.f;
+	actual.as5600_angle = 0.5f;
 	EXPECT_EQ(with_sensors.update(actual).state, HybridState::Flying);
+}
+
+TEST(TransformationStateMachine, RepeatedTransitionRequestDoesNotRestartTimeout)
+{
+	TransformationStateMachine machine;
+	auto cfg = config();
+	cfg.sensor_timeout_s = 5.f;
+	ASSERT_EQ(machine.initialize(cfg, input()).state, HybridState::Unknown);
+	ASSERT_EQ(machine.request(HybridTarget::Driving, 100).state, HybridState::TransitionToRover);
+	EXPECT_EQ(machine.request(HybridTarget::Driving, 2900000).state, HybridState::TransitionToRover);
+
+	const auto output = machine.update(input(3000100));
+	EXPECT_EQ(output.state, HybridState::Fault);
+	EXPECT_EQ(output.fault, TransformFault::TransitionTimeout);
+}
+
+TEST(TransformationStateMachine, RepeatedOpenLoopRequestCompletesAtOriginalDeadline)
+{
+	TransformationStateMachine machine;
+	ASSERT_EQ(machine.initialize(config(false), input()).state, HybridState::Flying);
+	ASSERT_EQ(machine.request(HybridTarget::Driving, 100).state, HybridState::TransitionToRover);
+	EXPECT_EQ(machine.request(HybridTarget::Driving, 2900000).state, HybridState::TransitionToRover);
+	EXPECT_EQ(machine.update(input(3000099)).state, HybridState::TransitionToRover);
+	EXPECT_EQ(machine.update(input(3000100)).state, HybridState::Driving);
+}
+
+TEST(TransformationStateMachine, ConfigurationChangesApplyOnlyWhenSafe)
+{
+	TransformationConfigTracker tracker;
+	auto active = config(false);
+	tracker.initialize(active);
+
+	auto changed = active;
+	changed.rover_servo = 0.9f;
+	changed.tmag_rover_threshold = 8.f;
+	EXPECT_FALSE(tracker.update(changed, false));
+	EXPECT_TRUE(tracker.hasPending());
+	EXPECT_FLOAT_EQ(tracker.active().rover_servo, 0.8f);
+	EXPECT_FLOAT_EQ(tracker.active().tmag_rover_threshold, 5.f);
+
+	EXPECT_TRUE(tracker.update(changed, true));
+	EXPECT_FALSE(tracker.hasPending());
+	EXPECT_FLOAT_EQ(tracker.active().rover_servo, 0.9f);
+	EXPECT_FLOAT_EQ(tracker.active().tmag_rover_threshold, 8.f);
+}
+
+TEST(TransformationStateMachine, RevertedPendingConfigurationIsNotApplied)
+{
+	TransformationConfigTracker tracker;
+	const auto active = config(false);
+	tracker.initialize(active);
+	auto changed = active;
+	changed.quad_angle = 2.f;
+
+	EXPECT_FALSE(tracker.update(changed, false));
+	EXPECT_TRUE(tracker.hasPending());
+	EXPECT_FALSE(tracker.update(active, false));
+	EXPECT_FALSE(tracker.hasPending());
+	EXPECT_FALSE(tracker.update(active, true));
+	EXPECT_FLOAT_EQ(tracker.active().quad_angle, active.quad_angle);
+}
+
+TEST(TransformationStateMachine, InvalidGeneralConfigurationFaultsAndReleasesServo)
+{
+	TransformationStateMachine machine;
+	auto invalid = config(false);
+	invalid.configured_boot_state = 2;
+	auto output = machine.initialize(invalid, input());
+	EXPECT_EQ(output.fault, TransformFault::InvalidConfiguration);
+	EXPECT_FALSE(output.servo_enabled);
+
+	invalid = config(false);
+	invalid.max_transition_s = std::numeric_limits<float>::quiet_NaN();
+	EXPECT_EQ(machine.initialize(invalid, input()).fault, TransformFault::InvalidConfiguration);
+
+	invalid = config(false);
+	invalid.sensor_timeout_s = -1.f;
+	EXPECT_EQ(machine.initialize(invalid, input()).fault, TransformFault::InvalidConfiguration);
+
+	invalid = config(false);
+	invalid.debounce_s = std::numeric_limits<float>::infinity();
+	EXPECT_EQ(machine.initialize(invalid, input()).fault, TransformFault::InvalidConfiguration);
+
+	invalid = config(false);
+	invalid.max_transition_s = 10.1f;
+	EXPECT_EQ(machine.initialize(invalid, input()).fault, TransformFault::InvalidConfiguration);
+
+	invalid = config(false);
+	invalid.quad_angle = std::numeric_limits<float>::infinity();
+	EXPECT_EQ(machine.initialize(invalid, input()).fault, TransformFault::InvalidConfiguration);
+
+	invalid = config(false);
+	invalid.rover_angle = -0.1f;
+	EXPECT_EQ(machine.initialize(invalid, input()).fault, TransformFault::InvalidConfiguration);
+
+	invalid = config(false);
+	invalid.angle_tolerance = -0.1f;
+	EXPECT_EQ(machine.initialize(invalid, input()).fault, TransformFault::InvalidConfiguration);
+
+	invalid = config(false);
+	invalid.tmag_quad_threshold = -0.1f;
+	output = machine.initialize(invalid, input());
+	EXPECT_EQ(output.state, HybridState::Fault);
+	EXPECT_EQ(output.fault, TransformFault::InvalidConfiguration);
+	EXPECT_FALSE(output.servo_enabled);
+
+	invalid = config(false);
+	invalid.tmag_rover_threshold = std::numeric_limits<float>::quiet_NaN();
+	output = machine.initialize(invalid, input());
+	EXPECT_EQ(output.fault, TransformFault::InvalidConfiguration);
+	EXPECT_EQ(machine.clearFault(true).fault, TransformFault::InvalidConfiguration);
 }
 
 TEST(TransformationStateMachine, FaultClearsOnlyDisarmedWithExplicitRequest)
@@ -136,7 +247,7 @@ TEST(TransformationStateMachine, FaultClearsOnlyDisarmedWithExplicitRequest)
 
 	auto healthy = input(1);
 	healthy.as5600_valid = true;
-	healthy.as5600_angle = 10.f;
+	healthy.as5600_angle = 0.5f;
 	EXPECT_EQ(machine.update(healthy).state, HybridState::Fault);
 	EXPECT_EQ(machine.clearFault(false).state, HybridState::Fault);
 	EXPECT_EQ(machine.clearFault(true).state, HybridState::Unknown);
@@ -188,7 +299,7 @@ TEST(TransformationStateMachine, StableSameTargetRequestPreservesOutput)
 	TransformationStateMachine machine;
 	auto sensed = input();
 	sensed.as5600_valid = true;
-	sensed.as5600_angle = 10.f;
+	sensed.as5600_angle = 0.5f;
 	const auto before = machine.initialize(config(), sensed);
 	ASSERT_EQ(before.state, HybridState::Flying);
 	ASSERT_EQ(before.source, SensorSource::As5600);

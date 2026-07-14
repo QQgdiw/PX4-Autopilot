@@ -19,6 +19,7 @@ uint8 TRANSFORM_FAULT_SENSOR_CONFLICT = 2
 uint8 TRANSFORM_FAULT_SENSOR_TIMEOUT = 3
 uint8 TRANSFORM_FAULT_TRANSITION_TIMEOUT = 4
 uint8 TRANSFORM_FAULT_INVALID_SERVO_CONFIG = 5
+uint8 TRANSFORM_FAULT_INVALID_CONFIGURATION = 6
 
 uint8 current_state       # 当前的变形状态
 uint8 target_state        # requested stable state during a transition

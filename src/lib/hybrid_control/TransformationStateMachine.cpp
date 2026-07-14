@@ -1,9 +1,83 @@
 #include "TransformationStateMachine.hpp"
 
 #include <cmath>
+#include <cstring>
 
 namespace hybrid_control
 {
+
+namespace
+{
+bool sameFloat(float lhs, float rhs)
+{
+	uint32_t lhs_bits{};
+	uint32_t rhs_bits{};
+	static_assert(sizeof(lhs_bits) == sizeof(lhs), "unexpected float size");
+	std::memcpy(&lhs_bits, &lhs, sizeof(lhs));
+	std::memcpy(&rhs_bits, &rhs, sizeof(rhs));
+	return lhs_bits == rhs_bits;
+}
+
+bool sameConfig(const TransformationConfig &lhs, const TransformationConfig &rhs)
+{
+	return lhs.sensors_enabled == rhs.sensors_enabled
+	       && lhs.configured_boot_state == rhs.configured_boot_state
+	       && sameFloat(lhs.quad_servo, rhs.quad_servo)
+	       && sameFloat(lhs.rover_servo, rhs.rover_servo)
+	       && sameFloat(lhs.quad_angle, rhs.quad_angle)
+	       && sameFloat(lhs.rover_angle, rhs.rover_angle)
+	       && sameFloat(lhs.angle_tolerance, rhs.angle_tolerance)
+	       && sameFloat(lhs.sensor_timeout_s, rhs.sensor_timeout_s)
+	       && sameFloat(lhs.debounce_s, rhs.debounce_s)
+	       && sameFloat(lhs.max_transition_s, rhs.max_transition_s)
+	       && lhs.tmag_quad_device_id == rhs.tmag_quad_device_id
+	       && lhs.tmag_rover_device_id == rhs.tmag_rover_device_id
+	       && sameFloat(lhs.tmag_quad_threshold, rhs.tmag_quad_threshold)
+	       && sameFloat(lhs.tmag_rover_threshold, rhs.tmag_rover_threshold);
+}
+
+bool inRange(float value, float minimum, float maximum)
+{
+	return std::isfinite(value) && value >= minimum && value <= maximum;
+}
+
+uint64_t secondsToMicroseconds(float seconds)
+{
+	return static_cast<uint64_t>(seconds * 1000000.f);
+}
+}
+
+void TransformationConfigTracker::initialize(const TransformationConfig &config)
+{
+	_active = config;
+	_pending = config;
+	_initialized = true;
+	_has_pending = false;
+}
+
+bool TransformationConfigTracker::update(const TransformationConfig &requested, bool safe_to_apply)
+{
+	if (!_initialized) {
+		initialize(requested);
+		return true;
+	}
+
+	if (sameConfig(requested, _active)) {
+		_has_pending = false;
+		return false;
+	}
+
+	_pending = requested;
+	_has_pending = true;
+
+	if (!safe_to_apply) {
+		return false;
+	}
+
+	_active = _pending;
+	_has_pending = false;
+	return true;
+}
 
 TransformationStateMachine::Endpoint TransformationStateMachine::as5600Endpoint(const TransformationInput &input) const
 {
@@ -92,10 +166,21 @@ TransformationOutput TransformationStateMachine::initialize(const Transformation
 		return _output;
 	}
 
+	if ((config.configured_boot_state != 0 && config.configured_boot_state != 1)
+	    || !inRange(config.quad_angle, 0.f, 6.28f)
+	    || !inRange(config.rover_angle, 0.f, 6.28f)
+	    || !inRange(config.angle_tolerance, 0.f, 3.14f)
+	    || !inRange(config.sensor_timeout_s, 0.01f, 5.f)
+	    || !inRange(config.debounce_s, 0.f, 2.f)
+	    || !inRange(config.max_transition_s, 0.1f, 10.f)
+	    || !inRange(config.tmag_quad_threshold, 0.f, 100.f)
+	    || !inRange(config.tmag_rover_threshold, 0.f, 100.f)) {
+		enterFault(TransformFault::InvalidConfiguration);
+		return _output;
+	}
+
 	if (!config.sensors_enabled) {
-		if (config.configured_boot_state == HybridState::Flying || config.configured_boot_state == HybridState::Driving) {
-			setStable(config.configured_boot_state, SensorSource::None);
-		}
+		setStable(config.configured_boot_state == 0 ? HybridState::Flying : HybridState::Driving, SensorSource::None);
 
 		return _output;
 	}
@@ -130,7 +215,9 @@ TransformationOutput TransformationStateMachine::request(HybridTarget target, ui
 	}
 
 	if ((target == HybridTarget::Flying && _output.state == HybridState::Flying)
-	    || (target == HybridTarget::Driving && _output.state == HybridState::Driving)) {
+	    || (target == HybridTarget::Driving && _output.state == HybridState::Driving)
+	    || (target == HybridTarget::Flying && _output.state == HybridState::TransitionToQuad)
+	    || (target == HybridTarget::Driving && _output.state == HybridState::TransitionToRover)) {
 		return _output;
 	}
 
@@ -197,9 +284,10 @@ TransformationOutput TransformationStateMachine::update(const TransformationInpu
 	}
 
 	const uint64_t elapsed = input.now_us - _transition_started_us;
+	const uint64_t max_transition_us = secondsToMicroseconds(_config.max_transition_s);
 
 	if (!_config.sensors_enabled) {
-		if (elapsed >= _config.max_transition_us) {
+		if (elapsed >= max_transition_us) {
 			setStable(_output.target == HybridTarget::Flying ? HybridState::Flying : HybridState::Driving,
 				  SensorSource::None);
 		}
@@ -215,7 +303,7 @@ TransformationOutput TransformationStateMachine::update(const TransformationInpu
 			_target_detected_us = input.now_us;
 		}
 
-		if (input.now_us - _target_detected_us >= _config.debounce_us) {
+		if (input.now_us - _target_detected_us >= secondsToMicroseconds(_config.debounce_s)) {
 			setStable(_output.target == HybridTarget::Flying ? HybridState::Flying : HybridState::Driving,
 				  _output.source);
 			return _output;
@@ -225,10 +313,11 @@ TransformationOutput TransformationStateMachine::update(const TransformationInpu
 		_target_detection_active = false;
 	}
 
-	if (!input.as5600_valid && _output.source == SensorSource::None && elapsed >= _config.sensor_timeout_us) {
+	if (!input.as5600_valid && _output.source == SensorSource::None
+	    && elapsed >= secondsToMicroseconds(_config.sensor_timeout_s)) {
 		enterFault(TransformFault::SensorTimeout);
 
-	} else if (elapsed >= _config.max_transition_us) {
+	} else if (elapsed >= max_transition_us) {
 		enterFault(TransformFault::TransitionTimeout);
 	}
 
@@ -237,14 +326,17 @@ TransformationOutput TransformationStateMachine::update(const TransformationInpu
 
 TransformationOutput TransformationStateMachine::clearFault(bool disarmed)
 {
-	if (_output.state != HybridState::Fault || !disarmed || _output.fault == TransformFault::InvalidServoConfig) {
+	if (_output.state != HybridState::Fault || !disarmed
+	    || _output.fault == TransformFault::InvalidServoConfig
+	    || _output.fault == TransformFault::InvalidConfiguration) {
 		return _output;
 	}
 
 	_output.fault = TransformFault::None;
 	_output.source = SensorSource::None;
 	_output.target = HybridTarget::None;
-	_output.state = _config.sensors_enabled ? HybridState::Unknown : _config.configured_boot_state;
+	_output.state = _config.sensors_enabled ? HybridState::Unknown
+			: (_config.configured_boot_state == 0 ? HybridState::Flying : HybridState::Driving);
 
 	if (_output.state != HybridState::Flying && _output.state != HybridState::Driving) {
 		_output.state = HybridState::Unknown;

@@ -90,7 +90,8 @@ private:
 	 * 核心状态机更新逻辑
 	 */
 	void update_state_machine(const hybrid_control::TransformationInput &input);
-	hybrid_control::TransformationInput update_transformation_input(hrt_abstime now);
+	hybrid_control::TransformationInput update_transformation_input(
+		hrt_abstime now, const hybrid_control::TransformationConfig &config);
 	void publish_status(const hybrid_control::TransformationInput &input, hrt_abstime now);
 	void publish_servo(hrt_abstime now);
 	void publish_motor_outputs(hrt_abstime now);
@@ -138,8 +139,10 @@ private:
 
 	// === 内部状态变量 ===
 	hybrid_control::TransformationStateMachine _transformation;
+	hybrid_control::TransformationConfigTracker _transformation_config_tracker;
 	hybrid_control::TransformationOutput _transformation_output{};
 	bool _transformation_initialized{false};
+	bool _transformation_config_initialized{false};
 	hrt_abstime _transition_start_time{0};
 	bool _transition_timing_active{false};
 	actuator_armed_s _actuator_armed{};
@@ -147,6 +150,7 @@ private:
 	bool _manual_commissioning_active{false};
 	bool _manual_value_initialized{false};
 	float _last_manual_value{0.f};
+	hrt_abstime _last_manual_control_timestamp{0};
 
 	float _current_mechanism_angle{0.0f};   // 当前变形机构的角度 (rad)
 	uint64_t _last_encoder_timestamp{0};    // 上一次收到编码器数据的时间戳

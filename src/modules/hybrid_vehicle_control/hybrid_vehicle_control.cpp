@@ -45,8 +45,14 @@ using hybrid_control::TransformFault;
 using hybrid_control::TransformationConfig;
 using hybrid_control::TransformationInput;
 
+static_assert(static_cast<uint8_t>(TransformFault::InvalidConfiguration)
+	      == hybrid_vehicle_status_s::TRANSFORM_FAULT_INVALID_CONFIGURATION,
+	      "transformation fault values must match the public uORB contract");
+
 namespace
 {
+static constexpr hrt_abstime MANUAL_CONTROL_TIMEOUT = 1_s;
+
 bool timestamp_fresh(uint64_t timestamp, hrt_abstime now, uint64_t timeout_us)
 {
 	return timestamp != 0 && now >= timestamp && now - timestamp <= timeout_us;
@@ -126,19 +132,23 @@ TransformationConfig HybridVehicleControl::transformation_config() const
 {
 	return {
 		_param_hyb_sens_en.get(),
-		_param_hyb_boot_st.get() == 1 ? HybridState::Driving : HybridState::Flying,
+		_param_hyb_boot_st.get(),
 		_param_hyb_sv_qud.get(),
 		_param_hyb_sv_rov.get(),
 		_param_hybrid_ang_qud.get(),
 		_param_hybrid_ang_rov.get(),
 		_param_hyb_ang_tol.get(),
-		static_cast<uint64_t>(_param_hyb_sens_to.get() * 1_s),
-		static_cast<uint64_t>(_param_hyb_dbnc_t.get() * 1_s),
-		static_cast<uint64_t>(_param_hybrid_trans_t.get() * 1_s)
+		_param_hyb_sens_to.get(),
+		_param_hyb_dbnc_t.get(),
+		_param_hybrid_trans_t.get(),
+		_param_hyb_mag_id_qud.get(),
+		_param_hyb_mag_id_rov.get(),
+		_param_hyb_mag_thr_qud.get(),
+		_param_hyb_mag_thr_rov.get()
 	};
 }
 
-TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstime now)
+TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstime now, const TransformationConfig &config)
 {
 	sensor_encoder_s encoder{};
 
@@ -152,19 +162,20 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 		magnetic_sensor_s magnetic{};
 
 		if (_magnetic_subs[i].update(&magnetic)) {
-			if (magnetic.device_id == static_cast<uint32_t>(_param_hyb_mag_id_qud.get())) {
+			if (magnetic.device_id == static_cast<uint32_t>(config.tmag_quad_device_id)) {
 				_current_mag_z_qud = magnetic.mag_z;
 				_last_mag_timestamp_qud = magnetic.timestamp;
 			}
 
-			if (magnetic.device_id == static_cast<uint32_t>(_param_hyb_mag_id_rov.get())) {
+			if (magnetic.device_id == static_cast<uint32_t>(config.tmag_rover_device_id)) {
 				_current_mag_z_rov = magnetic.mag_z;
 				_last_mag_timestamp_rov = magnetic.timestamp;
 			}
 		}
 	}
 
-	const uint64_t sensor_timeout_us = static_cast<uint64_t>(_param_hyb_sens_to.get() * 1_s);
+	const uint64_t sensor_timeout_us = std::isfinite(config.sensor_timeout_s) && config.sensor_timeout_s >= 0.f
+					   ? static_cast<uint64_t>(config.sensor_timeout_s * 1_s) : 0;
 	const bool encoder_valid = timestamp_fresh(_last_encoder_timestamp, now, sensor_timeout_us)
 				   && _encoder_healthy && std::isfinite(_current_mechanism_angle);
 	const bool tmag_quad_valid = timestamp_fresh(_last_mag_timestamp_qud, now, sensor_timeout_us)
@@ -177,9 +188,9 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 		encoder_valid,
 		_current_mechanism_angle,
 		tmag_quad_valid,
-		tmag_quad_valid && fabsf(_current_mag_z_qud) >= _param_hyb_mag_thr_qud.get(),
+		tmag_quad_valid && fabsf(_current_mag_z_qud) >= config.tmag_quad_threshold,
 		tmag_rover_valid,
-		tmag_rover_valid && fabsf(_current_mag_z_rov) >= _param_hyb_mag_thr_rov.get()
+		tmag_rover_valid && fabsf(_current_mag_z_rov) >= config.tmag_rover_threshold
 	};
 }
 
@@ -196,11 +207,27 @@ void HybridVehicleControl::Run()
 	_vehicle_control_mode_sub.update(&_vcontrol_mode);
 
 	const hrt_abstime now = hrt_absolute_time();
-	const TransformationInput input = update_transformation_input(now);
+	const TransformationConfig requested_config = transformation_config();
+	bool configuration_applied = false;
 
-	if (!_transformation_initialized) {
-		_transformation_output = _transformation.initialize(transformation_config(), input);
+	if (!_transformation_config_initialized) {
+		_transformation_config_tracker.initialize(requested_config);
+		_transformation_config_initialized = true;
+		configuration_applied = true;
+
+	} else {
+		const bool safe_to_apply = !_actuator_armed.armed && !_actuator_armed.prearmed;
+		configuration_applied = _transformation_config_tracker.update(requested_config, safe_to_apply);
+	}
+
+	const TransformationConfig &active_config = _transformation_config_tracker.active();
+	const TransformationInput input = update_transformation_input(now, active_config);
+
+	if (!_transformation_initialized || configuration_applied) {
+		_transformation_output = _transformation.initialize(active_config, input);
 		_transformation_initialized = true;
+		_manual_commissioning_active = false;
+		_transition_timing_active = false;
 	}
 
 	update_state_machine(input);
@@ -238,6 +265,12 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 
 	if (_manual_control_setpoint_sub.update(&manual)) {
 		float transfer_switch = -1.f;
+		float manual_rc_value = 0.f;
+		const bool manual_sample_fresh = timestamp_fresh(manual.timestamp, input.now_us, MANUAL_CONTROL_TIMEOUT);
+
+		if (manual_sample_fresh) {
+			_last_manual_control_timestamp = manual.timestamp;
+		}
 
 		switch (_rc_map_trans_sw_val) {
 		case 5: transfer_switch = manual.aux1; break;
@@ -250,16 +283,18 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 		}
 
 		switch (_param_hybrid_man_ch.get()) {
-		case 1: _manual_rc_value = manual.aux1; break;
-		case 2: _manual_rc_value = manual.aux2; break;
-		case 3: _manual_rc_value = manual.aux3; break;
-		case 4: _manual_rc_value = manual.aux4; break;
-		case 5: _manual_rc_value = manual.aux5; break;
-		case 6: _manual_rc_value = manual.aux6; break;
-		default: _manual_rc_value = 0.f; break;
+		case 1: manual_rc_value = manual.aux1; break;
+		case 2: manual_rc_value = manual.aux2; break;
+		case 3: manual_rc_value = manual.aux3; break;
+		case 4: manual_rc_value = manual.aux4; break;
+		case 5: manual_rc_value = manual.aux5; break;
+		case 6: manual_rc_value = manual.aux6; break;
+		default: manual_rc_value = 0.f; break;
 		}
 
-		if (std::isfinite(_manual_rc_value)) {
+		if (manual_sample_fresh && std::isfinite(manual_rc_value)) {
+			_manual_rc_value = manual_rc_value;
+
 			if (_manual_value_initialized
 			    && fabsf(_manual_rc_value - _last_manual_value) > 0.5f
 			    && !_actuator_armed.armed && _actuator_armed.prearmed) {
@@ -270,7 +305,8 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 			_last_manual_value = _manual_rc_value;
 		}
 
-		if (std::isfinite(transfer_switch) && fabsf(transfer_switch - last_transfer_switch) > 0.5f) {
+		if (manual_sample_fresh && std::isfinite(transfer_switch)
+		    && fabsf(transfer_switch - last_transfer_switch) > 0.5f) {
 			_manual_commissioning_active = false;
 
 			if (_vcontrol_mode.flag_control_auto_enabled) {
@@ -292,9 +328,17 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 			}
 		}
 
-		if (std::isfinite(transfer_switch)) {
+		if (manual_sample_fresh && std::isfinite(transfer_switch)) {
 			last_transfer_switch = transfer_switch;
 		}
+	}
+
+	const bool manual_control_fresh = timestamp_fresh(_last_manual_control_timestamp, input.now_us,
+					  MANUAL_CONTROL_TIMEOUT) && std::isfinite(_manual_rc_value);
+
+	if (!manual_control_fresh) {
+		_manual_commissioning_active = false;
+		_manual_value_initialized = false;
 	}
 
 	if (_actuator_armed.armed || !_actuator_armed.prearmed) {
