@@ -139,6 +139,16 @@ bool TmagSampleCache::validFor(int32_t device_id, uint64_t now_us, uint64_t time
 	       && std::isfinite(_value);
 }
 
+bool isTransformationFaulted(const TransformationOutput &output)
+{
+	return output.state == HybridState::Fault || output.fault != TransformFault::None;
+}
+
+bool manualCommissioningPermitted(const TransformationOutput &output, bool armed, bool prearmed, bool manual_fresh)
+{
+	return !isTransformationFaulted(output) && !armed && prearmed && manual_fresh;
+}
+
 TransformationStateMachine::Endpoint TransformationStateMachine::as5600Endpoint(const TransformationInput &input) const
 {
 	if (!input.as5600_valid) {

@@ -283,6 +283,48 @@ TEST(TransformationStateMachine, TmagCacheRejectsOldDeviceAfterIdChange)
 	EXPECT_FALSE(cache.validFor(54, 500000, 1000000));
 }
 
+TEST(TransformationStateMachine, FaultAlwaysBlocksManualCommissioning)
+{
+	TransformationStateMachine timeout_machine;
+	auto cfg = config();
+	ASSERT_EQ(timeout_machine.initialize(cfg, input()).state, HybridState::Unknown);
+	ASSERT_EQ(timeout_machine.request(HybridTarget::Driving, 0).state, HybridState::TransitionToRover);
+	const auto timeout_fault = timeout_machine.update(input(1000000));
+	ASSERT_EQ(timeout_fault.fault, TransformFault::SensorTimeout);
+	EXPECT_TRUE(isTransformationFaulted(timeout_fault));
+	EXPECT_FALSE(manualCommissioningPermitted(timeout_fault, false, true, true));
+
+	TransformationStateMachine invalid_machine;
+	auto invalid = config(false);
+	invalid.tmag_rover_device_id = invalid.tmag_quad_device_id;
+	const auto config_fault = invalid_machine.initialize(invalid, input());
+	ASSERT_EQ(config_fault.fault, TransformFault::InvalidConfiguration);
+	EXPECT_TRUE(isTransformationFaulted(config_fault));
+	EXPECT_FALSE(manualCommissioningPermitted(config_fault, false, true, true));
+
+	TransformationStateMachine healthy_machine;
+	const auto healthy = healthy_machine.initialize(config(false), input());
+	ASSERT_FALSE(isTransformationFaulted(healthy));
+	EXPECT_TRUE(manualCommissioningPermitted(healthy, false, true, true));
+}
+
+TEST(TransformationStateMachine, ManualCommissioningRequiresFreshPrearmedFaultFreeState)
+{
+	const TransformationOutput healthy{HybridState::Unknown, HybridTarget::None, SensorSource::None,
+					   TransformFault::None, false, 0.f};
+	const TransformationOutput state_fault{HybridState::Fault, HybridTarget::None, SensorSource::None,
+					       TransformFault::None, false, 0.f};
+	const TransformationOutput reported_fault{HybridState::Flying, HybridTarget::Flying, SensorSource::None,
+			TransformFault::SensorTimeout, true, -0.7f};
+
+	EXPECT_TRUE(manualCommissioningPermitted(healthy, false, true, true));
+	EXPECT_FALSE(manualCommissioningPermitted(healthy, true, true, true));
+	EXPECT_FALSE(manualCommissioningPermitted(healthy, false, false, true));
+	EXPECT_FALSE(manualCommissioningPermitted(healthy, false, true, false));
+	EXPECT_FALSE(manualCommissioningPermitted(state_fault, false, true, true));
+	EXPECT_FALSE(manualCommissioningPermitted(reported_fault, false, true, true));
+}
+
 TEST(TransformationStateMachine, FaultClearsOnlyDisarmedWithExplicitRequest)
 {
 	TransformationStateMachine machine;

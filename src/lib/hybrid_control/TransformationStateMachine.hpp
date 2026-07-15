@@ -97,6 +97,9 @@ struct TransformationOutput {
 	float servo_value;
 };
 
+bool isTransformationFaulted(const TransformationOutput &output);
+bool manualCommissioningPermitted(const TransformationOutput &output, bool armed, bool prearmed, bool manual_fresh);
+
 class TransformationStateMachine
 {
 public:

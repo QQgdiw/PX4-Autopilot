@@ -293,7 +293,8 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 
 			if (_manual_value_initialized
 			    && fabsf(current_manual_value - _last_manual_value) > 0.5f
-			    && !_actuator_armed.armed && _actuator_armed.prearmed) {
+			    && hybrid_control::manualCommissioningPermitted(_transformation_output,
+				    _actuator_armed.armed, _actuator_armed.prearmed, true)) {
 				_manual_commissioning_active = true;
 			}
 
@@ -336,7 +337,8 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 		_manual_value_initialized = false;
 	}
 
-	if (_actuator_armed.armed || !_actuator_armed.prearmed) {
+	if (hybrid_control::isTransformationFaulted(_transformation_output)
+	    || _actuator_armed.armed || !_actuator_armed.prearmed) {
 		_manual_commissioning_active = false;
 	}
 
@@ -368,6 +370,10 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 	}
 
 	_transformation_output = _transformation.update(input);
+
+	if (hybrid_control::isTransformationFaulted(_transformation_output)) {
+		_manual_commissioning_active = false;
+	}
 }
 
 bool HybridVehicleControl::check_safe_to_transform(bool to_rover)
@@ -391,15 +397,20 @@ void HybridVehicleControl::publish_status(const TransformationInput &input, hrt_
 	status.as5600_valid = input.as5600_valid;
 	status.tmag_quad_valid = input.tmag_quad_valid;
 	status.tmag_rover_valid = input.tmag_rover_valid;
+	const bool transformation_faulted = hybrid_control::isTransformationFaulted(_transformation_output);
 
-	if (_manual_commissioning_active) {
+	if (_manual_commissioning_active && !transformation_faulted) {
 		status.current_state = hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN;
 		status.target_state = hybrid_vehicle_status_s::TARGET_NONE;
 		status.sensor_source = hybrid_vehicle_status_s::SENSOR_NONE;
 		status.fault_reason = hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE;
 
 	} else {
-		switch (_transformation_output.state) {
+		if (transformation_faulted) {
+			status.current_state = hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT;
+
+		} else {
+			switch (_transformation_output.state) {
 		case HybridState::Flying:
 			status.current_state = hybrid_vehicle_status_s::HYBRID_STATE_FLYING;
 			break;
@@ -416,6 +427,7 @@ void HybridVehicleControl::publish_status(const TransformationInput &input, hrt_
 		case HybridState::Fault:
 			status.current_state = hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT;
 			break;
+			}
 		}
 
 		switch (_transformation_output.target) {
@@ -437,7 +449,7 @@ void HybridVehicleControl::publish_status(const TransformationInput &input, hrt_
 				   || _transformation_output.state == HybridState::TransitionToRover;
 
 	if (!_manual_commissioning_active && _transition_timing_active
-	    && (transitioning || _transformation_output.state == HybridState::Fault)) {
+	    && (transitioning || transformation_faulted)) {
 		status.transition_elapsed = now - _transition_start_time;
 
 	} else {
@@ -464,13 +476,15 @@ void HybridVehicleControl::publish_servo(hrt_abstime now)
 	const bool outputs_enabled = (_actuator_armed.armed || _actuator_armed.prearmed)
 				     && !_actuator_armed.lockdown && !_actuator_armed.manual_lockdown
 				     && !_actuator_armed.force_failsafe;
+	const bool transformation_faulted = hybrid_control::isTransformationFaulted(_transformation_output);
 
-	if (outputs_enabled && _manual_commissioning_active
-	    && _manual_control_cache.fresh(now, MANUAL_CONTROL_TIMEOUT)) {
-		servos.control[0] = clamp_servo(_manual_control_cache.value());
+	if (!transformation_faulted && outputs_enabled) {
+		if (_manual_commissioning_active && _manual_control_cache.fresh(now, MANUAL_CONTROL_TIMEOUT)) {
+			servos.control[0] = clamp_servo(_manual_control_cache.value());
 
-	} else if (outputs_enabled && _transformation_output.servo_enabled) {
-		servos.control[0] = _transformation_output.servo_value;
+		} else if (_transformation_output.servo_enabled) {
+			servos.control[0] = _transformation_output.servo_value;
+		}
 	}
 
 	_actuator_servos_pub.publish(servos);
@@ -489,14 +503,18 @@ void HybridVehicleControl::publish_motor_outputs(hrt_abstime now)
 		motors.control[i] = NAN;
 	}
 
-	if (!_manual_commissioning_active && _transformation_output.state == HybridState::Flying) {
+	const bool transformation_faulted = hybrid_control::isTransformationFaulted(_transformation_output);
+
+	if (!transformation_faulted && !_manual_commissioning_active
+	    && _transformation_output.state == HybridState::Flying) {
 		for (int i = 0; i < 4; ++i) {
 			motors.control[i] = _mc_motors.control[i];
 		}
 
 		motors.reversible_flags = _mc_motors.reversible_flags & 0x0f;
 
-	} else if (!_manual_commissioning_active && _transformation_output.state == HybridState::Driving) {
+	} else if (!transformation_faulted && !_manual_commissioning_active
+		   && _transformation_output.state == HybridState::Driving) {
 		// RoverDifferential owns mixing: right is source 1 -> final 4, left is source 0 -> final 5.
 		motors.control[4] = _rover_motors.control[1];
 		motors.control[5] = _rover_motors.control[0];
