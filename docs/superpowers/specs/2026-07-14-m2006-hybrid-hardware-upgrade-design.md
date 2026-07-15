@@ -94,9 +94,13 @@ Nonzero commands require all of the following:
 
 Runtime ownership is mutually exclusive:
 
-- Starting `m2006_can` requires `UAVCAN_ENABLE=0` and `CYPHAL_ENABLE=0`.
+- Starting `m2006_can` requires `UAVCAN_ENABLE=0`. If `CYPHAL_ENABLE` exists,
+  it must also be zero; absence means that the optional backend is not compiled.
 - Conflicting configuration causes `m2006_can` to refuse startup and publish a health error.
-- DroneCAN and Cyphal remain compiled and available when M2006 is disabled.
+- The default board target retains its DroneCAN-capable build. PX4's Cyphal
+  source and other board configurations remain available, but the hybrid board
+  does not compile Cyphal because its separate CAN backend is unavailable and
+  would violate the single-owner CAN1 architecture.
 - Changing CAN ownership requires a reboot because the STM32H7 low-level CAN driver is not safely deinitialized at runtime.
 
 C610 command frame `0x200`:
@@ -245,7 +249,9 @@ Add `m2006_motor_status` with two-element fields for:
 - Current command and feedback torque-current.
 - Encoder position and feedback age.
 - Online state and fault bits.
-- RX, TX, timeout, and bus-off counters.
+- RX, successful TX, TX-full, TX-error, and timeout counters, plus the low-level
+  aggregate CAN error count. The aggregate includes bus-off events; the selected
+  low-level interface does not expose a trustworthy separate bus-off count.
 
 Extend `hybrid_vehicle_status` with:
 
