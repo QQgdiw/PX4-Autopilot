@@ -57,6 +57,7 @@
 #include "checks/magnetometerCheck.hpp"
 #include "checks/manualControlCheck.hpp"
 #include "checks/homePositionCheck.hpp"
+#include "checks/hybridCheck.hpp"
 #include "checks/modeCheck.hpp"
 #include "checks/parachuteCheck.hpp"
 #include "checks/powerCheck.hpp"
@@ -142,6 +143,7 @@ private:
 	MagnetometerChecks _magnetometer_checks;
 	ManualControlChecks _manual_control_checks;
 	HomePositionChecks _home_position_checks;
+	HybridChecks _hybrid_checks;
 	ModeChecks _mode_checks;
 	OpenDroneIDChecks _open_drone_id_checks;
 	ParachuteChecks _parachute_checks;
@@ -182,6 +184,7 @@ private:
 		&_magnetometer_checks,
 		&_manual_control_checks,
 		&_home_position_checks,
+		&_hybrid_checks,
 		&_mission_checks,
 		&_offboard_checks, // must be after _estimator_checks
 		&_mode_checks, // must be after _estimator_checks, _home_position_checks, _mission_checks, _offboard_checks, _external_checks

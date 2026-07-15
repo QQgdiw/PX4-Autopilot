@@ -1936,11 +1936,15 @@ void Commander::run()
 			// Commander直接听命于 HybridVehicleControl！
 			// ==========================================================
 			if (_vehicle_status.is_quad_rover) {
-			// 实时获取 HybridVehicleControl 发布的最新状态
-			hybrid_vehicle_status_s hybrid_status;
-			if (_hybrid_vehicle_status_sub.update(&hybrid_status)) {
-			_current_hybrid_state = hybrid_status.current_state;
-			}
+				hybrid_vehicle_status_s hybrid_status{};
+
+				if (_hybrid_vehicle_status_sub.copy(&hybrid_status) && hybrid_status.timestamp != 0
+				    && hrt_absolute_time() - hybrid_status.timestamp <= 1_s) {
+					_current_hybrid_state = hybrid_status.current_state;
+
+				} else {
+					_current_hybrid_state = hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN;
+				}
 
 			if (_current_hybrid_state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING) {
 			// 我们的自定义大脑说现在是车 -> 强制广播为漫游车！
@@ -2632,7 +2636,8 @@ void Commander::updateControlMode()
 	// ==========================================================
 	if (_vehicle_status.is_quad_rover) {
 
-		if (_current_hybrid_state == hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING) {
+		if (_current_hybrid_state != hybrid_vehicle_status_s::HYBRID_STATE_FLYING
+		    && _current_hybrid_state != hybrid_vehicle_status_s::HYBRID_STATE_DRIVING) {
 			// 2. 变形中模式：最危险的阶段，强制关闭所有自动化和姿态控制
 			_vehicle_control_mode.flag_control_position_enabled = false;
 			_vehicle_control_mode.flag_control_velocity_enabled = false;

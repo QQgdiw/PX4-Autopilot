@@ -50,6 +50,7 @@ px4_add_library(health_and_arming_checks
 	checks/geofenceCheck.cpp
 	checks/gyroCheck.cpp
 	checks/homePositionCheck.cpp
+	checks/hybridCheck.cpp
 	checks/imuConsistencyCheck.cpp
 	checks/loggerCheck.cpp
 	checks/magnetometerCheck.cpp
@@ -73,5 +74,9 @@ px4_add_library(health_and_arming_checks
 add_dependencies(health_and_arming_checks mode_util)
 
 px4_add_functional_gtest(SRC HealthAndArmingChecksTest.cpp
+	LINKLIBS health_and_arming_checks mode_util
+	)
+
+px4_add_functional_gtest(SRC checks/hybridCheckTest.cpp
 	LINKLIBS health_and_arming_checks mode_util
 	)
