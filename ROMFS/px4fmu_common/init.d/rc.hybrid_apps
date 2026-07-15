@@ -6,6 +6,16 @@
 
 echo "[Hybrid] Starting Quad-Rover Hybrid Control Modules..."
 
+# Board and external sensors have already been started by rcS before vehicle setup.
+# CAN ownership parameters are applied at boot; change them only before a reboot.
+if param greater -s M2K_EN 0
+then
+	if ! m2006_can start
+	then
+		echo "ERROR [Hybrid] M2006 CAN unavailable; wheel operation disabled"
+	fi
+fi
+
 # 1. MC Control (Publishing to Bypass A)
 mc_rate_control start
 mc_att_control start

@@ -23,8 +23,14 @@ param set-default EKF2_MAG_TYPE 1
 # Control Allocator Frontend Config (For QGC UI)
 param set-default CA_AIRFRAME 2
 
-# Force QGC to display 6 motor sliders for testing
-param set-default CA_ROTOR_COUNT 6
+# Quad motors remain on M1-M4. M5/M6 are unused because the wheels use CAN.
+param set-default PWM_MAIN_FUNC1 101
+param set-default PWM_MAIN_FUNC2 102
+param set-default PWM_MAIN_FUNC3 103
+param set-default PWM_MAIN_FUNC4 104
+param set-default PWM_MAIN_FUNC5 0
+param set-default PWM_MAIN_FUNC6 0
+param set-default CA_ROTOR_COUNT 4
 param set-default CA_ROTOR0_PX 1
 param set-default CA_ROTOR0_PY 1
 param set-default CA_ROTOR1_PX -1
@@ -36,8 +42,30 @@ param set-default CA_ROTOR3_PX -1
 param set-default CA_ROTOR3_PY 1
 param set-default CA_ROTOR3_KM -0.05
 
-# Additional Servos for Transformation
-param set-default CA_SV_CS_COUNT 2
+# Transformation servo on M8. A zero disarmed/failsafe value disables pulses.
+param set-default PWM_MAIN_FUNC8 201
+param set-default PWM_MAIN_DIS8 0
+param set-default PWM_MAIN_FAIL8 0
+param set-default CA_SV_CS_COUNT 1
+
+# CAN1 has one runtime owner. Changing ownership parameters requires a reboot.
+param set-default UAVCAN_ENABLE 0
+param set-default CYPHAL_ENABLE 0
+param set-default M2K_EN 1
+param set-default M2K_L_ID 1
+param set-default M2K_R_ID 2
+param set-default M2K_MAX_RPM 500
+param set-default M2K_CUR_LIM 10000
+
+# Bench calibration is required before driving can be armed.
+param set-default M2K_SPD_P 0
+param set-default M2K_SPD_I 0
+param set-default M2K_SPD_D 0
+param set-default M2K_SPD_FF 0
+param set-default RO_MAX_THR_SPEED 2.47
+param set-default HYB_SENS_EN 1
+param set-default HYB_SV_QUD 0
+param set-default HYB_SV_ROV 0
 
 # Custom Parameters
 param set-default HYBRID_TRANS_T 2.0
