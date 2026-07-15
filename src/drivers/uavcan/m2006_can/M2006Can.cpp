@@ -203,6 +203,8 @@ void M2006Can::publishStatus(const hrt_abstime now, const bool online[2])
 	status.fault_flags = _gate.faultBits();
 	status.rx_count = _rx_count[0] + _rx_count[1];
 	status.tx_count = _tx_count;
+	status.tx_full_count = _tx_full_count;
+	status.tx_error_count = _tx_error_count;
 	status.timeout_count = _timeout_count;
 	status.can_error_count = _iface->getErrorCount();
 	_status_pub.publish(status);

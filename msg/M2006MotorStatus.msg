@@ -20,5 +20,7 @@ bool[2] online                         # feedback is fresh
 uint32 fault_flags
 uint32 rx_count
 uint32 tx_count
+uint32 tx_full_count
+uint32 tx_error_count
 uint32 timeout_count
-uint64 can_error_count
+uint64 can_error_count                   # aggregate CAN errors, including bus-off events
