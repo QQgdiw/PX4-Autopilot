@@ -38,6 +38,7 @@
 #include "failure_detector/FailureDetector.hpp"
 #include "HealthAndArmingChecks/HealthAndArmingChecks.hpp"
 #include "HomePosition.hpp"
+#include "HybridStatusGuard.hpp"
 #include "ModeManagement.hpp"
 #include "MulticopterThrowLaunch/MulticopterThrowLaunch.hpp"
 #include "Safety.hpp"
@@ -325,7 +326,7 @@ private:
 	perf_counter_t _loop_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};
 	perf_counter_t _preflight_check_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": preflight check")};
 
-	uint8_t _current_hybrid_state{hybrid_vehicle_status_s::HYBRID_STATE_FLYING};
+	uint8_t _current_hybrid_state{hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN};
 
 	// optional parameters
 	param_t _param_mav_type{PARAM_INVALID};

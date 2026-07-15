@@ -15,12 +15,13 @@
 namespace
 {
 
-void publishHybridStatus(uint8_t state)
+void publishHybridStatus(uint8_t state, uint8_t fault_reason = hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE,
+			 hrt_abstime timestamp = hrt_absolute_time())
 {
 	hybrid_vehicle_status_s status{};
-	status.timestamp = hrt_absolute_time();
+	status.timestamp = timestamp;
 	status.current_state = state;
-	status.fault_reason = hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE;
+	status.fault_reason = fault_reason;
 	orb_advertise(ORB_ID(hybrid_vehicle_status), &status);
 }
 
@@ -67,6 +68,10 @@ protected:
 		_vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROTARY_WING;
 		_configuration.m2006_enabled = 1;
 		_configuration.servo_function = 201;
+		_configuration.m7_disarmed = 1000;
+		_configuration.m7_failsafe = -1;
+		_configuration.m8_disarmed = 0;
+		_configuration.m8_failsafe = 0;
 		_configuration.quad_servo_target = -0.5f;
 		_configuration.rover_servo_target = 0.5f;
 		_configuration.speed_p = 1.f;
@@ -103,13 +108,25 @@ TEST_F(HybridCheckTest, UnknownTransitionAndFaultRejectArming)
 	EXPECT_FALSE(canArm(checks, _vehicle_status));
 	publishHybridStatus(hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT);
 	EXPECT_FALSE(canArm(checks, _vehicle_status));
+	publishHybridStatus(hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
+	publishHybridStatus(hybrid_vehicle_status_s::HYBRID_STATE_FLYING,
+			    hybrid_vehicle_status_s::TRANSFORM_FAULT_SENSOR_TIMEOUT);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
+	publishHybridStatus(hybrid_vehicle_status_s::HYBRID_STATE_FLYING,
+			    hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE, 0);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
 }
 
 TEST_F(HybridCheckTest, UnsafeM8MappingRejectsArming)
 {
 	publishHybridStatus(hybrid_vehicle_status_s::HYBRID_STATE_FLYING);
-	_configuration.servo_function = 0;
+	_configuration.m8_failsafe = 1000;
 	HybridChecks checks;
+	checks.setConfigurationForTesting(_configuration);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
+	_configuration.m8_failsafe = 0;
+	_configuration.quad_servo_target = -2.f;
 	checks.setConfigurationForTesting(_configuration);
 	EXPECT_FALSE(canArm(checks, _vehicle_status));
 }

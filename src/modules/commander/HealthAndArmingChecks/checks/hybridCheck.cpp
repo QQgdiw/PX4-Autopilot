@@ -111,8 +111,8 @@ bool HybridChecks::getConfiguration(HybridCheckConfiguration &configuration) con
 	       && getIntParameter("PWM_MAIN_FUNC5", configuration.motor5_function)
 	       && getIntParameter("PWM_MAIN_FUNC6", configuration.motor6_function)
 	       && getIntParameter("PWM_MAIN_FUNC8", configuration.servo_function)
-	       && getIntParameter("PWM_MAIN_DIS7", configuration.servo_disarmed)
-	       && getIntParameter("PWM_MAIN_FAIL7", configuration.servo_failsafe)
+	       && getIntParameter("PWM_MAIN_DIS8", configuration.m8_disarmed)
+	       && getIntParameter("PWM_MAIN_FAIL8", configuration.m8_failsafe)
 	       && getFloatParameter("HYB_SV_QUD", configuration.quad_servo_target)
 	       && getFloatParameter("HYB_SV_ROV", configuration.rover_servo_target)
 	       && getFloatParameter("M2K_SPD_P", configuration.speed_p)
@@ -123,9 +123,11 @@ bool HybridChecks::getConfiguration(HybridCheckConfiguration &configuration) con
 bool HybridChecks::hasSafeServoMapping(const HybridCheckConfiguration &configuration) const
 {
 	return configuration.motor5_function == 0 && configuration.motor6_function == 0
-	       && configuration.servo_function == Servo1Function && configuration.servo_disarmed == 0
-	       && configuration.servo_failsafe == 0 && std::isfinite(configuration.quad_servo_target)
+	       && configuration.servo_function == Servo1Function && configuration.m8_disarmed == 0
+	       && configuration.m8_failsafe == 0 && std::isfinite(configuration.quad_servo_target)
 	       && std::isfinite(configuration.rover_servo_target)
+	       && configuration.quad_servo_target >= -1.f && configuration.quad_servo_target <= 1.f
+	       && configuration.rover_servo_target >= -1.f && configuration.rover_servo_target <= 1.f
 	       && std::fabs(configuration.quad_servo_target - configuration.rover_servo_target) > 0.001f;
 }
 

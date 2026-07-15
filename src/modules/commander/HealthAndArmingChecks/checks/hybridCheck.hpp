@@ -19,8 +19,10 @@ struct HybridCheckConfiguration {
 	int32_t motor5_function{0};
 	int32_t motor6_function{0};
 	int32_t servo_function{0};
-	int32_t servo_disarmed{0};
-	int32_t servo_failsafe{0};
+	int32_t m7_disarmed{0};
+	int32_t m7_failsafe{0};
+	int32_t m8_disarmed{0};
+	int32_t m8_failsafe{0};
 	float quad_servo_target{NAN};
 	float rover_servo_target{NAN};
 	float speed_p{0.f};

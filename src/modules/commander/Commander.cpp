@@ -1913,6 +1913,8 @@ void Commander::run()
 		// _actuator_armed.manual_lockdown // action_request_s::ACTION_KILL
 		_actuator_armed.force_failsafe = (_vehicle_status.nav_state == _vehicle_status.NAVIGATION_STATE_TERMINATION);
 		// _actuator_armed.in_esc_calibration_mode // VEHICLE_CMD_PREFLIGHT_CALIBRATION
+		const bool hybrid_status_updated = commander::shouldProcessHybridStatus(_vehicle_status.is_quad_rover,
+										_hybrid_vehicle_status_sub.updated());
 
 		// if force_failsafe or manual_lockdown activated send parachute command
 		if ((!actuator_armed_prev.force_failsafe && _actuator_armed.force_failsafe)
@@ -1925,6 +1927,7 @@ void Commander::run()
 
 		// publish states (armed, control_mode, vehicle_status, failure_detector_status) at 2 Hz or immediately when changed
 		if ((now >= _vehicle_status.timestamp + 500_ms) || _status_changed || nav_state_or_failsafe_changed
+		    || hybrid_status_updated
 		    || !(_actuator_armed == actuator_armed_prev)) {
 
 			// publish actuator_armed first (used by output modules)
@@ -1938,9 +1941,8 @@ void Commander::run()
 			if (_vehicle_status.is_quad_rover) {
 				hybrid_vehicle_status_s hybrid_status{};
 
-				if (_hybrid_vehicle_status_sub.copy(&hybrid_status) && hybrid_status.timestamp != 0
-				    && hrt_absolute_time() - hybrid_status.timestamp <= 1_s) {
-					_current_hybrid_state = hybrid_status.current_state;
+				if (_hybrid_vehicle_status_sub.copy(&hybrid_status)) {
+					_current_hybrid_state = commander::hybridStateForCommander(hybrid_status, now);
 
 				} else {
 					_current_hybrid_state = hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN;
@@ -2636,8 +2638,7 @@ void Commander::updateControlMode()
 	// ==========================================================
 	if (_vehicle_status.is_quad_rover) {
 
-		if (_current_hybrid_state != hybrid_vehicle_status_s::HYBRID_STATE_FLYING
-		    && _current_hybrid_state != hybrid_vehicle_status_s::HYBRID_STATE_DRIVING) {
+		if (!commander::hybridStateEnablesControl(_current_hybrid_state)) {
 			// 2. 变形中模式：最危险的阶段，强制关闭所有自动化和姿态控制
 			_vehicle_control_mode.flag_control_position_enabled = false;
 			_vehicle_control_mode.flag_control_velocity_enabled = false;
