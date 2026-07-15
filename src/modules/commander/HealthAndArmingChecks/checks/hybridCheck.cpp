@@ -25,6 +25,18 @@ bool getIntParameter(const char *name, int32_t &value)
 	return param != PARAM_INVALID && param_get(param, &value) == PX4_OK;
 }
 
+bool getOptionalIntParameter(const char *name, int32_t &value)
+{
+	const param_t param = param_find(name);
+
+	if (param == PARAM_INVALID) {
+		value = 0;
+		return true;
+	}
+
+	return param_get(param, &value) == PX4_OK;
+}
+
 bool getFloatParameter(const char *name, float &value)
 {
 	const param_t param = param_find(name);
@@ -107,7 +119,7 @@ bool HybridChecks::getConfiguration(HybridCheckConfiguration &configuration) con
 
 	return getIntParameter("M2K_EN", configuration.m2006_enabled)
 	       && getIntParameter("UAVCAN_ENABLE", configuration.uavcan_enabled)
-	       && getIntParameter("CYPHAL_ENABLE", configuration.cyphal_enabled)
+	       && getOptionalIntParameter("CYPHAL_ENABLE", configuration.cyphal_enabled)
 	       && getIntParameter("PWM_MAIN_FUNC5", configuration.motor5_function)
 	       && getIntParameter("PWM_MAIN_FUNC6", configuration.motor6_function)
 	       && getIntParameter("PWM_MAIN_FUNC8", configuration.servo_function)

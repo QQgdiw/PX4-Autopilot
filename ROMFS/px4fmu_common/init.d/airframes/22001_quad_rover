@@ -50,7 +50,7 @@ param set-default CA_SV_CS_COUNT 1
 
 # CAN1 has one runtime owner. Changing ownership parameters requires a reboot.
 param set-default UAVCAN_ENABLE 0
-param set-default CYPHAL_ENABLE 0
+param set-default -s CYPHAL_ENABLE 0
 param set-default M2K_EN 1
 param set-default M2K_L_ID 1
 param set-default M2K_R_ID 2
