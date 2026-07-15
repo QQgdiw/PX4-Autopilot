@@ -8,6 +8,11 @@ namespace
 constexpr uint64_t feedback_health_delay_us = 100000;
 }
 
+bool commandTimestampFresh(uint64_t timestamp, uint64_t now_us, uint64_t timeout_us)
+{
+	return timestamp != 0 && now_us >= timestamp && now_us - timestamp <= timeout_us;
+}
+
 bool M2006DriveGate::update(const DriveGateInput &input)
 {
 	const bool feedback_healthy = input.feedback_healthy[0] && input.feedback_healthy[1];
@@ -64,7 +69,7 @@ bool M2006DriveGate::update(const DriveGateInput &input)
 		_recovery_timer_active = false;
 	}
 
-	return input.armed && input.driving && all_healthy && feedback_ready
+	return input.armed && input.driving && !input.output_inhibited && all_healthy && feedback_ready
 	       && _fault_bits == DriveFaultNone;
 }
 

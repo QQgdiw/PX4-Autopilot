@@ -39,4 +39,4 @@ rover_differential start
 # 4. Custom Hybrid Arbiter (The Multiplexer/Hijacker)
 hybrid_vehicle_control start
 
-echo "[Hybrid] All modules started successfully."
+echo "[Hybrid] Core module start commands completed; check errors above."

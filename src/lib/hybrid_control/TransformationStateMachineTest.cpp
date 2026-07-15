@@ -124,6 +124,56 @@ TEST(TransformationStateMachine, StartupUsesConfiguredStateOnlyWhenSensorsDisabl
 	EXPECT_EQ(with_sensors.update(actual).state, HybridState::Flying);
 }
 
+TEST(TransformationStateMachine, StableStateRequiresContinuousEndpointConfirmation)
+{
+	TransformationStateMachine machine;
+	auto sensed = input();
+	sensed.as5600_valid = true;
+	sensed.as5600_angle = 0.5f;
+	ASSERT_EQ(machine.initialize(config(), sensed).state, HybridState::Flying);
+
+	auto missing = input(50000);
+	auto output = machine.update(missing);
+	EXPECT_EQ(output.state, HybridState::Flying);
+	EXPECT_FALSE(output.position_confirmed);
+	EXPECT_FALSE(stablePositionSafe(output, true));
+
+	missing.now_us = 150000;
+	output = machine.update(missing);
+	EXPECT_EQ(output.state, HybridState::Fault);
+	EXPECT_EQ(output.fault, TransformFault::NoSensor);
+}
+
+TEST(TransformationStateMachine, StableStateFallsBackToMatchingTmag)
+{
+	TransformationStateMachine machine;
+	auto sensed = input();
+	sensed.as5600_valid = true;
+	sensed.as5600_angle = 3.f;
+	ASSERT_EQ(machine.initialize(config(), sensed).state, HybridState::Driving);
+
+	auto fallback = input(100000);
+	fallback.tmag_rover_valid = true;
+	fallback.tmag_rover_active = true;
+	const auto output = machine.update(fallback);
+	EXPECT_EQ(output.state, HybridState::Driving);
+	EXPECT_TRUE(output.position_confirmed);
+	EXPECT_EQ(output.source, SensorSource::Tmag5273);
+}
+
+TEST(TransformationStateMachine, As5600EndpointComparisonWrapsAtTwoPi)
+{
+	auto cfg = config();
+	cfg.quad_angle = 0.01f;
+	TransformationStateMachine machine;
+	auto sensed = input();
+	sensed.as5600_valid = true;
+	sensed.as5600_angle = 6.28f;
+	const auto output = machine.initialize(cfg, sensed);
+	EXPECT_EQ(output.state, HybridState::Flying);
+	EXPECT_TRUE(output.position_confirmed);
+}
+
 TEST(TransformationStateMachine, RepeatedTransitionRequestDoesNotRestartTimeout)
 {
 	TransformationStateMachine machine;
@@ -311,11 +361,11 @@ TEST(TransformationStateMachine, FaultAlwaysBlocksManualCommissioning)
 TEST(TransformationStateMachine, ManualCommissioningRequiresFreshPrearmedFaultFreeState)
 {
 	const TransformationOutput healthy{HybridState::Unknown, HybridTarget::None, SensorSource::None,
-					   TransformFault::None, false, 0.f};
+					   TransformFault::None, false, false, 0.f};
 	const TransformationOutput state_fault{HybridState::Fault, HybridTarget::None, SensorSource::None,
-					       TransformFault::None, false, 0.f};
+					       TransformFault::None, false, false, 0.f};
 	const TransformationOutput reported_fault{HybridState::Flying, HybridTarget::Flying, SensorSource::None,
-			TransformFault::SensorTimeout, true, -0.7f};
+			TransformFault::SensorTimeout, false, true, -0.7f};
 
 	EXPECT_TRUE(manualCommissioningPermitted(healthy, false, true, true));
 	EXPECT_FALSE(manualCommissioningPermitted(healthy, true, true, true));

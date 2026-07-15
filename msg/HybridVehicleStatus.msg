@@ -28,4 +28,6 @@ uint8 fault_reason        # transformation fault code, zero when healthy
 bool as5600_valid
 bool tmag_quad_valid
 bool tmag_rover_valid
+bool sensors_enabled      # sensor-backed shape validation is configured
+bool position_confirmed   # current stable endpoint is confirmed by a fresh source
 uint64 transition_elapsed # elapsed transition time (microseconds)

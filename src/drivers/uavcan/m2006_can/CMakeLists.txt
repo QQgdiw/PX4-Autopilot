@@ -12,5 +12,6 @@ px4_add_module(
 	DEPENDS
 		hybrid_control
 		uavcan
+		uavcan_can_ownership
 		uavcan_${UAVCAN_DRIVER}_driver
 )

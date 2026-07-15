@@ -877,6 +877,7 @@ void CanIface::handleTxInterrupt(const uavcan::uint64_t utc_usec)
 
 void CanIface::handleBusOff()
 {
+	error_cnt_++;
 
 	/*
 	 * The bus off recovery sequence consists of 128 occurrences of 11 consecutive recessive bits. MCAN controllers

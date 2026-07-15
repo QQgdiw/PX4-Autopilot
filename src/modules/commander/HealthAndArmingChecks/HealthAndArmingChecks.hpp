@@ -57,7 +57,9 @@
 #include "checks/magnetometerCheck.hpp"
 #include "checks/manualControlCheck.hpp"
 #include "checks/homePositionCheck.hpp"
-#include "checks/hybridCheck.hpp"
+#if defined(CONFIG_UAVCAN_M2006_CAN) || defined(__PX4_POSIX)
+# include "checks/hybridCheck.hpp"
+#endif
 #include "checks/modeCheck.hpp"
 #include "checks/parachuteCheck.hpp"
 #include "checks/powerCheck.hpp"
@@ -143,7 +145,9 @@ private:
 	MagnetometerChecks _magnetometer_checks;
 	ManualControlChecks _manual_control_checks;
 	HomePositionChecks _home_position_checks;
+#if defined(CONFIG_UAVCAN_M2006_CAN) || defined(__PX4_POSIX)
 	HybridChecks _hybrid_checks;
+#endif
 	ModeChecks _mode_checks;
 	OpenDroneIDChecks _open_drone_id_checks;
 	ParachuteChecks _parachute_checks;
@@ -184,7 +188,9 @@ private:
 		&_magnetometer_checks,
 		&_manual_control_checks,
 		&_home_position_checks,
+#if defined(CONFIG_UAVCAN_M2006_CAN) || defined(__PX4_POSIX)
 		&_hybrid_checks,
+#endif
 		&_mission_checks,
 		&_offboard_checks, // must be after _estimator_checks
 		&_mode_checks, // must be after _estimator_checks, _home_position_checks, _mission_checks, _offboard_checks, _external_checks

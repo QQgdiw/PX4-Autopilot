@@ -20,6 +20,8 @@ validation.
 
 1. Verify `UAVCAN_ENABLE=0`, `M2K_EN=1`, `M2K_L_ID=1`, `M2K_R_ID=2`, and
    `M2K_MAX_RPM=500`, then reboot after changing an ownership or ID parameter.
+   If `m2006_can` is stopped, reboot before starting it or DroneCAN again; the
+   low-level CAN driver cannot be safely reinitialized in the same boot.
 2. Limit the first test to 1000 current-command units:
 
    ```sh
@@ -69,10 +71,13 @@ The software maximum is 10000.
 1. Disconnect or unload the linkage. Set conservative `PWM_MAIN_MIN8` and
    `PWM_MAIN_MAX8`, and verify the pulse width with an oscilloscope. M8 must be
    `PWM_MAIN_FUNC8=201`, `PWM_MAIN_DIS8=0`, and `PWM_MAIN_FAIL8=0`.
-2. While disarmed and prearmed, use the existing RC commissioning control to
-   find safe normalized endpoints. A stale or non-finite RC input must cancel
-   commissioning. Set separated values in `HYB_SV_QUD` and `HYB_SV_ROV`; both
-   must remain in `[-1, 1]`.
+2. Assign `HYBRID_MAN_CH` to AUX1-AUX6 (`1`-`6`) on a channel different from
+   `RC_MAP_TRANS_SW`, then enter the disarmed, prearmed state. Move the assigned
+   AUX input by more than `0.5` from its previous value to activate direct M8
+   commissioning and find safe normalized endpoints. A stale or non-finite RC
+   input, loss of prearm, arming, or a transformation-switch movement must
+   cancel commissioning. Set separated values in `HYB_SV_QUD` and
+   `HYB_SV_ROV`; both must remain in `[-1, 1]`.
 3. With `HYB_SENS_EN=1`, verify AS5600 reaches both targets within
    `HYB_ANG_TOL` and remains valid for `HYB_DBNC_T`. AS5600 has priority.
 4. Make AS5600 unavailable and verify the target TMAG5273 device provides the
@@ -80,8 +85,11 @@ The software maximum is 10000.
    thresholds against actual device IDs and measured fields.
 5. Assert both TMAG endpoints or make AS5600 and TMAG disagree. Verify a
    conflict fault, `TRANSITION_FAULT`, no propulsion, and no valid M8 pulses.
-6. Remove all enabled position feedback. Verify sensor timeout and transition
-   timeout faults. Faults must not automatically degrade to time-only mode.
+6. Remove all enabled position feedback both during a transition and after a
+   stable endpoint was confirmed. Verify propulsion is inhibited as soon as no
+   fresh endpoint confirms the shape, followed by a sensor/transition fault and
+   suppressed M8 output. Faults must not automatically degrade to time-only
+   mode.
 7. Disarm and confirm M8 has no valid pulse. A latched fault must also suppress
    M8 even during RC commissioning.
 8. Set `HYB_SENS_EN=0` only for the explicit sensorless test. Verify completion

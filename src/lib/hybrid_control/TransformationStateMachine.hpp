@@ -93,11 +93,13 @@ struct TransformationOutput {
 	HybridTarget target;
 	SensorSource source;
 	TransformFault fault;
+	bool position_confirmed;
 	bool servo_enabled;
 	float servo_value;
 };
 
 bool isTransformationFaulted(const TransformationOutput &output);
+bool stablePositionSafe(const TransformationOutput &output, bool sensors_enabled);
 bool manualCommissioningPermitted(const TransformationOutput &output, bool armed, bool prearmed, bool manual_fresh);
 
 class TransformationStateMachine
@@ -112,6 +114,7 @@ private:
 	enum class Endpoint : uint8_t { None, Quad, Rover };
 
 	Endpoint as5600Endpoint(const TransformationInput &input) const;
+	SensorSource stablePositionSource(const TransformationInput &input) const;
 	bool sensorConflict(const TransformationInput &input) const;
 	bool targetDetected(const TransformationInput &input);
 	void enterFault(TransformFault fault);
@@ -120,10 +123,12 @@ private:
 
 	TransformationConfig _config{};
 	TransformationOutput _output{HybridState::Unknown, HybridTarget::None, SensorSource::None,
-				     TransformFault::None, false, 0.f};
+				     TransformFault::None, false, false, 0.f};
 	uint64_t _transition_started_us{0};
 	uint64_t _target_detected_us{0};
 	bool _target_detection_active{false};
+	uint64_t _stable_mismatch_started_us{0};
+	bool _stable_mismatch_active{false};
 	bool _initialized{false};
 };
 

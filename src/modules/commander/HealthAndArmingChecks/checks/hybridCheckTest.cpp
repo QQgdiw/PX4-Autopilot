@@ -16,12 +16,15 @@ namespace
 {
 
 void publishHybridStatus(uint8_t state, uint8_t fault_reason = hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE,
-			 hrt_abstime timestamp = hrt_absolute_time())
+			 hrt_abstime timestamp = hrt_absolute_time(), bool sensors_enabled = false,
+			 bool position_confirmed = true)
 {
 	hybrid_vehicle_status_s status{};
 	status.timestamp = timestamp;
 	status.current_state = state;
 	status.fault_reason = fault_reason;
+	status.sensors_enabled = sensors_enabled;
+	status.position_confirmed = position_confirmed;
 	orb_advertise(ORB_ID(hybrid_vehicle_status), &status);
 }
 
@@ -137,6 +140,30 @@ TEST_F(HybridCheckTest, AllZeroControllerRejectsDriving)
 	publishM2006Status(true, true);
 	_configuration.speed_p = 0.f;
 	HybridChecks checks;
+	checks.setConfigurationForTesting(_configuration);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
+}
+
+TEST_F(HybridCheckTest, EnabledSensorsRequireCurrentPositionConfirmation)
+{
+	publishHybridStatus(hybrid_vehicle_status_s::HYBRID_STATE_FLYING,
+			    hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE, hrt_absolute_time(), true, false);
+	HybridChecks checks;
+	checks.setConfigurationForTesting(_configuration);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
+}
+
+TEST_F(HybridCheckTest, NegativeControllerGainRejectsDriving)
+{
+	publishHybridStatus(hybrid_vehicle_status_s::HYBRID_STATE_DRIVING);
+	publishM2006Status(true, true);
+	HybridChecks checks;
+	_configuration.speed_p = -1.f;
+	checks.setConfigurationForTesting(_configuration);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
+
+	_configuration.speed_p = 1.f;
+	_configuration.speed_d = -1.f;
 	checks.setConfigurationForTesting(_configuration);
 	EXPECT_FALSE(canArm(checks, _vehicle_status));
 }

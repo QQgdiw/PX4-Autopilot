@@ -27,6 +27,7 @@ struct HybridCheckConfiguration {
 	float rover_servo_target{NAN};
 	float speed_p{0.f};
 	float speed_i{0.f};
+	float speed_d{0.f};
 	float speed_ff{0.f};
 };
 
@@ -45,6 +46,8 @@ private:
 	FRIEND_TEST(HybridCheckTest, UnknownTransitionAndFaultRejectArming);
 	FRIEND_TEST(HybridCheckTest, UnsafeM8MappingRejectsArming);
 	FRIEND_TEST(HybridCheckTest, AllZeroControllerRejectsDriving);
+	FRIEND_TEST(HybridCheckTest, EnabledSensorsRequireCurrentPositionConfirmation);
+	FRIEND_TEST(HybridCheckTest, NegativeControllerGainRejectsDriving);
 	bool getConfiguration(HybridCheckConfiguration &configuration) const;
 	bool hasSafeServoMapping(const HybridCheckConfiguration &configuration) const;
 	bool hasConfiguredSpeedController(const HybridCheckConfiguration &configuration) const;

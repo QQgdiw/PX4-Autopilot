@@ -46,6 +46,7 @@
 #include <px4_platform_common/posix.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
 #include <lib/hybrid_control/TransformationStateMachine.hpp>
+#include <lib/hybrid_control/M2006DriveGate.hpp>
 #include <uORB/SubscriptionMultiArray.hpp>
 
 // uORB 发布与订阅
@@ -142,7 +143,7 @@ private:
 	hybrid_control::TransformationConfigTracker _transformation_config_tracker;
 	hybrid_control::TransformationOutput _transformation_output{hybrid_control::HybridState::Unknown,
 			       hybrid_control::HybridTarget::None, hybrid_control::SensorSource::None,
-			       hybrid_control::TransformFault::None, false, 0.f};
+			       hybrid_control::TransformFault::None, false, false, 0.f};
 	bool _transformation_initialized{false};
 	hrt_abstime _transition_start_time{0};
 	bool _transition_timing_active{false};

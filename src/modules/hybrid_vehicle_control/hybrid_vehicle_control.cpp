@@ -397,6 +397,8 @@ void HybridVehicleControl::publish_status(const TransformationInput &input, hrt_
 	status.as5600_valid = input.as5600_valid;
 	status.tmag_quad_valid = input.tmag_quad_valid;
 	status.tmag_rover_valid = input.tmag_rover_valid;
+	status.sensors_enabled = _transformation_config_tracker.active().sensors_enabled;
+	status.position_confirmed = _transformation_output.position_confirmed;
 	const bool transformation_faulted = hybrid_control::isTransformationFaulted(_transformation_output);
 
 	if (_manual_commissioning_active && !transformation_faulted) {
@@ -504,8 +506,12 @@ void HybridVehicleControl::publish_motor_outputs(hrt_abstime now)
 	}
 
 	const bool transformation_faulted = hybrid_control::isTransformationFaulted(_transformation_output);
+	const bool position_safe = hybrid_control::stablePositionSafe(_transformation_output,
+				  _transformation_config_tracker.active().sensors_enabled);
+	const bool mc_fresh = hybrid_control::commandTimestampFresh(_mc_motors.timestamp, now, 100_ms);
+	const bool rover_fresh = hybrid_control::commandTimestampFresh(_rover_motors.timestamp, now, 100_ms);
 
-	if (!transformation_faulted && !_manual_commissioning_active
+	if (!transformation_faulted && position_safe && !_manual_commissioning_active && mc_fresh
 	    && _transformation_output.state == HybridState::Flying) {
 		for (int i = 0; i < 4; ++i) {
 			motors.control[i] = _mc_motors.control[i];
@@ -513,7 +519,7 @@ void HybridVehicleControl::publish_motor_outputs(hrt_abstime now)
 
 		motors.reversible_flags = _mc_motors.reversible_flags & 0x0f;
 
-	} else if (!transformation_faulted && !_manual_commissioning_active
+	} else if (!transformation_faulted && position_safe && !_manual_commissioning_active && rover_fresh
 		   && _transformation_output.state == HybridState::Driving) {
 		// RoverDifferential owns mixing: right is source 1 -> final 4, left is source 0 -> final 5.
 		motors.control[4] = _rover_motors.control[1];

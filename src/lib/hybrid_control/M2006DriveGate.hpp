@@ -16,12 +16,15 @@ enum DriveFault : uint32_t {
 struct DriveGateInput {
 	bool armed;
 	bool driving;
+	bool output_inhibited;
 	bool command_fresh;
 	bool command_finite;
 	bool feedback_healthy[2];
 	bool can_error;
 	uint64_t now_us;
 };
+
+bool commandTimestampFresh(uint64_t timestamp, uint64_t now_us, uint64_t timeout_us);
 
 class M2006DriveGate
 {

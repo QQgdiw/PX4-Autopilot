@@ -45,6 +45,8 @@
 #include <px4_platform_common/px4_config.h>
 #include <px4_platform_common/tasks.h>
 
+#include "CanOwnership.hpp"
+
 #include <inttypes.h>
 #include <cstdlib>
 #include <cstring>
@@ -427,6 +429,10 @@ UavcanNode::start(uavcan::NodeID node_id, uint32_t bitrate)
 	}
 
 	if (can == nullptr) {
+		if (!uavcan_can::claim(uavcan_can::Owner::DroneCan)) {
+			PX4_ERR("CAN already claimed by another driver; reboot required");
+			return -1;
+		}
 
 		can = new CanInitHelper(board_get_can_interfaces());
 

@@ -19,7 +19,7 @@ PARAM_DEFINE_INT32(M2K_EN, 1);
  * This hardware integration supports only left ID 1 and right ID 2.
  *
  * @min 1
- * @max 4
+ * @max 1
  * @reboot_required true
  * @group M2006 CAN
  */
@@ -30,8 +30,8 @@ PARAM_DEFINE_INT32(M2K_L_ID, 1);
  *
  * This hardware integration supports only left ID 1 and right ID 2.
  *
- * @min 1
- * @max 4
+ * @min 2
+ * @max 2
  * @reboot_required true
  * @group M2006 CAN
  */

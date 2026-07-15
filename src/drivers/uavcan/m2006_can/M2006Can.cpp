@@ -1,4 +1,5 @@
 #include "M2006Can.hpp"
+#include "CanOwnership.hpp"
 
 #include <cstring>
 
@@ -55,6 +56,13 @@ bool M2006Can::init()
 		PX4_ERR("CAN1 conflict: disable UAVCAN and Cyphal, then reboot");
 		events::send(events::ID("m2006_can_ownership_conflict"), events::Log::Error,
 			     "M2006 CAN conflict: disable UAVCAN and Cyphal, then reboot");
+		return false;
+	}
+
+	if (!uavcan_can::claim(uavcan_can::Owner::M2006)) {
+		PX4_ERR("CAN1 is already initialized; reboot required");
+		events::send(events::ID("m2006_can_runtime_ownership_conflict"), events::Log::Error,
+			     "M2006 CAN1 is already owned; reboot required");
 		return false;
 	}
 
@@ -254,13 +262,13 @@ void M2006Can::Run()
 	const hybrid_control::M2006NormalizedCommand command = hybrid_control::adaptM2006Command(
 				_motors.control, _param_left_reverse.get(), _param_right_reverse.get());
 	const uint64_t command_timeout_us = static_cast<uint64_t>(_param_command_timeout.get() * 1e6f);
-	const bool command_fresh = _motors.timestamp != 0 && now >= _motors.timestamp
-				   && now - _motors.timestamp <= command_timeout_us;
+	const bool command_fresh = hybrid_control::commandTimestampFresh(_motors.timestamp, now, command_timeout_us);
 	const bool output_inhibited = _armed.lockdown || _armed.manual_lockdown || _armed.force_failsafe;
 	const bool hybrid_driving = _hybrid_status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING;
 	const hybrid_control::DriveGateInput gate_input{
 		_armed.armed,
-		hybrid_driving&& !output_inhibited,
+		hybrid_driving,
+		output_inhibited,
 		command_fresh,
 		command.finite,
 		{online[0], online[1]},

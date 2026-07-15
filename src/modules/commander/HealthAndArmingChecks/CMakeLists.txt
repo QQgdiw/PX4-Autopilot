@@ -50,7 +50,6 @@ px4_add_library(health_and_arming_checks
 	checks/geofenceCheck.cpp
 	checks/gyroCheck.cpp
 	checks/homePositionCheck.cpp
-	checks/hybridCheck.cpp
 	checks/imuConsistencyCheck.cpp
 	checks/loggerCheck.cpp
 	checks/magnetometerCheck.cpp
@@ -71,6 +70,11 @@ px4_add_library(health_and_arming_checks
 
 	checks/externalChecks.cpp
 )
+
+if(CONFIG_UAVCAN_M2006_CAN OR PX4_PLATFORM STREQUAL "posix")
+	target_sources(health_and_arming_checks PRIVATE checks/hybridCheck.cpp)
+endif()
+
 add_dependencies(health_and_arming_checks mode_util)
 
 px4_add_functional_gtest(SRC HealthAndArmingChecksTest.cpp

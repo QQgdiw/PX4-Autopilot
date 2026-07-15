@@ -102,6 +102,10 @@ target_include_directories(uavcan_${UAVCAN_DRIVER}_driver PUBLIC
 	${LIBDRONECAN_DIR}/libuavcan/include/dsdlc_generated
 )
 
+px4_add_library(uavcan_can_ownership CanOwnership.cpp)
+target_include_directories(uavcan_can_ownership PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+px4_add_unit_gtest(SRC CanOwnershipTest.cpp LINKLIBS uavcan_can_ownership)
+
 if(CONFIG_UAVCAN_M2006_CAN)
 	add_subdirectory(m2006_can)
 endif()
@@ -202,6 +206,7 @@ px4_add_module(
 		git_uavcan_dsdl
 		git_uavcan_pydronecan
 		uavcan_${UAVCAN_DRIVER}_driver
+		uavcan_can_ownership
 
 		drivers_rangefinder # Fix undefined reference when no distance sensors are selected
 

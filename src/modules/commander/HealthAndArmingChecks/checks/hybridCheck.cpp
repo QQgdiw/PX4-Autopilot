@@ -62,10 +62,12 @@ void HybridChecks::checkAndReport(const Context &context, Report &reporter)
 	const bool have_hybrid_status = _hybrid_status_sub.copy(&hybrid_status);
 	const bool stable_flying = have_hybrid_status && isFresh(hybrid_status.timestamp)
 				   && hybrid_status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_FLYING
-				   && hybrid_status.fault_reason == hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE;
+				   && hybrid_status.fault_reason == hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE
+				   && (!hybrid_status.sensors_enabled || hybrid_status.position_confirmed);
 	const bool stable_driving = have_hybrid_status && isFresh(hybrid_status.timestamp)
 				    && hybrid_status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING
-				    && hybrid_status.fault_reason == hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE;
+				    && hybrid_status.fault_reason == hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE
+				    && (!hybrid_status.sensors_enabled || hybrid_status.position_confirmed);
 
 	if (!stable_flying && !stable_driving) {
 		/* EVENT
@@ -129,6 +131,7 @@ bool HybridChecks::getConfiguration(HybridCheckConfiguration &configuration) con
 	       && getFloatParameter("HYB_SV_ROV", configuration.rover_servo_target)
 	       && getFloatParameter("M2K_SPD_P", configuration.speed_p)
 	       && getFloatParameter("M2K_SPD_I", configuration.speed_i)
+	       && getFloatParameter("M2K_SPD_D", configuration.speed_d)
 	       && getFloatParameter("M2K_SPD_FF", configuration.speed_ff);
 }
 
@@ -145,10 +148,12 @@ bool HybridChecks::hasSafeServoMapping(const HybridCheckConfiguration &configura
 
 bool HybridChecks::hasConfiguredSpeedController(const HybridCheckConfiguration &configuration) const
 {
-	return std::isfinite(configuration.speed_p) && std::isfinite(configuration.speed_i)
-	       && std::isfinite(configuration.speed_ff)
-	       && (std::fabs(configuration.speed_p) > 0.0001f || std::fabs(configuration.speed_i) > 0.0001f
-		   || std::fabs(configuration.speed_ff) > 0.0001f);
+	return std::isfinite(configuration.speed_p) && configuration.speed_p >= 0.f
+	       && std::isfinite(configuration.speed_i) && configuration.speed_i >= 0.f
+	       && std::isfinite(configuration.speed_d) && configuration.speed_d >= 0.f
+	       && std::isfinite(configuration.speed_ff) && configuration.speed_ff >= 0.f
+	       && (configuration.speed_p > 0.0001f || configuration.speed_i > 0.0001f
+		   || configuration.speed_ff > 0.0001f);
 }
 
 bool HybridChecks::hasM2006Conflict(const HybridCheckConfiguration &configuration) const
