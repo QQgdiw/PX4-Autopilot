@@ -8,6 +8,8 @@ namespace hybrid_control
 namespace
 {
 
+constexpr float MinimumConfiguredGain = 0.0001f;
+
 float clampFloat(const float value, const float lower, const float upper)
 {
 	return value < lower ? lower : (value > upper ? upper : value);
@@ -15,10 +17,19 @@ float clampFloat(const float value, const float lower, const float upper)
 
 } // namespace
 
-void M2006SpeedController::configure(const SpeedControllerConfig &config)
+bool M2006SpeedController::configure(const SpeedControllerConfig &config)
 {
-	if (std::isfinite(config.max_rpm) && std::isfinite(config.kp) && std::isfinite(config.ki)
-	    && std::isfinite(config.kd) && std::isfinite(config.kff) && std::isfinite(config.rpm_slew)) {
+	_valid = std::isfinite(config.max_rpm) && config.max_rpm >= 0.f
+		 && std::isfinite(config.kp) && config.kp >= 0.f
+		 && std::isfinite(config.ki) && config.ki >= 0.f
+		 && std::isfinite(config.kd) && config.kd >= 0.f
+		 && std::isfinite(config.kff) && config.kff >= 0.f
+		 && std::isfinite(config.rpm_slew) && config.rpm_slew >= 0.f
+		 && config.current_limit >= 0
+		 && (config.kp > MinimumConfiguredGain || config.ki > MinimumConfiguredGain
+		     || config.kff > MinimumConfiguredGain);
+
+	if (_valid) {
 		_config = config;
 
 	} else {
@@ -26,6 +37,7 @@ void M2006SpeedController::configure(const SpeedControllerConfig &config)
 	}
 
 	reset();
+	return _valid;
 }
 
 void M2006SpeedController::reset()
@@ -38,7 +50,7 @@ void M2006SpeedController::reset()
 
 int16_t M2006SpeedController::update(float normalized, float measured_rpm, float dt, bool enabled)
 {
-	if (!enabled || !std::isfinite(normalized) || !std::isfinite(measured_rpm) || !std::isfinite(dt)) {
+	if (!enabled || !_valid || !std::isfinite(normalized) || !std::isfinite(measured_rpm) || !std::isfinite(dt)) {
 		reset();
 		return 0;
 	}

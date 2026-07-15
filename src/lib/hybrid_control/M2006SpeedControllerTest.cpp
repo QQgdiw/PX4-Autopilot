@@ -36,7 +36,7 @@ TEST(M2006SpeedController, SlewsTarget)
 TEST(M2006SpeedController, UsesDerivativeOnMeasurement)
 {
 	M2006SpeedController controller;
-	controller.configure({500.f, 0.f, 0.f, 1.f, 0.f, 10000, 50000.f});
+	controller.configure({500.f, 0.f, 0.f, 1.f, 0.1f, 10000, 50000.f});
 	EXPECT_EQ(controller.update(0.f, 10.f, 0.1f, true), 0);
 	EXPECT_EQ(controller.update(0.f, 20.f, 0.1f, true), -100);
 	EXPECT_EQ(controller.update(0.f, 20.f, 0.1f, false), 0);
@@ -66,10 +66,23 @@ TEST(M2006SpeedController, RejectsNonFiniteMeasurementAndDt)
 TEST(M2006SpeedController, RejectsNonFiniteConfiguration)
 {
 	M2006SpeedController controller;
-	controller.configure({100.f, std::numeric_limits<float>::quiet_NaN(), 1.f, 0.f, 0.f, 1000, 1000.f});
+	EXPECT_FALSE(controller.configure({100.f, std::numeric_limits<float>::quiet_NaN(), 1.f, 0.f, 0.f, 1000, 1000.f}));
 	EXPECT_EQ(controller.update(1.f, 0.f, 0.1f, true), 0);
 	EXPECT_FLOAT_EQ(controller.targetRpm(), 0.f);
 	EXPECT_FLOAT_EQ(controller.integral(), 0.f);
+}
+
+TEST(M2006SpeedController, RejectsNegativeConfiguration)
+{
+	M2006SpeedController controller;
+	EXPECT_FALSE(controller.configure({100.f, -1.f, 0.f, 0.f, 0.f, 1000, 1000.f}));
+	EXPECT_FALSE(controller.valid());
+	EXPECT_EQ(controller.update(1.f, 0.f, 0.1f, true), 0);
+	EXPECT_FALSE(controller.configure({100.f, 0.f, 0.f, 0.f, -1.f, 1000, 1000.f}));
+	EXPECT_FALSE(controller.configure({-100.f, 0.f, 0.f, 0.f, 0.f, 1000, 1000.f}));
+	EXPECT_FALSE(controller.configure({100.f, 0.f, 0.f, 0.f, 0.f, 1000, -1.f}));
+	EXPECT_FALSE(controller.configure({100.f, 0.f, 0.f, 0.f, 0.f, 1000, 1000.f}));
+	EXPECT_FALSE(controller.configure({100.f, 0.f, 0.f, 1.f, 0.f, 1000, 1000.f}));
 }
 
 TEST(M2006SpeedController, RejectsNonFiniteDerivedOutput)

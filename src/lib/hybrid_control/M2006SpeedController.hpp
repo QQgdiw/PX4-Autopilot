@@ -18,11 +18,12 @@ struct SpeedControllerConfig {
 class M2006SpeedController
 {
 public:
-	void configure(const SpeedControllerConfig &config);
+	bool configure(const SpeedControllerConfig &config);
 	void reset();
 	int16_t update(float normalized, float measured_rpm, float dt, bool enabled);
 	float targetRpm() const { return _target_rpm; }
 	float integral() const { return _integral; }
+	bool valid() const { return _valid; }
 
 private:
 	SpeedControllerConfig _config{};
@@ -30,6 +31,7 @@ private:
 	float _integral{0.f};
 	float _last_measurement{0.f};
 	bool _measurement_valid{false};
+	bool _valid{false};
 };
 
 } // namespace hybrid_control

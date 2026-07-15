@@ -113,8 +113,8 @@ void M2006Can::updateControllerConfiguration()
 		_param_rpm_slew.get()
 	};
 
-	_speed[0].configure(config);
-	_speed[1].configure(config);
+	_controller_config_valid = _speed[0].configure(config);
+	_controller_config_valid = _speed[1].configure(config) && _controller_config_valid;
 }
 
 void M2006Can::receiveFeedback()
@@ -270,7 +270,7 @@ void M2006Can::Run()
 		hybrid_driving,
 		output_inhibited,
 		command_fresh,
-		command.finite,
+		command.finite &&_controller_config_valid,
 		{online[0], online[1]},
 		can_error,
 		now

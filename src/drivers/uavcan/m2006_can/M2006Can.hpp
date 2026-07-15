@@ -77,6 +77,7 @@ private:
 	unsigned _consecutive_tx_failures{0};
 	uint64_t _last_can_error_count{0};
 	bool _rx_error{false};
+	bool _controller_config_valid{false};
 
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::M2K_EN>) _param_enable,
