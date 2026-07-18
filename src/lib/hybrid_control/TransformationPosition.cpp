@@ -1,7 +1,5 @@
 #include "TransformationPosition.hpp"
 
-#include <algorithm>
-
 namespace hybrid_control
 {
 
@@ -9,6 +7,11 @@ namespace
 {
 constexpr float kMinimumTmagMagnitude = 1e-6f;
 constexpr float kTmagFilterAlpha = 0.25f;
+
+float clamp01(float value)
+{
+	return fmaxf(0.f, fminf(value, 1.f));
+}
 
 float wrappedDifference(float value, float reference)
 {
@@ -34,7 +37,7 @@ float normalizeAs5600(float angle, float quad_angle, float rover_angle)
 	}
 
 	const float position = wrappedDifference(angle, quad_angle) / endpoint_travel;
-	return std::max(0.f, std::min(position, 1.f));
+	return clamp01(position);
 }
 
 float tmagMagnitude(const TmagVector &sample)
@@ -59,7 +62,7 @@ PositionSample TmagRatioFilter::update(const TmagVector &quad, const TmagVector 
 		return result;
 	}
 
-	const float ratio = std::max(0.f, std::min(rover_magnitude / denominator, 1.f));
+	const float ratio = clamp01(rover_magnitude / denominator);
 	_filtered = std::isfinite(_filtered) ? _filtered + kTmagFilterAlpha * (ratio - _filtered) : ratio;
 	result.normalized = _filtered;
 	result.valid = true;
