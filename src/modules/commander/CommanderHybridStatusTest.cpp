@@ -40,3 +40,66 @@ TEST(CommanderHybridStatus, FreshUpdateTriggersImmediateProcessing)
 	EXPECT_FALSE(commander::shouldProcessHybridStatus(true, false));
 	EXPECT_FALSE(commander::shouldProcessHybridStatus(false, true));
 }
+
+TEST(CommanderHybridStatus, SelectsRedPatternFromFaultAndOverload)
+{
+	hybrid_vehicle_status_s status{};
+	status.current_state = hybrid_vehicle_status_s::HYBRID_STATE_FLYING;
+
+	EXPECT_EQ(commander::hybridRedPattern(status, true, false), commander::HybridRedPattern::Off);
+	EXPECT_EQ(commander::hybridRedPattern(status, true, true), commander::HybridRedPattern::OverloadFast);
+
+	status.fault_reason = hybrid_vehicle_status_s::TRANSFORM_FAULT_SENSOR_TIMEOUT;
+	EXPECT_EQ(commander::hybridRedPattern(status, true, false), commander::HybridRedPattern::FaultSlow);
+	EXPECT_EQ(commander::hybridRedPattern(status, true, true), commander::HybridRedPattern::CombinedTriple);
+
+	status.fault_reason = hybrid_vehicle_status_s::TRANSFORM_FAULT_STALL;
+	EXPECT_EQ(commander::hybridRedPattern(status, true, false), commander::HybridRedPattern::StallDouble);
+	EXPECT_EQ(commander::hybridRedPattern(status, true, true), commander::HybridRedPattern::CombinedTriple);
+
+	status.fault_reason = hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE;
+	EXPECT_EQ(commander::hybridRedPattern(status, false, false), commander::HybridRedPattern::FaultSlow);
+	EXPECT_EQ(commander::hybridRedPattern(status, false, true), commander::HybridRedPattern::CombinedTriple);
+
+	status.current_state = hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT;
+	EXPECT_EQ(commander::hybridRedPattern(status, true, false), commander::HybridRedPattern::FaultSlow);
+}
+
+TEST(CommanderHybridStatus, RedWaveformBoundaries)
+{
+	using commander::HybridRedPattern;
+	EXPECT_FALSE(commander::hybridRedLedOn(HybridRedPattern::Off, 0));
+
+	EXPECT_TRUE(commander::hybridRedLedOn(HybridRedPattern::OverloadFast, 0));
+	EXPECT_TRUE(commander::hybridRedLedOn(HybridRedPattern::OverloadFast, 50_ms - 1));
+	EXPECT_FALSE(commander::hybridRedLedOn(HybridRedPattern::OverloadFast, 50_ms));
+	EXPECT_FALSE(commander::hybridRedLedOn(HybridRedPattern::OverloadFast, 100_ms - 1));
+	EXPECT_TRUE(commander::hybridRedLedOn(HybridRedPattern::OverloadFast, 100_ms));
+
+	EXPECT_TRUE(commander::hybridRedLedOn(HybridRedPattern::FaultSlow, 500_ms - 1));
+	EXPECT_FALSE(commander::hybridRedLedOn(HybridRedPattern::FaultSlow, 500_ms));
+	EXPECT_FALSE(commander::hybridRedLedOn(HybridRedPattern::FaultSlow, 1_s - 1));
+	EXPECT_TRUE(commander::hybridRedLedOn(HybridRedPattern::FaultSlow, 1_s));
+
+	EXPECT_TRUE(commander::hybridRedLedOn(HybridRedPattern::StallDouble, 150_ms - 1));
+	EXPECT_FALSE(commander::hybridRedLedOn(HybridRedPattern::StallDouble, 150_ms));
+	EXPECT_FALSE(commander::hybridRedLedOn(HybridRedPattern::StallDouble, 300_ms - 1));
+	EXPECT_TRUE(commander::hybridRedLedOn(HybridRedPattern::StallDouble, 300_ms));
+	EXPECT_TRUE(commander::hybridRedLedOn(HybridRedPattern::StallDouble, 450_ms - 1));
+	EXPECT_FALSE(commander::hybridRedLedOn(HybridRedPattern::StallDouble, 450_ms));
+	EXPECT_FALSE(commander::hybridRedLedOn(HybridRedPattern::StallDouble, 1450_ms - 1));
+	EXPECT_TRUE(commander::hybridRedLedOn(HybridRedPattern::StallDouble, 1450_ms));
+
+	EXPECT_TRUE(commander::hybridRedLedOn(HybridRedPattern::CombinedTriple, 150_ms - 1));
+	EXPECT_FALSE(commander::hybridRedLedOn(HybridRedPattern::CombinedTriple, 150_ms));
+	EXPECT_FALSE(commander::hybridRedLedOn(HybridRedPattern::CombinedTriple, 300_ms - 1));
+	EXPECT_TRUE(commander::hybridRedLedOn(HybridRedPattern::CombinedTriple, 300_ms));
+	EXPECT_TRUE(commander::hybridRedLedOn(HybridRedPattern::CombinedTriple, 450_ms - 1));
+	EXPECT_FALSE(commander::hybridRedLedOn(HybridRedPattern::CombinedTriple, 450_ms));
+	EXPECT_FALSE(commander::hybridRedLedOn(HybridRedPattern::CombinedTriple, 600_ms - 1));
+	EXPECT_TRUE(commander::hybridRedLedOn(HybridRedPattern::CombinedTriple, 600_ms));
+	EXPECT_TRUE(commander::hybridRedLedOn(HybridRedPattern::CombinedTriple, 750_ms - 1));
+	EXPECT_FALSE(commander::hybridRedLedOn(HybridRedPattern::CombinedTriple, 750_ms));
+	EXPECT_FALSE(commander::hybridRedLedOn(HybridRedPattern::CombinedTriple, 1750_ms - 1));
+	EXPECT_TRUE(commander::hybridRedLedOn(HybridRedPattern::CombinedTriple, 1750_ms));
+}

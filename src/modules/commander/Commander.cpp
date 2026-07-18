@@ -1939,10 +1939,8 @@ void Commander::run()
 			// Commander直接听命于 HybridVehicleControl！
 			// ==========================================================
 			if (_vehicle_status.is_quad_rover) {
-				hybrid_vehicle_status_s hybrid_status{};
-
-				if (_hybrid_vehicle_status_sub.copy(&hybrid_status)) {
-					_current_hybrid_state = commander::hybridStateForCommander(hybrid_status, now);
+				if (_hybrid_vehicle_status_sub.copy(&_hybrid_vehicle_status)) {
+					_current_hybrid_state = commander::hybridStateForCommander(_hybrid_vehicle_status, now);
 
 				} else {
 					_current_hybrid_state = hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN;
@@ -2603,12 +2601,18 @@ void Commander::control_status_leds(bool changed, const uint8_t battery_warning)
 
 #endif
 
-	// give system warnings on error LED
-	if (overload) {
-		if (time_now_us >= _led_overload_toggle + 50_ms) {
-			_led_overload_toggle = time_now_us;
-			BOARD_OVERLOAD_LED_TOGGLE();
-		}
+	// Commander is the sole owner of the board error LED.
+	commander::HybridRedPattern red_pattern = overload ? commander::HybridRedPattern::OverloadFast
+							 : commander::HybridRedPattern::Off;
+
+	if (_vehicle_status.is_quad_rover) {
+		red_pattern = commander::hybridRedPattern(_hybrid_vehicle_status,
+				commander::hybridStatusIsFresh(_hybrid_vehicle_status, time_now_us), overload);
+	}
+
+	if (commander::hybridRedLedOn(red_pattern, time_now_us)) {
+		BOARD_OVERLOAD_LED_OFF();
+		BOARD_OVERLOAD_LED_TOGGLE();
 
 	} else {
 		BOARD_OVERLOAD_LED_OFF();

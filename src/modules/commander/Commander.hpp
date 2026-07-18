@@ -260,8 +260,6 @@ private:
 #if !defined(CONFIG_ARCH_LEDS) && defined(BOARD_HAS_CONTROL_STATUS_LEDS)
 	hrt_abstime _led_armed_state_toggle {0};
 #endif
-	hrt_abstime _led_overload_toggle {0};
-
 	hrt_abstime _last_health_and_arming_check{0};
 
 	uint8_t		_battery_warning{battery_status_s::WARNING_NONE};
@@ -327,6 +325,7 @@ private:
 	perf_counter_t _preflight_check_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": preflight check")};
 
 	uint8_t _current_hybrid_state{hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN};
+	hybrid_vehicle_status_s _hybrid_vehicle_status{};
 
 	// optional parameters
 	param_t _param_mav_type{PARAM_INVALID};

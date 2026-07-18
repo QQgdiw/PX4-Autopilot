@@ -28,6 +28,26 @@ void publishHybridStatus(uint8_t state, uint8_t fault_reason = hybrid_vehicle_st
 	orb_advertise(ORB_ID(hybrid_vehicle_status), &status);
 }
 
+void publishHybridStatus(const hybrid_vehicle_status_s &status)
+{
+	orb_advertise(ORB_ID(hybrid_vehicle_status), &status);
+}
+
+hybrid_vehicle_status_s healthyHx8Status()
+{
+	hybrid_vehicle_status_s status{};
+	status.timestamp = hrt_absolute_time();
+	status.current_state = hybrid_vehicle_status_s::HYBRID_STATE_FLYING;
+	status.position_confirmed = true;
+	status.actuator_backend = hybrid_vehicle_status_s::ACTUATOR_HX8;
+	status.position_normalized = 0.f;
+	status.position_valid = true;
+	status.actuator_online = true;
+	status.actuator_healthy = true;
+	status.actuator_config_verified = true;
+	return status;
+}
+
 void publishM2006Status(bool left_online, bool right_online, uint32_t faults = m2006_motor_status_s::DRIVE_FAULT_NONE)
 {
 	m2006_motor_status_s status{};
@@ -150,6 +170,50 @@ TEST_F(HybridCheckTest, EnabledSensorsRequireCurrentPositionConfirmation)
 			    hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE, hrt_absolute_time(), true, false);
 	HybridChecks checks;
 	checks.setConfigurationForTesting(_configuration);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
+
+	publishHybridStatus(hybrid_vehicle_status_s::HYBRID_STATE_FLYING,
+			    hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE, hrt_absolute_time(), false, false);
+	EXPECT_TRUE(canArm(checks, _vehicle_status));
+
+	auto hx8 = healthyHx8Status();
+	publishHybridStatus(hx8);
+	EXPECT_TRUE(canArm(checks, _vehicle_status));
+
+	hx8.position_valid = false;
+	publishHybridStatus(hx8);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
+	hx8 = healthyHx8Status();
+	hx8.position_normalized = NAN;
+	publishHybridStatus(hx8);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
+	hx8 = healthyHx8Status();
+	hx8.position_normalized = 1.1f;
+	publishHybridStatus(hx8);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
+	hx8 = healthyHx8Status();
+	hx8.actuator_online = false;
+	publishHybridStatus(hx8);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
+	hx8 = healthyHx8Status();
+	hx8.actuator_healthy = false;
+	publishHybridStatus(hx8);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
+	hx8 = healthyHx8Status();
+	hx8.actuator_config_verified = false;
+	publishHybridStatus(hx8);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
+	hx8 = healthyHx8Status();
+	hx8.actuator_protection_flags = 1;
+	publishHybridStatus(hx8);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
+	hx8 = healthyHx8Status();
+	hx8.position_confirmed = false;
+	publishHybridStatus(hx8);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
+	hx8 = healthyHx8Status();
+	hx8.actuator_backend = 255;
+	publishHybridStatus(hx8);
 	EXPECT_FALSE(canArm(checks, _vehicle_status));
 }
 

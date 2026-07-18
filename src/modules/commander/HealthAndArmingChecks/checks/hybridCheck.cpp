@@ -48,6 +48,29 @@ bool isFresh(uint64_t timestamp)
 	return timestamp != 0 && hrt_absolute_time() - timestamp <= StatusTimeout;
 }
 
+bool isStableAndSafe(const hybrid_vehicle_status_s &status)
+{
+	const bool stable_state = status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_FLYING
+				  || status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING;
+
+	if (!stable_state || status.fault_reason != hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE) {
+		return false;
+	}
+
+	if (status.actuator_backend == hybrid_vehicle_status_s::ACTUATOR_PWM) {
+		return !status.sensors_enabled || status.position_confirmed;
+	}
+
+	if (status.actuator_backend == hybrid_vehicle_status_s::ACTUATOR_HX8) {
+		return status.position_confirmed && status.position_valid && std::isfinite(status.position_normalized)
+		       && status.position_normalized >= 0.f && status.position_normalized <= 1.f
+		       && status.actuator_online && status.actuator_healthy && status.actuator_config_verified
+		       && status.actuator_protection_flags == 0;
+	}
+
+	return false;
+}
+
 } // namespace
 
 void HybridChecks::checkAndReport(const Context &context, Report &reporter)
@@ -60,14 +83,11 @@ void HybridChecks::checkAndReport(const Context &context, Report &reporter)
 	HybridCheckConfiguration configuration{};
 	const bool have_configuration = getConfiguration(configuration);
 	const bool have_hybrid_status = _hybrid_status_sub.copy(&hybrid_status);
-	const bool stable_flying = have_hybrid_status && isFresh(hybrid_status.timestamp)
-				   && hybrid_status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_FLYING
-				   && hybrid_status.fault_reason == hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE
-				   && (!hybrid_status.sensors_enabled || hybrid_status.position_confirmed);
-	const bool stable_driving = have_hybrid_status && isFresh(hybrid_status.timestamp)
-				    && hybrid_status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING
-				    && hybrid_status.fault_reason == hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE
-				    && (!hybrid_status.sensors_enabled || hybrid_status.position_confirmed);
+	const bool stable_and_safe = have_hybrid_status && isFresh(hybrid_status.timestamp) && isStableAndSafe(hybrid_status);
+	const bool stable_flying = stable_and_safe
+				   && hybrid_status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_FLYING;
+	const bool stable_driving = stable_and_safe
+				    && hybrid_status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING;
 
 	if (!stable_flying && !stable_driving) {
 		/* EVENT
