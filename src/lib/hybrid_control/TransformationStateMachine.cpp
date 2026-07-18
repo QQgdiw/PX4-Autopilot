@@ -156,6 +156,14 @@ bool isTransformationFaulted(const TransformationOutput &output)
 	return output.state == HybridState::Fault || output.fault != TransformFault::None;
 }
 
+bool transformationPwmCommandEffective(ActuatorBackend backend, const TransformationOutput &output,
+		bool manual_override, bool armed, bool prearmed, bool lockdown, bool manual_lockdown, bool force_failsafe)
+{
+	return backend == ActuatorBackend::Pwm && output.servo_enabled && std::isfinite(output.servo_value)
+	       && !manual_override && !isTransformationFaulted(output) && (armed || prearmed)
+	       && !lockdown && !manual_lockdown && !force_failsafe;
+}
+
 bool stablePositionSafe(const TransformationOutput &output, bool sensors_enabled)
 {
 	return !sensors_enabled || output.position_confirmed;

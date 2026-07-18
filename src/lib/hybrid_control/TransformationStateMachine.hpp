@@ -123,6 +123,8 @@ struct TransformationOutput {
 };
 
 bool isTransformationFaulted(const TransformationOutput &output);
+bool transformationPwmCommandEffective(ActuatorBackend backend, const TransformationOutput &output,
+		bool manual_override, bool armed, bool prearmed, bool lockdown, bool manual_lockdown, bool force_failsafe);
 bool stablePositionSafe(const TransformationOutput &output, bool sensors_enabled);
 bool manualCommissioningPermitted(const TransformationOutput &output, bool armed, bool prearmed, bool manual_fresh);
 

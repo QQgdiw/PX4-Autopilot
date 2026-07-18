@@ -99,6 +99,7 @@ private:
 	hybrid_control::TransformationConfig transformation_config() const;
 	int clear_fault();
 	bool selected_feedback_fresh(hrt_abstime now, const hybrid_control::TransformationConfig &config) const;
+	bool transformation_pwm_command_effective() const;
 
 	/**
 	 * 检查变形条件是否安全 (例如: 必须贴地才能变形为车)

@@ -31,6 +31,14 @@ TransformationInput input(uint64_t now_us = 0)
 }
 }
 
+TEST(TransformationStateMachine, TmagPairValidityRequiresBothFreshStreams)
+{
+	EXPECT_FALSE(tmagPairValid(false, false));
+	EXPECT_FALSE(tmagPairValid(true, false));
+	EXPECT_FALSE(tmagPairValid(false, true));
+	EXPECT_TRUE(tmagPairValid(true, true));
+}
+
 TEST(TransformationStateMachine, As5600CompletesAfterDebounce)
 {
 	TransformationStateMachine machine;

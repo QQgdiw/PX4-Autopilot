@@ -40,6 +40,11 @@ float normalizeAs5600(float angle, float quad_angle, float rover_angle)
 	return clamp01(position);
 }
 
+bool tmagPairValid(bool quad_valid, bool rover_valid)
+{
+	return quad_valid && rover_valid;
+}
+
 float tmagMagnitude(const TmagVector &sample)
 {
 	return sqrtf(sample.x * sample.x + sample.y * sample.y + sample.z * sample.z);

@@ -24,6 +24,7 @@ struct TmagVector {
 
 float normalizeAs5600(float angle, float quad_angle, float rover_angle);
 float tmagMagnitude(const TmagVector &sample);
+bool tmagPairValid(bool quad_valid, bool rover_valid);
 
 class TmagRatioFilter
 {

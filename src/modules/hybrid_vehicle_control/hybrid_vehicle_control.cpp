@@ -173,8 +173,20 @@ bool HybridVehicleControl::selected_feedback_fresh(hrt_abstime now, const Transf
 		return true;
 	}
 
-	return _tmag_quad_cache.validFor(config.tmag_quad_device_id, now, timeout_us)
-	       && _tmag_rover_cache.validFor(config.tmag_rover_device_id, now, timeout_us);
+	return hybrid_control::tmagPairValid(
+		       _tmag_quad_cache.validFor(config.tmag_quad_device_id, now, timeout_us),
+		       _tmag_rover_cache.validFor(config.tmag_rover_device_id, now, timeout_us));
+}
+
+bool HybridVehicleControl::transformation_pwm_command_effective() const
+{
+	if (!_transformation_config_tracker.hasActive()) {
+		return false;
+	}
+
+	return hybrid_control::transformationPwmCommandEffective(_transformation_config_tracker.active().backend,
+			_transformation_output, _manual_commissioning_active, _actuator_armed.armed, _actuator_armed.prearmed,
+			_actuator_armed.lockdown, _actuator_armed.manual_lockdown, _actuator_armed.force_failsafe);
 }
 
 int HybridVehicleControl::clear_fault()
@@ -245,9 +257,10 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 				   && _encoder_healthy && std::isfinite(_current_mechanism_angle);
 	const bool tmag_quad_valid = _tmag_quad_cache.validFor(config.tmag_quad_device_id, now, sensor_timeout_us);
 	const bool tmag_rover_valid = _tmag_rover_cache.validFor(config.tmag_rover_device_id, now, sensor_timeout_us);
-	const bool tmag_quad_active = tmag_quad_valid
+	const bool tmag_pair_valid = hybrid_control::tmagPairValid(tmag_quad_valid, tmag_rover_valid);
+	const bool tmag_quad_active = tmag_pair_valid
 				      && fabsf(_tmag_quad_cache.vector().z) >= config.tmag_quad_threshold;
-	const bool tmag_rover_active = tmag_rover_valid
+	const bool tmag_rover_active = tmag_pair_valid
 				       && fabsf(_tmag_rover_cache.vector().z) >= config.tmag_rover_threshold;
 	hybrid_control::PositionSample position{};
 
@@ -255,7 +268,7 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 		position = {hybrid_control::normalizeAs5600(_current_mechanism_angle, config.quad_angle, config.rover_angle),
 			    true, false, SensorSource::As5600, _last_encoder_timestamp};
 
-	} else if (tmag_quad_valid && tmag_rover_valid) {
+	} else if (tmag_pair_valid) {
 		if (_position_source != SensorSource::Tmag5273) {
 			_tmag_ratio_filter.reset();
 		}
@@ -275,11 +288,13 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 		now,
 		encoder_valid,
 		_current_mechanism_angle,
-		tmag_quad_valid,
+		tmag_pair_valid,
 		tmag_quad_active,
-		tmag_rover_valid,
+		tmag_pair_valid,
 		tmag_rover_active,
-		position
+		position,
+		{},
+		transformation_pwm_command_effective()
 	};
 }
 
@@ -460,7 +475,9 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 		}
 	}
 
-	_transformation_output = _transformation.update(input);
+	TransformationInput state_input = input;
+	state_input.actuator_command_effective = transformation_pwm_command_effective();
+	_transformation_output = _transformation.update(state_input);
 
 	if (hybrid_control::isTransformationFaulted(_transformation_output)) {
 		_manual_commissioning_active = false;
@@ -571,15 +588,14 @@ void HybridVehicleControl::publish_servo(hrt_abstime now)
 				     && !_actuator_armed.lockdown && !_actuator_armed.manual_lockdown
 				     && !_actuator_armed.force_failsafe;
 	const bool transformation_faulted = hybrid_control::isTransformationFaulted(_transformation_output);
-
-	const bool pwm_backend = _transformation_config_tracker.active().backend
-				 == hybrid_control::ActuatorBackend::Pwm;
+	const bool pwm_backend = _transformation_config_tracker.hasActive()
+				 && _transformation_config_tracker.active().backend == hybrid_control::ActuatorBackend::Pwm;
 
 	if (!transformation_faulted && outputs_enabled && pwm_backend) {
 		if (_manual_commissioning_active && _manual_control_cache.fresh(now, MANUAL_CONTROL_TIMEOUT)) {
 			servos.control[0] = clamp_servo(_manual_control_cache.value());
 
-		} else if (_transformation_output.servo_enabled) {
+		} else if (transformation_pwm_command_effective()) {
 			servos.control[0] = _transformation_output.servo_value;
 		}
 	}

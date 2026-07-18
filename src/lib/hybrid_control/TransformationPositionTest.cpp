@@ -62,6 +62,43 @@ TEST(TransformationPosition, TmagCacheRejectsEveryNonFiniteAxis)
 	EXPECT_FALSE(cache.validFor(53, 102, kOneSecondUs));
 }
 
+TEST(TransformationPosition, PwmCommandEffectiveMatchesServoPublicationEligibility)
+{
+	TransformationOutput output{HybridState::TransitionToRover, HybridTarget::Driving, SensorSource::None,
+		TransformFault::None, false, true, 0.8f};
+
+	EXPECT_TRUE(transformationPwmCommandEffective(ActuatorBackend::Pwm, output,
+			false, true, false, false, false, false));
+	EXPECT_TRUE(transformationPwmCommandEffective(ActuatorBackend::Pwm, output,
+			false, false, true, false, false, false));
+	EXPECT_FALSE(transformationPwmCommandEffective(ActuatorBackend::Hx8, output,
+			false, true, false, false, false, false));
+	EXPECT_FALSE(transformationPwmCommandEffective(ActuatorBackend::Pwm, output,
+			true, true, false, false, false, false));
+
+	output.servo_enabled = false;
+	EXPECT_FALSE(transformationPwmCommandEffective(ActuatorBackend::Pwm, output,
+			false, true, false, false, false, false));
+	output.servo_enabled = true;
+	output.servo_value = NAN;
+	EXPECT_FALSE(transformationPwmCommandEffective(ActuatorBackend::Pwm, output,
+			false, true, false, false, false, false));
+	output.servo_value = 0.8f;
+	output.fault = TransformFault::Stall;
+	EXPECT_FALSE(transformationPwmCommandEffective(ActuatorBackend::Pwm, output,
+			false, true, false, false, false, false));
+	output.fault = TransformFault::None;
+
+	EXPECT_FALSE(transformationPwmCommandEffective(ActuatorBackend::Pwm, output,
+			false, false, false, false, false, false));
+	EXPECT_FALSE(transformationPwmCommandEffective(ActuatorBackend::Pwm, output,
+			false, true, false, true, false, false));
+	EXPECT_FALSE(transformationPwmCommandEffective(ActuatorBackend::Pwm, output,
+			false, true, false, false, true, false));
+	EXPECT_FALSE(transformationPwmCommandEffective(ActuatorBackend::Pwm, output,
+			false, true, false, false, false, true));
+}
+
 TEST(TransformationPosition, As5600ToTmagSwitchRestartsProgressEpoch)
 {
 	TransformationStateMachine machine;
