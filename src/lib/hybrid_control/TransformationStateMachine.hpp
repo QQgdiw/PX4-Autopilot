@@ -9,6 +9,7 @@ namespace hybrid_control
 
 enum class HybridState : uint8_t { Flying, TransitionToRover, Driving, TransitionToQuad, Unknown, Fault };
 enum class HybridTarget : uint8_t { None, Flying, Driving };
+enum class ActuatorBackend : uint8_t { Pwm = 0, Hx8 = 1 };
 enum class TransformFault : uint8_t {
 	None = 0,
 	NoSensor = 1,
@@ -16,7 +17,20 @@ enum class TransformFault : uint8_t {
 	SensorTimeout = 3,
 	TransitionTimeout = 4,
 	InvalidServoConfig = 5,
-	InvalidConfiguration = 6
+	InvalidConfiguration = 6,
+	Stall = 7,
+	ActuatorCommunication = 8,
+	ActuatorProtection = 9,
+	ActuatorConfigMismatch = 10,
+	ActuatorCommandRejected = 11
+};
+
+struct ActuatorHealth {
+	bool online{true};
+	bool healthy{true};
+	bool config_verified{true};
+	bool command_accepted{true};
+	uint8_t protection_flags{0};
 };
 
 struct TransformationConfig {
@@ -34,6 +48,9 @@ struct TransformationConfig {
 	int32_t tmag_rover_device_id;
 	float tmag_quad_threshold;
 	float tmag_rover_threshold;
+	ActuatorBackend backend{ActuatorBackend::Pwm};
+	float stall_timeout_s{0.8f};
+	float stall_distance{0.05f};
 };
 
 TransformFault validateTransformationConfig(const TransformationConfig &config);
@@ -87,6 +104,9 @@ struct TransformationInput {
 	bool tmag_quad_active;
 	bool tmag_rover_valid;
 	bool tmag_rover_active;
+	PositionSample position{};
+	ActuatorHealth actuator{};
+	bool actuator_command_effective{false};
 };
 
 struct TransformationOutput {
@@ -97,6 +117,8 @@ struct TransformationOutput {
 	bool position_confirmed;
 	bool servo_enabled;
 	float servo_value;
+	bool release_requested{false};
+	uint64_t no_progress_elapsed_us{0};
 };
 
 bool isTransformationFaulted(const TransformationOutput &output);
@@ -130,6 +152,8 @@ private:
 	bool _target_detection_active{false};
 	uint64_t _stable_mismatch_started_us{0};
 	bool _stable_mismatch_active{false};
+	DirectedProgressMonitor _progress_monitor{};
+	SensorSource _progress_source{SensorSource::None};
 	bool _initialized{false};
 };
 

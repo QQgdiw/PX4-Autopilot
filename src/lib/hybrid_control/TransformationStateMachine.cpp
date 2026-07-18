@@ -33,7 +33,10 @@ bool sameConfig(const TransformationConfig &lhs, const TransformationConfig &rhs
 	       && lhs.tmag_quad_device_id == rhs.tmag_quad_device_id
 	       && lhs.tmag_rover_device_id == rhs.tmag_rover_device_id
 	       && sameFloat(lhs.tmag_quad_threshold, rhs.tmag_quad_threshold)
-	       && sameFloat(lhs.tmag_rover_threshold, rhs.tmag_rover_threshold);
+	       && sameFloat(lhs.tmag_rover_threshold, rhs.tmag_rover_threshold)
+	       && lhs.backend == rhs.backend
+	       && sameFloat(lhs.stall_timeout_s, rhs.stall_timeout_s)
+	       && sameFloat(lhs.stall_distance, rhs.stall_distance);
 }
 
 bool inRange(float value, float minimum, float maximum)
@@ -69,6 +72,9 @@ TransformFault validateTransformationConfig(const TransformationConfig &config)
 	    || !inRange(config.sensor_timeout_s, 0.01f, 5.f)
 	    || !inRange(config.debounce_s, 0.f, 2.f)
 	    || !inRange(config.max_transition_s, 0.1f, 10.f)
+	    || (config.backend != ActuatorBackend::Pwm && config.backend != ActuatorBackend::Hx8)
+	    || !inRange(config.stall_timeout_s, 0.01f, 10.f)
+	    || !inRange(config.stall_distance, 0.001f, 1.f)
 	    || config.tmag_quad_device_id < 0
 	    || config.tmag_rover_device_id < 0
 	    || config.tmag_quad_device_id == config.tmag_rover_device_id
@@ -220,20 +226,32 @@ void TransformationStateMachine::refreshServoOutput()
 		break;
 
 	case HybridState::Unknown:
-	case HybridState::Fault:
 		_output.servo_enabled = false;
 		_output.servo_value = 0.f;
+		break;
+
+	case HybridState::Fault:
+		_output.servo_enabled = false;
+		_output.servo_value = NAN;
 		break;
 	}
 }
 
 void TransformationStateMachine::enterFault(TransformFault fault)
 {
+	if (_output.fault != TransformFault::None || _output.state == HybridState::Fault) {
+		return;
+	}
+
 	_output.state = HybridState::Fault;
 	_output.fault = fault;
+	_output.target = HybridTarget::None;
 	_output.position_confirmed = false;
+	_output.release_requested = true;
 	_target_detection_active = false;
 	_stable_mismatch_active = false;
+	_progress_monitor.reset();
+	_progress_source = SensorSource::None;
 	refreshServoOutput();
 }
 
@@ -244,8 +262,12 @@ void TransformationStateMachine::setStable(HybridState state, SensorSource sourc
 	_output.source = source;
 	_output.fault = TransformFault::None;
 	_output.position_confirmed = !_config.sensors_enabled || source != SensorSource::None;
+	_output.release_requested = false;
+	_output.no_progress_elapsed_us = 0;
 	_target_detection_active = false;
 	_stable_mismatch_active = false;
+	_progress_monitor.reset();
+	_progress_source = SensorSource::None;
 	refreshServoOutput();
 }
 
@@ -254,8 +276,11 @@ TransformationOutput TransformationStateMachine::initialize(const Transformation
 {
 	_config = config;
 	_initialized = true;
-	_output = {HybridState::Unknown, HybridTarget::None, SensorSource::None, TransformFault::None, false, false, 0.f};
+	_output = {HybridState::Unknown, HybridTarget::None, SensorSource::None, TransformFault::None, false, false, 0.f,
+		   false, 0};
 	_target_detection_active = false;
+	_progress_monitor.reset();
+	_progress_source = SensorSource::None;
 
 	const TransformFault configuration_fault = validateTransformationConfig(config);
 
@@ -310,7 +335,11 @@ TransformationOutput TransformationStateMachine::request(HybridTarget target, ui
 	_output.fault = TransformFault::None;
 	_output.source = SensorSource::None;
 	_output.position_confirmed = false;
+	_output.release_requested = false;
+	_output.no_progress_elapsed_us = 0;
 	_target_detection_active = false;
+	_progress_monitor.reset();
+	_progress_source = SensorSource::None;
 	_transition_started_us = now_us;
 
 	_output.state = target == HybridTarget::Flying ? HybridState::TransitionToQuad : HybridState::TransitionToRover;
@@ -340,13 +369,32 @@ TransformationOutput TransformationStateMachine::update(const TransformationInpu
 		return _output;
 	}
 
+	const bool transitioning = _output.state == HybridState::TransitionToQuad
+				   || _output.state == HybridState::TransitionToRover;
+
+	if (transitioning) {
+		if (!input.actuator.online) {
+			enterFault(TransformFault::ActuatorCommunication);
+			return _output;
+
+		} else if (!input.actuator.config_verified) {
+			enterFault(TransformFault::ActuatorConfigMismatch);
+			return _output;
+
+		} else if (!input.actuator.healthy || input.actuator.protection_flags != 0) {
+			enterFault(TransformFault::ActuatorProtection);
+			return _output;
+
+		} else if (!input.actuator.command_accepted) {
+			enterFault(TransformFault::ActuatorCommandRejected);
+			return _output;
+		}
+	}
+
 	if (_config.sensors_enabled && sensorConflict(input)) {
 		enterFault(TransformFault::SensorConflict);
 		return _output;
 	}
-
-	const bool transitioning = _output.state == HybridState::TransitionToQuad
-				   || _output.state == HybridState::TransitionToRover;
 
 	if (!transitioning) {
 		if (_config.sensors_enabled && _output.state == HybridState::Unknown) {
@@ -399,6 +447,12 @@ TransformationOutput TransformationStateMachine::update(const TransformationInpu
 		return _output;
 	}
 
+	if (input.position.endpoint_confirmed) {
+		setStable(_output.target == HybridTarget::Flying ? HybridState::Flying : HybridState::Driving,
+			  input.position.source);
+		return _output;
+	}
+
 	const bool detected = targetDetected(input);
 	_output.position_confirmed = detected;
 
@@ -418,7 +472,35 @@ TransformationOutput TransformationStateMachine::update(const TransformationInpu
 		_target_detection_active = false;
 	}
 
-	if (!input.as5600_valid && _output.source == SensorSource::None
+	ProgressResult progress = ProgressResult::Idle;
+	const bool normalized_position_valid = input.position.valid
+					       && std::isfinite(input.position.normalized)
+					       && input.position.source != SensorSource::None;
+
+	if (!input.actuator_command_effective || !normalized_position_valid) {
+		_progress_monitor.reset();
+		_progress_source = SensorSource::None;
+		_output.no_progress_elapsed_us = 0;
+
+	} else {
+		const float target_position = _output.target == HybridTarget::Flying ? 0.f : 1.f;
+
+		if (_progress_source != input.position.source) {
+			_progress_monitor.start(input.position.normalized, target_position, input.position.timestamp_us);
+			_progress_source = input.position.source;
+		}
+
+		progress = _progress_monitor.update(input.position, target_position, _config.stall_distance,
+				secondsToMicroseconds(_config.stall_timeout_s));
+		_output.no_progress_elapsed_us = _progress_monitor.noProgressElapsed(input.position.timestamp_us);
+	}
+
+	if (progress == ProgressResult::NoProgress) {
+		enterFault(TransformFault::Stall);
+		return _output;
+	}
+
+	if (!input.as5600_valid && _output.source == SensorSource::None && !normalized_position_valid
 	    && elapsed >= secondsToMicroseconds(_config.sensor_timeout_s)) {
 		enterFault(TransformFault::SensorTimeout);
 
@@ -441,6 +523,10 @@ TransformationOutput TransformationStateMachine::clearFault(bool disarmed)
 	_output.source = SensorSource::None;
 	_output.position_confirmed = false;
 	_output.target = HybridTarget::None;
+	_output.release_requested = false;
+	_output.no_progress_elapsed_us = 0;
+	_progress_monitor.reset();
+	_progress_source = SensorSource::None;
 	_output.state = _config.sensors_enabled ? HybridState::Unknown
 			: (_config.configured_boot_state == 0 ? HybridState::Flying : HybridState::Driving);
 

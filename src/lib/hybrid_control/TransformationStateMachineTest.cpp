@@ -450,3 +450,258 @@ TEST(TransformationStateMachine, StableSameTargetRequestPreservesOutput)
 	EXPECT_EQ(after.servo_enabled, before.servo_enabled);
 	EXPECT_FLOAT_EQ(after.servo_value, before.servo_value);
 }
+
+TEST(TransformationStateMachine, StallsAfterExactNoProgressTimeout)
+{
+	TransformationStateMachine machine;
+	auto cfg = config();
+	cfg.sensor_timeout_s = 5.f;
+	cfg.stall_timeout_s = 0.8f;
+	cfg.stall_distance = 0.05f;
+	ASSERT_EQ(machine.initialize(cfg, input()).state, HybridState::Unknown);
+	ASSERT_EQ(machine.request(HybridTarget::Driving, 0).state, HybridState::TransitionToRover);
+
+	auto stationary = input();
+	stationary.actuator_command_effective = true;
+	stationary.position = {0.2f, true, false, SensorSource::Hx8, 0};
+	EXPECT_EQ(machine.update(stationary).state, HybridState::TransitionToRover);
+	stationary.now_us = stationary.position.timestamp_us = 799999;
+	EXPECT_EQ(machine.update(stationary).state, HybridState::TransitionToRover);
+	stationary.now_us = stationary.position.timestamp_us = 800000;
+	const auto output = machine.update(stationary);
+	EXPECT_EQ(output.fault, TransformFault::Stall);
+	EXPECT_EQ(output.no_progress_elapsed_us, 800000u);
+}
+
+TEST(TransformationStateMachine, SmallNetProgressDoesNotPostponeStall)
+{
+	TransformationStateMachine machine;
+	auto cfg = config();
+	cfg.sensor_timeout_s = 5.f;
+	cfg.stall_timeout_s = 0.8f;
+	cfg.stall_distance = 0.05f;
+	machine.initialize(cfg, input());
+	machine.request(HybridTarget::Driving, 0);
+
+	auto sample = input();
+	sample.actuator_command_effective = true;
+	sample.position = {0.2f, true, false, SensorSource::Hx8, 0};
+	machine.update(sample);
+	sample.now_us = sample.position.timestamp_us = 400000;
+	sample.position.normalized = 0.22f;
+	EXPECT_EQ(machine.update(sample).state, HybridState::TransitionToRover);
+	sample.now_us = sample.position.timestamp_us = 800000;
+	EXPECT_EQ(machine.update(sample).fault, TransformFault::Stall);
+}
+
+TEST(TransformationStateMachine, ReverseAndOscillatingMotionDoesNotCountAsProgress)
+{
+	TransformationStateMachine machine;
+	auto cfg = config();
+	cfg.sensor_timeout_s = 5.f;
+	cfg.stall_timeout_s = 0.8f;
+	cfg.stall_distance = 0.05f;
+	machine.initialize(cfg, input());
+	machine.request(HybridTarget::Driving, 0);
+
+	auto sample = input();
+	sample.actuator_command_effective = true;
+	sample.position = {0.2f, true, false, SensorSource::As5600, 0};
+	machine.update(sample);
+	sample.now_us = sample.position.timestamp_us = 300000;
+	sample.position.normalized = 0.18f;
+	machine.update(sample);
+	sample.now_us = sample.position.timestamp_us = 600000;
+	sample.position.normalized = 0.22f;
+	machine.update(sample);
+	sample.now_us = sample.position.timestamp_us = 800000;
+	EXPECT_EQ(machine.update(sample).fault, TransformFault::Stall);
+}
+
+TEST(TransformationStateMachine, StableHoldNeverPositionStalls)
+{
+	TransformationStateMachine machine;
+	auto sensed = input();
+	sensed.as5600_valid = true;
+	sensed.as5600_angle = 0.5f;
+	sensed.actuator_command_effective = true;
+	sensed.position = {0.f, true, true, SensorSource::As5600, 0};
+	ASSERT_EQ(machine.initialize(config(), sensed).state, HybridState::Flying);
+
+	sensed.now_us = sensed.position.timestamp_us = 800000;
+	const auto output = machine.update(sensed);
+	EXPECT_EQ(output.state, HybridState::Flying);
+	EXPECT_EQ(output.fault, TransformFault::None);
+}
+
+TEST(TransformationStateMachine, EndpointConfirmationWinsAtStallBoundary)
+{
+	TransformationStateMachine machine;
+	auto cfg = config();
+	cfg.sensor_timeout_s = 5.f;
+	cfg.stall_timeout_s = 0.8f;
+	machine.initialize(cfg, input());
+	machine.request(HybridTarget::Driving, 0);
+
+	auto sample = input();
+	sample.actuator_command_effective = true;
+	sample.position = {0.2f, true, false, SensorSource::Hx8, 0};
+	machine.update(sample);
+	sample.now_us = sample.position.timestamp_us = 800000;
+	sample.position.endpoint_confirmed = true;
+	const auto output = machine.update(sample);
+	EXPECT_EQ(output.state, HybridState::Driving);
+	EXPECT_EQ(output.fault, TransformFault::None);
+	EXPECT_EQ(output.source, SensorSource::Hx8);
+}
+
+TEST(TransformationStateMachine, AbsoluteTransitionTimeoutRemainsIndependent)
+{
+	TransformationStateMachine machine;
+	auto cfg = config();
+	cfg.sensor_timeout_s = 5.f;
+	cfg.max_transition_s = 0.5f;
+	cfg.stall_timeout_s = 0.8f;
+	machine.initialize(cfg, input());
+	machine.request(HybridTarget::Driving, 0);
+
+	auto sample = input();
+	sample.actuator_command_effective = true;
+	sample.position = {0.2f, true, false, SensorSource::Hx8, 0};
+	machine.update(sample);
+	sample.now_us = sample.position.timestamp_us = 500000;
+	EXPECT_EQ(machine.update(sample).fault, TransformFault::TransitionTimeout);
+}
+
+TEST(TransformationStateMachine, StallWinsWhenBothDeadlinesExpireTogether)
+{
+	TransformationStateMachine machine;
+	auto cfg = config();
+	cfg.sensor_timeout_s = 5.f;
+	cfg.max_transition_s = 0.8f;
+	cfg.stall_timeout_s = 0.8f;
+	cfg.stall_distance = 0.05f;
+	machine.initialize(cfg, input());
+	machine.request(HybridTarget::Driving, 0);
+
+	auto sample = input();
+	sample.actuator_command_effective = true;
+	sample.position = {0.2f, true, false, SensorSource::Hx8, 0};
+	machine.update(sample);
+	sample.now_us = sample.position.timestamp_us = 800000;
+	EXPECT_EQ(machine.update(sample).fault, TransformFault::Stall);
+}
+
+TEST(TransformationStateMachine, PositionSourceChangeRestartsProgressWindow)
+{
+	TransformationStateMachine machine;
+	auto cfg = config();
+	cfg.sensor_timeout_s = 5.f;
+	cfg.max_transition_s = 3.f;
+	cfg.stall_timeout_s = 0.8f;
+	machine.initialize(cfg, input());
+	machine.request(HybridTarget::Driving, 0);
+
+	auto sample = input();
+	sample.actuator_command_effective = true;
+	sample.position = {0.2f, true, false, SensorSource::As5600, 0};
+	machine.update(sample);
+	sample.now_us = sample.position.timestamp_us = 700000;
+	sample.position.source = SensorSource::Hx8;
+	EXPECT_EQ(machine.update(sample).state, HybridState::TransitionToRover);
+	sample.now_us = sample.position.timestamp_us = 1499999;
+	EXPECT_EQ(machine.update(sample).state, HybridState::TransitionToRover);
+	sample.now_us = sample.position.timestamp_us = 1500000;
+	EXPECT_EQ(machine.update(sample).fault, TransformFault::Stall);
+}
+
+TEST(TransformationStateMachine, ProgressingHx8PositionPreventsLegacySensorTimeout)
+{
+	TransformationStateMachine machine;
+	auto cfg = config();
+	cfg.sensor_timeout_s = 0.5f;
+	cfg.max_transition_s = 2.f;
+	cfg.stall_timeout_s = 0.8f;
+	cfg.stall_distance = 0.05f;
+	machine.initialize(cfg, input());
+	machine.request(HybridTarget::Driving, 0);
+
+	auto sample = input();
+	sample.actuator_command_effective = true;
+	sample.position = {0.1f, true, false, SensorSource::Hx8, 0};
+	machine.update(sample);
+	sample.now_us = sample.position.timestamp_us = 400000;
+	sample.position.normalized = 0.3f;
+	ASSERT_EQ(machine.update(sample).state, HybridState::TransitionToRover);
+	sample.now_us = sample.position.timestamp_us = 500000;
+	sample.position.normalized = 0.4f;
+	const auto output = machine.update(sample);
+	EXPECT_EQ(output.state, HybridState::TransitionToRover);
+	EXPECT_EQ(output.fault, TransformFault::None);
+}
+
+TEST(TransformationStateMachine, ActuatorHealthFaultsUseDefinedPriority)
+{
+	auto actuatorFault = [](const ActuatorHealth &health) {
+		TransformationStateMachine machine;
+		auto cfg = config();
+		cfg.sensor_timeout_s = 5.f;
+		machine.initialize(cfg, input());
+		machine.request(HybridTarget::Driving, 0);
+		auto unhealthy = input();
+		unhealthy.actuator = health;
+		return machine.update(unhealthy);
+	};
+
+	EXPECT_EQ(actuatorFault({false, false, false, false, 1}).fault,
+		  TransformFault::ActuatorCommunication);
+	EXPECT_EQ(actuatorFault({true, true, false, true, 0}).fault,
+		  TransformFault::ActuatorConfigMismatch);
+	EXPECT_EQ(actuatorFault({true, false, true, true, 0}).fault,
+		  TransformFault::ActuatorProtection);
+	EXPECT_EQ(actuatorFault({true, true, true, true, 1}).fault,
+		  TransformFault::ActuatorProtection);
+	EXPECT_EQ(actuatorFault({true, true, true, false, 0}).fault,
+		  TransformFault::ActuatorCommandRejected);
+}
+
+TEST(TransformationStateMachine, FirstFaultCauseIsLatchedAndRequestsRelease)
+{
+	TransformationStateMachine machine;
+	auto cfg = config();
+	cfg.sensor_timeout_s = 5.f;
+	machine.initialize(cfg, input());
+	machine.request(HybridTarget::Driving, 0);
+	auto failed = input();
+	failed.actuator.online = false;
+	auto output = machine.update(failed);
+	ASSERT_EQ(output.fault, TransformFault::ActuatorCommunication);
+	EXPECT_FALSE(output.servo_enabled);
+	EXPECT_TRUE(std::isnan(output.servo_value));
+	EXPECT_TRUE(output.release_requested);
+	EXPECT_EQ(output.target, HybridTarget::None);
+
+	failed.actuator.online = true;
+	failed.actuator.healthy = false;
+	output = machine.update(failed);
+	EXPECT_EQ(output.fault, TransformFault::ActuatorCommunication);
+}
+
+TEST(TransformationStateMachine, FaultClearRequiresDisarmedAndReturnsUnknown)
+{
+	TransformationStateMachine machine;
+	auto cfg = config();
+	cfg.sensor_timeout_s = 5.f;
+	machine.initialize(cfg, input());
+	machine.request(HybridTarget::Driving, 0);
+	auto failed = input();
+	failed.actuator.command_accepted = false;
+	ASSERT_EQ(machine.update(failed).fault, TransformFault::ActuatorCommandRejected);
+
+	EXPECT_EQ(machine.clearFault(false).fault, TransformFault::ActuatorCommandRejected);
+	const auto cleared = machine.clearFault(true);
+	EXPECT_EQ(cleared.state, HybridState::Unknown);
+	EXPECT_EQ(cleared.target, HybridTarget::None);
+	EXPECT_EQ(cleared.fault, TransformFault::None);
+	EXPECT_FALSE(cleared.release_requested);
+}
