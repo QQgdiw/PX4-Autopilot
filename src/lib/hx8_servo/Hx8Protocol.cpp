@@ -147,8 +147,7 @@ ParseResult StreamParser::push(uint8_t byte, uint8_t expected_servo_id, Frame &f
 		result = ParseResult::FrameReady;
 	}
 
-	const bool preserve_header_prefix = result != ParseResult::NeedMore && result != ParseResult::FrameReady
-					    && isHeaderFirst(byte);
+	const bool preserve_header_prefix = result == ParseResult::BadChecksum && isHeaderFirst(byte);
 	reset();
 
 	if (preserve_header_prefix) {

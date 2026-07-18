@@ -173,6 +173,30 @@ TEST(Hx8Protocol, PreservesNextFramePrefixConsumedAsBadChecksum)
 	EXPECT_EQ(frame.command, CommandId::Ping);
 }
 
+TEST(Hx8Protocol, DoesNotReuseChecksumFromCompleteRejectedFrame)
+{
+	struct RejectedFrame {
+		uint8_t command;
+		uint8_t servo_id;
+		ParseResult result;
+	};
+
+	const RejectedFrame rejected_frames[] {
+		{0x01, 0xe2, ParseResult::WrongId},
+		{0x99, 0x4a, ParseResult::UnknownCommand}
+	};
+	const uint8_t ping_without_header_prefix[] {0x1c, 0x01, 0x01, 0x00, 0x23};
+
+	for (const RejectedFrame &rejected : rejected_frames) {
+		StreamParser parser;
+		Frame frame {};
+		const uint8_t complete_frame[] {0x05, 0x1c, rejected.command, 0x01, rejected.servo_id, 0x05};
+		EXPECT_EQ(feed(parser, complete_frame, sizeof(complete_frame), 0, frame), rejected.result);
+		EXPECT_EQ(feed(parser, ping_without_header_prefix, sizeof(ping_without_header_prefix), 0, frame),
+			  ParseResult::NeedMore);
+	}
+}
+
 TEST(Hx8Protocol, IgnoresRequestEchoBeforeResponse)
 {
 	StreamParser parser;
