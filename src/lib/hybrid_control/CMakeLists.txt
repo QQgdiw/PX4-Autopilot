@@ -3,6 +3,7 @@ px4_add_library(hybrid_control
 	M2006CommandAdapter.cpp
 	M2006DriveGate.cpp
 	M2006SpeedController.cpp
+	TransformationPosition.cpp
 	TransformationStateMachine.cpp
 )
 
@@ -13,3 +14,4 @@ px4_add_unit_gtest(SRC M2006CommandAdapterTest.cpp LINKLIBS hybrid_control)
 px4_add_unit_gtest(SRC M2006SpeedControllerTest.cpp LINKLIBS hybrid_control)
 px4_add_unit_gtest(SRC M2006DriveGateTest.cpp LINKLIBS hybrid_control)
 px4_add_unit_gtest(SRC TransformationStateMachineTest.cpp LINKLIBS hybrid_control)
+px4_add_unit_gtest(SRC TransformationPositionTest.cpp LINKLIBS hybrid_control)

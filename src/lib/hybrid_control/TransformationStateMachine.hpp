@@ -2,12 +2,13 @@
 
 #include <cstdint>
 
+#include "TransformationPosition.hpp"
+
 namespace hybrid_control
 {
 
 enum class HybridState : uint8_t { Flying, TransitionToRover, Driving, TransitionToQuad, Unknown, Fault };
 enum class HybridTarget : uint8_t { None, Flying, Driving };
-enum class SensorSource : uint8_t { None, As5600, Tmag5273 };
 enum class TransformFault : uint8_t {
 	None = 0,
 	NoSensor = 1,
