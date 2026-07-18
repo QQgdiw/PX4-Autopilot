@@ -473,6 +473,54 @@ TEST(TransformationStateMachine, StallsAfterExactNoProgressTimeout)
 	EXPECT_EQ(output.no_progress_elapsed_us, 800000u);
 }
 
+TEST(TransformationStateMachine, InvalidPositionGapDoesNotResetNoProgressWindow)
+{
+	TransformationStateMachine machine;
+	auto cfg = config();
+	cfg.sensor_timeout_s = 5.f;
+	cfg.stall_timeout_s = 0.8f;
+	cfg.stall_distance = 0.05f;
+	machine.initialize(cfg, input());
+	machine.request(HybridTarget::Driving, 0);
+
+	auto sample = input();
+	sample.actuator_command_effective = true;
+	sample.position = {0.2f, true, false, SensorSource::Hx8, 0};
+	EXPECT_EQ(machine.update(sample).state, HybridState::TransitionToRover);
+	sample.now_us = sample.position.timestamp_us = 799999;
+	sample.position.valid = false;
+	EXPECT_EQ(machine.update(sample).state, HybridState::TransitionToRover);
+	sample.now_us = sample.position.timestamp_us = 800000;
+	sample.position.valid = true;
+	EXPECT_EQ(machine.update(sample).fault, TransformFault::Stall);
+}
+
+TEST(TransformationStateMachine, DifferentSourceAfterInvalidGapRestartsProgressWindow)
+{
+	TransformationStateMachine machine;
+	auto cfg = config();
+	cfg.sensor_timeout_s = 5.f;
+	cfg.max_transition_s = 3.f;
+	cfg.stall_timeout_s = 0.8f;
+	machine.initialize(cfg, input());
+	machine.request(HybridTarget::Driving, 0);
+
+	auto sample = input();
+	sample.actuator_command_effective = true;
+	sample.position = {0.2f, true, false, SensorSource::As5600, 0};
+	machine.update(sample);
+	sample.now_us = sample.position.timestamp_us = 700000;
+	sample.position = {NAN, false, false, SensorSource::None, 700000};
+	EXPECT_EQ(machine.update(sample).state, HybridState::TransitionToRover);
+	sample.now_us = sample.position.timestamp_us = 800000;
+	sample.position = {0.2f, true, false, SensorSource::Hx8, 800000};
+	EXPECT_EQ(machine.update(sample).state, HybridState::TransitionToRover);
+	sample.now_us = sample.position.timestamp_us = 1599999;
+	EXPECT_EQ(machine.update(sample).state, HybridState::TransitionToRover);
+	sample.now_us = sample.position.timestamp_us = 1600000;
+	EXPECT_EQ(machine.update(sample).fault, TransformFault::Stall);
+}
+
 TEST(TransformationStateMachine, SmallNetProgressDoesNotPostponeStall)
 {
 	TransformationStateMachine machine;

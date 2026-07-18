@@ -477,12 +477,12 @@ TransformationOutput TransformationStateMachine::update(const TransformationInpu
 					       && std::isfinite(input.position.normalized)
 					       && input.position.source != SensorSource::None;
 
-	if (!input.actuator_command_effective || !normalized_position_valid) {
+	if (!input.actuator_command_effective) {
 		_progress_monitor.reset();
 		_progress_source = SensorSource::None;
 		_output.no_progress_elapsed_us = 0;
 
-	} else {
+	} else if (normalized_position_valid) {
 		const float target_position = _output.target == HybridTarget::Flying ? 0.f : 1.f;
 
 		if (_progress_source != input.position.source) {
