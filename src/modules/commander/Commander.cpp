@@ -2611,8 +2611,7 @@ void Commander::control_status_leds(bool changed, const uint8_t battery_warning)
 	}
 
 	if (commander::hybridRedLedOn(red_pattern, time_now_us)) {
-		BOARD_OVERLOAD_LED_OFF();
-		BOARD_OVERLOAD_LED_TOGGLE();
+		BOARD_OVERLOAD_LED_ON();
 
 	} else {
 		BOARD_OVERLOAD_LED_OFF();

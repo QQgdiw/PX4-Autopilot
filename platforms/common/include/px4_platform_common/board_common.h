@@ -296,9 +296,11 @@ typedef uint16_t hw_base_id_t;
 #if defined(BOARD_OVERLOAD_LED)
 #  define BOARD_OVERLOAD_LED_TOGGLE() led_toggle(BOARD_OVERLOAD_LED)
 #  define BOARD_OVERLOAD_LED_OFF()    led_off(BOARD_OVERLOAD_LED)
+#  define BOARD_OVERLOAD_LED_ON()     led_on(BOARD_OVERLOAD_LED)
 #else
 #  define BOARD_OVERLOAD_LED_TOGGLE()
 #  define BOARD_OVERLOAD_LED_OFF()
+#  define BOARD_OVERLOAD_LED_ON()
 #endif
 
 #if defined(BOARD_HAS_CONTROL_STATUS_LEDS)
