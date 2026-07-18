@@ -12,6 +12,10 @@ uint8 TARGET_DRIVING = 2
 uint8 SENSOR_NONE = 0
 uint8 SENSOR_AS5600 = 1
 uint8 SENSOR_TMAG5273 = 2
+uint8 SENSOR_HX8 = 3
+
+uint8 ACTUATOR_PWM = 0
+uint8 ACTUATOR_HX8 = 1
 
 uint8 TRANSFORM_FAULT_NONE = 0
 uint8 TRANSFORM_FAULT_NO_SENSOR = 1
@@ -20,6 +24,11 @@ uint8 TRANSFORM_FAULT_SENSOR_TIMEOUT = 3
 uint8 TRANSFORM_FAULT_TRANSITION_TIMEOUT = 4
 uint8 TRANSFORM_FAULT_INVALID_SERVO_CONFIG = 5
 uint8 TRANSFORM_FAULT_INVALID_CONFIGURATION = 6
+uint8 TRANSFORM_FAULT_STALL = 7
+uint8 TRANSFORM_FAULT_ACTUATOR_COMMUNICATION = 8
+uint8 TRANSFORM_FAULT_ACTUATOR_PROTECTION = 9
+uint8 TRANSFORM_FAULT_ACTUATOR_CONFIG_MISMATCH = 10
+uint8 TRANSFORM_FAULT_ACTUATOR_COMMAND_REJECTED = 11
 
 uint8 current_state       # 当前的变形状态
 uint8 target_state        # requested stable state during a transition
@@ -31,3 +40,11 @@ bool tmag_rover_valid
 bool sensors_enabled      # sensor-backed shape validation is configured
 bool position_confirmed   # current stable endpoint is confirmed by a fresh source
 uint64 transition_elapsed # elapsed transition time (microseconds)
+uint8 actuator_backend
+float32 position_normalized
+bool position_valid
+bool actuator_online
+bool actuator_healthy
+bool actuator_config_verified
+uint8 actuator_protection_flags
+uint64 no_progress_elapsed

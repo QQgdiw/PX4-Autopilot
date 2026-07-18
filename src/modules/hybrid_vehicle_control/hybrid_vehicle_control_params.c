@@ -27,15 +27,52 @@
 PARAM_DEFINE_FLOAT(HYBRID_TRANS_T, 6.0f);
 
 /**
- * Enable transformation position sensors
+ * Enable PWM external position sensors
  *
- * Enables AS5600 and TMAG5273 endpoint completion checks. Runtime sensor
- * faults do not fall back to open-loop operation.
+ * Enables AS5600 and TMAG5273 endpoint completion checks for the PWM actuator
+ * backend only. The HX8 backend always requires its internal position feedback,
+ * regardless of this setting. Runtime sensor faults do not fall back to
+ * open-loop operation.
  *
  * @boolean
  * @group Hybrid Control
  */
 PARAM_DEFINE_INT32(HYB_SENS_EN, 1);
+
+/**
+ * Transformation actuator backend
+ *
+ * Selects the mutually exclusive transformation actuator backend.
+ *
+ * @value 0 PWM
+ * @value 1 HX8 UART servo
+ * @reboot_required true
+ * @group Hybrid Control
+ */
+PARAM_DEFINE_INT32(HYB_ACT_TYPE, 0);
+
+/**
+ * Transformation no-progress timeout
+ *
+ * @unit s
+ * @min 0.1
+ * @max 5.0
+ * @decimal 1
+ * @increment 0.1
+ * @group Hybrid Control
+ */
+PARAM_DEFINE_FLOAT(HYB_STALL_T, 0.8f);
+
+/**
+ * Minimum transformation progress distance
+ *
+ * @min 0.001
+ * @max 0.25
+ * @decimal 3
+ * @increment 0.001
+ * @group Hybrid Control
+ */
+PARAM_DEFINE_FLOAT(HYB_STALL_D, 0.02f);
 
 /**
  * Configured startup shape

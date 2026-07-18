@@ -113,6 +113,8 @@ set(msg_files
 	HealthReport.msg
 	HeaterStatus.msg
 	HoverThrustEstimate.msg
+	Hx8ServoCommand.msg
+	Hx8ServoStatus.msg
 	HybridVehicleStatus.msg
 	InputRc.msg
 	InternalCombustionEngineControl.msg

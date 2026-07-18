@@ -1,10 +1,21 @@
 #include <gtest/gtest.h>
+#include <uORB/topics/hybrid_vehicle_status.h>
 
 #include <limits>
 
 #include "TransformationStateMachine.hpp"
 
 using namespace hybrid_control;
+
+static_assert(static_cast<uint8_t>(TransformFault::Stall) == hybrid_vehicle_status_s::TRANSFORM_FAULT_STALL);
+static_assert(static_cast<uint8_t>(TransformFault::ActuatorCommunication) ==
+	      hybrid_vehicle_status_s::TRANSFORM_FAULT_ACTUATOR_COMMUNICATION);
+static_assert(static_cast<uint8_t>(TransformFault::ActuatorProtection) ==
+	      hybrid_vehicle_status_s::TRANSFORM_FAULT_ACTUATOR_PROTECTION);
+static_assert(static_cast<uint8_t>(TransformFault::ActuatorConfigMismatch) ==
+	      hybrid_vehicle_status_s::TRANSFORM_FAULT_ACTUATOR_CONFIG_MISMATCH);
+static_assert(static_cast<uint8_t>(TransformFault::ActuatorCommandRejected) ==
+	      hybrid_vehicle_status_s::TRANSFORM_FAULT_ACTUATOR_COMMAND_REJECTED);
 
 namespace
 {
