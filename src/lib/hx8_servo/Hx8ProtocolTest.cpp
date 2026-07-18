@@ -151,6 +151,28 @@ TEST(Hx8Protocol, ReportsMalformedFramesAndRecovers)
 	EXPECT_EQ(feed(parser, valid, sizeof(valid), 0, frame), ParseResult::FrameReady);
 }
 
+TEST(Hx8Protocol, PreservesNextFramePrefixConsumedAsBadChecksum)
+{
+	StreamParser parser;
+	Frame frame {};
+	const uint8_t traffic[] {
+		0x05, 0x1c, 0x0a, 0x01, 0x00,
+		0x05, 0x1c, 0x01, 0x01, 0x00, 0x23
+	};
+	unsigned checksum_errors = 0;
+	unsigned ready_count = 0;
+
+	for (uint8_t byte : traffic) {
+		const ParseResult result = parser.push(byte, 0, frame);
+		checksum_errors += result == ParseResult::BadChecksum;
+		ready_count += result == ParseResult::FrameReady;
+	}
+
+	EXPECT_EQ(checksum_errors, 1u);
+	EXPECT_EQ(ready_count, 1u);
+	EXPECT_EQ(frame.command, CommandId::Ping);
+}
+
 TEST(Hx8Protocol, IgnoresRequestEchoBeforeResponse)
 {
 	StreamParser parser;
