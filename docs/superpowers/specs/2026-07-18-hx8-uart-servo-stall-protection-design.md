@@ -327,10 +327,16 @@ before the HX8 backend is accepted for operation.
 Normal boot is read-only:
 
 1. ping the configured ID;
-2. read model/version and required protection settings;
+2. read every required protection setting;
 3. compare every value with PX4 expectations;
 4. publish `config_verified=true` only on a complete match;
 5. fail preflight on mismatch; never repair automatically.
+
+The published UART protocol does not expose a model or firmware-version field.
+PX4 therefore cannot prove electronically that the responding servo is an
+HX8-U45H-M; the physical model must be verified and recorded during
+commissioning. Software health claims are limited to matching ID, supported
+protocol behavior, and complete protection-setting readback.
 
 The explicit command `hx8_uart_servo config write` is the only persistent-write
 path. It requires disarmed commissioning state and mandatory per-item readback.
