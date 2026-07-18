@@ -339,7 +339,7 @@ TEST(TransformationStateMachine, FreshNonFiniteManualValueClearsPreviousValidSam
 TEST(TransformationStateMachine, TmagCacheRejectsOldDeviceAfterIdChange)
 {
 	TmagSampleCache cache;
-	cache.update(53, 8.f, 100);
+	cache.update(53, {0.f, 0.f, 8.f}, 100);
 	ASSERT_TRUE(cache.validFor(53, 500000, 1000000));
 	EXPECT_FALSE(cache.validFor(54, 500000, 1000000));
 }

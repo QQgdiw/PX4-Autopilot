@@ -5,6 +5,7 @@
 #include <limits>
 
 #include "TransformationPosition.hpp"
+#include "TransformationStateMachine.hpp"
 
 using namespace hybrid_control;
 
@@ -21,6 +22,67 @@ constexpr uint64_t kEighteenHundredMillisecondsUs = 1'800'000;
 constexpr uint64_t kEighteenHundredAndOneMillisecondsUs = 1'801'000;
 constexpr uint64_t kTwentyFiveHundredAndOneMillisecondsUs = 2'501'000;
 constexpr uint64_t kEightHundredMillisecondsUs = 800'000;
+
+TransformationConfig transformationConfig()
+{
+	return {true, 0, -0.7f, 0.8f, 0.5f, 3.f, 0.05f,
+		1.f, 0.1f, 3.f, 53, 34, 5.f, 5.f};
+}
+
+TransformationInput transformationInput(uint64_t now_us = 0)
+{
+	return {now_us, false, 0.f, false, false, false, false};
+}
+}
+
+TEST(TransformationPosition, TmagCacheRequiresMatchingFreshFiniteVector)
+{
+	TmagSampleCache cache;
+	cache.update(53, {1.f, 2.f, 3.f}, 100);
+
+	EXPECT_TRUE(cache.validFor(53, 500'000, kOneSecondUs));
+	EXPECT_FALSE(cache.validFor(54, 500'000, kOneSecondUs));
+	EXPECT_FALSE(cache.validFor(53, 1'000'101, kOneSecondUs));
+	EXPECT_FLOAT_EQ(cache.vector().x, 1.f);
+	EXPECT_FLOAT_EQ(cache.vector().y, 2.f);
+	EXPECT_FLOAT_EQ(cache.vector().z, 3.f);
+	EXPECT_EQ(cache.timestamp(), 100u);
+}
+
+TEST(TransformationPosition, TmagCacheRejectsEveryNonFiniteAxis)
+{
+	TmagSampleCache cache;
+	const float nonfinite = std::numeric_limits<float>::quiet_NaN();
+
+	cache.update(53, {nonfinite, 2.f, 3.f}, 100);
+	EXPECT_FALSE(cache.validFor(53, 100, kOneSecondUs));
+	cache.update(53, {1.f, nonfinite, 3.f}, 101);
+	EXPECT_FALSE(cache.validFor(53, 101, kOneSecondUs));
+	cache.update(53, {1.f, 2.f, nonfinite}, 102);
+	EXPECT_FALSE(cache.validFor(53, 102, kOneSecondUs));
+}
+
+TEST(TransformationPosition, As5600ToTmagSwitchRestartsProgressEpoch)
+{
+	TransformationStateMachine machine;
+	auto config = transformationConfig();
+	config.sensor_timeout_s = 5.f;
+	config.max_transition_s = 3.f;
+	config.stall_timeout_s = 0.8f;
+	machine.initialize(config, transformationInput());
+	machine.request(HybridTarget::Driving, 0);
+
+	auto sample = transformationInput();
+	sample.actuator_command_effective = true;
+	sample.position = {0.2f, true, false, SensorSource::As5600, 0};
+	machine.update(sample);
+	sample.now_us = sample.position.timestamp_us = 700'000;
+	sample.position.source = SensorSource::Tmag5273;
+	EXPECT_EQ(machine.update(sample).state, HybridState::TransitionToRover);
+	sample.now_us = sample.position.timestamp_us = 1'499'999;
+	EXPECT_EQ(machine.update(sample).state, HybridState::TransitionToRover);
+	sample.now_us = sample.position.timestamp_us = 1'500'000;
+	EXPECT_EQ(machine.update(sample).fault, TransformFault::Stall);
 }
 
 TEST(TransformationPosition, As5600NormalizesWrappedTravel)

@@ -33,6 +33,7 @@
 #include "hybrid_vehicle_control.hpp"
 
 #include <cmath>
+#include <cstring>
 
 #include <px4_platform_common/cli.h>
 #include <px4_platform_common/getopt.h>
@@ -100,6 +101,15 @@ int HybridVehicleControl::task_spawn(int argc, char *argv[])
 
 int HybridVehicleControl::custom_command(int argc, char *argv[])
 {
+	if (argc >= 1 && strcmp(argv[0], "clear_fault") == 0) {
+		if (!is_running()) {
+			PX4_ERR("module not running");
+			return PX4_ERROR;
+		}
+
+		return get_instance()->clear_fault();
+	}
+
 	return print_usage("unrecognized command");
 }
 
@@ -119,6 +129,7 @@ positional transformation servo.
 
 	PRINT_MODULE_USAGE_NAME("hybrid_vehicle_control", "controller");
 	PRINT_MODULE_USAGE_COMMAND("start");
+	PRINT_MODULE_USAGE_COMMAND_DESCR("clear_fault", "Clear a latched transformation fault while fully disarmed");
 	PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
 	return 0;
 }
@@ -148,6 +159,61 @@ TransformationConfig HybridVehicleControl::transformation_config() const
 	};
 }
 
+bool HybridVehicleControl::selected_feedback_fresh(hrt_abstime now, const TransformationConfig &config) const
+{
+	if (!config.sensors_enabled) {
+		return true;
+	}
+
+	const uint64_t timeout_us = static_cast<uint64_t>(config.sensor_timeout_s * 1_s);
+	const bool encoder_valid = timestamp_fresh(_last_encoder_timestamp, now, timeout_us)
+				   && _encoder_healthy && std::isfinite(_current_mechanism_angle);
+
+	if (encoder_valid) {
+		return true;
+	}
+
+	return _tmag_quad_cache.validFor(config.tmag_quad_device_id, now, timeout_us)
+	       && _tmag_rover_cache.validFor(config.tmag_rover_device_id, now, timeout_us);
+}
+
+int HybridVehicleControl::clear_fault()
+{
+	if (_actuator_armed.armed || _actuator_armed.prearmed) {
+		PX4_ERR("clear_fault requires fully disarmed vehicle");
+		return PX4_ERROR;
+	}
+
+	if (!_transformation_initialized || !_transformation_config_tracker.hasActive()
+	    || !hybrid_control::isTransformationFaulted(_transformation_output)) {
+		PX4_ERR("no initialized transformation fault to clear");
+		return PX4_ERROR;
+	}
+
+	const TransformationConfig &config = _transformation_config_tracker.active();
+
+	if (hybrid_control::validateTransformationConfig(config) != TransformFault::None) {
+		PX4_ERR("transformation configuration is invalid");
+		return PX4_ERROR;
+	}
+
+	if (!selected_feedback_fresh(hrt_absolute_time(), config)) {
+		PX4_ERR("required transformation feedback is not fresh");
+		return PX4_ERROR;
+	}
+
+	_transformation_output = _transformation.clearFault(true);
+	_manual_commissioning_active = false;
+	_transition_timing_active = false;
+
+	if (hybrid_control::isTransformationFaulted(_transformation_output)) {
+		PX4_ERR("transformation fault cannot be cleared");
+		return PX4_ERROR;
+	}
+
+	return PX4_OK;
+}
+
 TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstime now, const TransformationConfig &config)
 {
 	sensor_encoder_s encoder{};
@@ -163,11 +229,13 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 
 		if (_magnetic_subs[i].update(&magnetic)) {
 			if (magnetic.device_id == static_cast<uint32_t>(config.tmag_quad_device_id)) {
-				_tmag_quad_cache.update(magnetic.device_id, magnetic.mag_z, magnetic.timestamp);
+				_tmag_quad_cache.update(magnetic.device_id, {magnetic.mag_x, magnetic.mag_y, magnetic.mag_z},
+						magnetic.timestamp);
 			}
 
 			if (magnetic.device_id == static_cast<uint32_t>(config.tmag_rover_device_id)) {
-				_tmag_rover_cache.update(magnetic.device_id, magnetic.mag_z, magnetic.timestamp);
+				_tmag_rover_cache.update(magnetic.device_id, {magnetic.mag_x, magnetic.mag_y, magnetic.mag_z},
+						magnetic.timestamp);
 			}
 		}
 	}
@@ -177,15 +245,41 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 				   && _encoder_healthy && std::isfinite(_current_mechanism_angle);
 	const bool tmag_quad_valid = _tmag_quad_cache.validFor(config.tmag_quad_device_id, now, sensor_timeout_us);
 	const bool tmag_rover_valid = _tmag_rover_cache.validFor(config.tmag_rover_device_id, now, sensor_timeout_us);
+	const bool tmag_quad_active = tmag_quad_valid
+				      && fabsf(_tmag_quad_cache.vector().z) >= config.tmag_quad_threshold;
+	const bool tmag_rover_active = tmag_rover_valid
+				       && fabsf(_tmag_rover_cache.vector().z) >= config.tmag_rover_threshold;
+	hybrid_control::PositionSample position{};
+
+	if (encoder_valid) {
+		position = {hybrid_control::normalizeAs5600(_current_mechanism_angle, config.quad_angle, config.rover_angle),
+			    true, false, SensorSource::As5600, _last_encoder_timestamp};
+
+	} else if (tmag_quad_valid && tmag_rover_valid) {
+		if (_position_source != SensorSource::Tmag5273) {
+			_tmag_ratio_filter.reset();
+		}
+
+		const uint64_t timestamp = _tmag_quad_cache.timestamp() < _tmag_rover_cache.timestamp()
+					   ? _tmag_quad_cache.timestamp() : _tmag_rover_cache.timestamp();
+		position = _tmag_ratio_filter.update(_tmag_quad_cache.vector(), _tmag_rover_cache.vector(),
+				true, true, false, timestamp);
+
+	} else if (config.sensors_enabled) {
+		position = {NAN, false, false, SensorSource::None, 0};
+	}
+
+	_position_source = position.source;
 
 	return {
 		now,
 		encoder_valid,
 		_current_mechanism_angle,
 		tmag_quad_valid,
-		tmag_quad_valid && fabsf(_tmag_quad_cache.value()) >= config.tmag_quad_threshold,
+		tmag_quad_active,
 		tmag_rover_valid,
-		tmag_rover_valid && fabsf(_tmag_rover_cache.value()) >= config.tmag_rover_threshold
+		tmag_rover_active,
+		position
 	};
 }
 
@@ -338,7 +432,8 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 	}
 
 	if (hybrid_control::isTransformationFaulted(_transformation_output)
-	    || _actuator_armed.armed || !_actuator_armed.prearmed) {
+	    || _actuator_armed.armed || !_actuator_armed.prearmed
+	    || _actuator_armed.lockdown || _actuator_armed.manual_lockdown || _actuator_armed.force_failsafe) {
 		_manual_commissioning_active = false;
 	}
 
@@ -353,10 +448,6 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 
 	if (requested_target != HybridTarget::None) {
 		_manual_commissioning_active = false;
-
-		if (_transformation_output.state == HybridState::Fault && !_actuator_armed.armed) {
-			_transformation_output = _transformation.clearFault(true);
-		}
 
 		const HybridState previous_state = _transformation_output.state;
 		_transformation_output = _transformation.request(requested_target, input.now_us);
@@ -442,6 +533,7 @@ void HybridVehicleControl::publish_status(const TransformationInput &input, hrt_
 		case SensorSource::None: status.sensor_source = hybrid_vehicle_status_s::SENSOR_NONE; break;
 		case SensorSource::As5600: status.sensor_source = hybrid_vehicle_status_s::SENSOR_AS5600; break;
 		case SensorSource::Tmag5273: status.sensor_source = hybrid_vehicle_status_s::SENSOR_TMAG5273; break;
+		case SensorSource::Hx8: status.sensor_source = hybrid_vehicle_status_s::SENSOR_HX8; break;
 		}
 
 		status.fault_reason = static_cast<uint8_t>(_transformation_output.fault);
@@ -480,7 +572,10 @@ void HybridVehicleControl::publish_servo(hrt_abstime now)
 				     && !_actuator_armed.force_failsafe;
 	const bool transformation_faulted = hybrid_control::isTransformationFaulted(_transformation_output);
 
-	if (!transformation_faulted && outputs_enabled) {
+	const bool pwm_backend = _transformation_config_tracker.active().backend
+				 == hybrid_control::ActuatorBackend::Pwm;
+
+	if (!transformation_faulted && outputs_enabled && pwm_backend) {
 		if (_manual_commissioning_active && _manual_control_cache.fresh(now, MANUAL_CONTROL_TIMEOUT)) {
 			servos.control[0] = clamp_servo(_manual_control_cache.value());
 

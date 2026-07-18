@@ -85,13 +85,14 @@ private:
 class TmagSampleCache
 {
 public:
-	void update(uint32_t device_id, float value, uint64_t timestamp);
+	void update(uint32_t device_id, const TmagVector &vector, uint64_t timestamp_us);
 	bool validFor(int32_t device_id, uint64_t now_us, uint64_t timeout_us) const;
-	float value() const { return _value; }
+	const TmagVector &vector() const { return _vector; }
+	uint64_t timestamp() const { return _timestamp; }
 
 private:
 	uint32_t _device_id{0};
-	float _value{0.f};
+	TmagVector _vector{};
 	uint64_t _timestamp{0};
 	bool _initialized{false};
 };

@@ -97,6 +97,8 @@ private:
 	void publish_servo(hrt_abstime now);
 	void publish_motor_outputs(hrt_abstime now);
 	hybrid_control::TransformationConfig transformation_config() const;
+	int clear_fault();
+	bool selected_feedback_fresh(hrt_abstime now, const hybrid_control::TransformationConfig &config) const;
 
 	/**
 	 * 检查变形条件是否安全 (例如: 必须贴地才能变形为车)
@@ -159,6 +161,8 @@ private:
 	bool _encoder_healthy{false};
 	hybrid_control::TmagSampleCache _tmag_quad_cache;
 	hybrid_control::TmagSampleCache _tmag_rover_cache;
+	hybrid_control::TmagRatioFilter _tmag_ratio_filter;
+	hybrid_control::SensorSource _position_source{hybrid_control::SensorSource::None};
 
 	vehicle_control_mode_s _vcontrol_mode{};         // 缓存控制模式数据
 

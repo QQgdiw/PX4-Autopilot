@@ -136,11 +136,11 @@ bool ManualControlCache::fresh(uint64_t now_us, uint64_t timeout_us) const
 	return _timestamp != 0 && now_us >= _timestamp && now_us - _timestamp <= timeout_us;
 }
 
-void TmagSampleCache::update(uint32_t device_id, float value, uint64_t timestamp)
+void TmagSampleCache::update(uint32_t device_id, const TmagVector &vector, uint64_t timestamp_us)
 {
 	_device_id = device_id;
-	_value = value;
-	_timestamp = timestamp;
+	_vector = vector;
+	_timestamp = timestamp_us;
 	_initialized = true;
 }
 
@@ -148,7 +148,7 @@ bool TmagSampleCache::validFor(int32_t device_id, uint64_t now_us, uint64_t time
 {
 	return _initialized && device_id >= 0 && _device_id == static_cast<uint32_t>(device_id)
 	       && _timestamp != 0 && now_us >= _timestamp && now_us - _timestamp <= timeout_us
-	       && std::isfinite(_value);
+	       && std::isfinite(_vector.x) && std::isfinite(_vector.y) && std::isfinite(_vector.z);
 }
 
 bool isTransformationFaulted(const TransformationOutput &output)
