@@ -1,14 +1,27 @@
 #include <gtest/gtest.h>
 
-#include <drivers/drv_hrt.h>
-
 #include <cmath>
+#include <cstdint>
 #include <limits>
 
 #include "TransformationPosition.hpp"
 
 using namespace hybrid_control;
-using namespace time_literals;
+
+namespace
+{
+constexpr uint64_t kOneSecondUs = 1'000'000;
+constexpr uint64_t kElevenHundredMillisecondsUs = 1'100'000;
+constexpr uint64_t kTwelveHundredMillisecondsUs = 1'200'000;
+constexpr uint64_t kThirteenHundredMillisecondsUs = 1'300'000;
+constexpr uint64_t kFifteenHundredMillisecondsUs = 1'500'000;
+constexpr uint64_t kSixteenHundredMillisecondsUs = 1'600'000;
+constexpr uint64_t kSeventeenHundredMillisecondsUs = 1'700'000;
+constexpr uint64_t kEighteenHundredMillisecondsUs = 1'800'000;
+constexpr uint64_t kEighteenHundredAndOneMillisecondsUs = 1'801'000;
+constexpr uint64_t kTwentyFiveHundredAndOneMillisecondsUs = 2'501'000;
+constexpr uint64_t kEightHundredMillisecondsUs = 800'000;
+}
 
 TEST(TransformationPosition, As5600NormalizesWrappedTravel)
 {
@@ -59,44 +72,70 @@ TEST(TransformationPosition, TmagRatioRejectsInvalidInput)
 TEST(TransformationPosition, DirectedProgressResetsOnlyAfterNetForwardDisplacement)
 {
 	DirectedProgressMonitor monitor;
-	monitor.start(0.20f, 1.0f, 1_s);
-	EXPECT_EQ(monitor.update({0.21f, true, false, SensorSource::As5600, 1500_ms}, 1.f, .02f, 800_ms),
+	monitor.start(0.20f, 1.0f, kOneSecondUs);
+	EXPECT_EQ(monitor.update({0.21f, true, false, SensorSource::As5600, kFifteenHundredMillisecondsUs},
+				 1.f, .02f, kEightHundredMillisecondsUs),
 		  ProgressResult::Progress);
-	EXPECT_EQ(monitor.update({0.19f, true, false, SensorSource::As5600, 1801_ms}, 1.f, .02f, 800_ms),
+	EXPECT_EQ(monitor.update({0.19f, true, false, SensorSource::As5600, kEighteenHundredAndOneMillisecondsUs},
+				 1.f, .02f, kEightHundredMillisecondsUs),
 		  ProgressResult::NoProgress);
 
-	monitor.start(0.20f, 1.f, 1_s);
-	EXPECT_EQ(monitor.update({0.18f, true, false, SensorSource::As5600, 1300_ms}, 1.f, .02f, 800_ms),
+	monitor.start(0.20f, 1.f, kOneSecondUs);
+	EXPECT_EQ(monitor.update({0.18f, true, false, SensorSource::As5600, kThirteenHundredMillisecondsUs},
+				 1.f, .02f, kEightHundredMillisecondsUs),
 		  ProgressResult::Progress);
-	EXPECT_EQ(monitor.update({0.21f, true, false, SensorSource::As5600, 1600_ms}, 1.f, .02f, 800_ms),
+	EXPECT_EQ(monitor.update({0.21f, true, false, SensorSource::As5600, kSixteenHundredMillisecondsUs},
+				 1.f, .02f, kEightHundredMillisecondsUs),
 		  ProgressResult::Progress);
-	EXPECT_EQ(monitor.update({0.22f, true, false, SensorSource::As5600, 1700_ms}, 1.f, .02f, 800_ms),
+	EXPECT_EQ(monitor.update({0.220001f, true, false, SensorSource::As5600, kSeventeenHundredMillisecondsUs},
+				 1.f, .02f, kEightHundredMillisecondsUs),
 		  ProgressResult::Progress);
-	EXPECT_EQ(monitor.noProgressElapsed(1700_ms), 0u);
-	EXPECT_EQ(monitor.update({0.21f, true, false, SensorSource::As5600, 2501_ms}, 1.f, .02f, 800_ms),
+	EXPECT_EQ(monitor.noProgressElapsed(kSeventeenHundredMillisecondsUs), 0u);
+	EXPECT_EQ(monitor.update({0.21f, true, false, SensorSource::As5600, kTwentyFiveHundredAndOneMillisecondsUs},
+				 1.f, .02f, kEightHundredMillisecondsUs),
+		  ProgressResult::NoProgress);
+}
+
+TEST(TransformationPosition, DirectedProgressDoesNotResetJustBelowConfiguredDelta)
+{
+	DirectedProgressMonitor monitor;
+	monitor.start(0.20f, 1.f, kOneSecondUs);
+	EXPECT_EQ(monitor.update({0.2199995f, true, false, SensorSource::As5600, kFifteenHundredMillisecondsUs},
+				 1.f, .02f, kEightHundredMillisecondsUs),
+		  ProgressResult::Progress);
+	EXPECT_EQ(monitor.noProgressElapsed(kFifteenHundredMillisecondsUs), 500'000u);
+}
+
+TEST(TransformationPosition, DirectedProgressTimesOutAtExactBoundary)
+{
+	DirectedProgressMonitor monitor;
+	monitor.start(0.20f, 1.f, kOneSecondUs);
+	EXPECT_EQ(monitor.update({0.21f, true, false, SensorSource::As5600, kEighteenHundredMillisecondsUs},
+				 1.f, .02f, kEightHundredMillisecondsUs),
 		  ProgressResult::NoProgress);
 }
 
 TEST(TransformationPosition, DirectedProgressSupportsReverseDirection)
 {
 	DirectedProgressMonitor monitor;
-	monitor.start(0.8f, 0.f, 1_s);
-	EXPECT_EQ(monitor.update({0.77f, true, false, SensorSource::Hx8, 1200_ms}, 0.f, .02f, 800_ms),
+	monitor.start(0.8f, 0.f, kOneSecondUs);
+	EXPECT_EQ(monitor.update({0.77f, true, false, SensorSource::Hx8, kTwelveHundredMillisecondsUs},
+				 0.f, .02f, kEightHundredMillisecondsUs),
 		  ProgressResult::Progress);
-	EXPECT_EQ(monitor.noProgressElapsed(1200_ms), 0u);
+	EXPECT_EQ(monitor.noProgressElapsed(kTwelveHundredMillisecondsUs), 0u);
 }
 
 TEST(TransformationPosition, DirectedProgressHandlesReachedInvalidAndIdle)
 {
 	DirectedProgressMonitor monitor;
-	PositionSample valid{0.2f, true, false, SensorSource::As5600, 1_s};
-	EXPECT_EQ(monitor.update(valid, 1.f, .02f, 800_ms), ProgressResult::Idle);
+	PositionSample valid{0.2f, true, false, SensorSource::As5600, kOneSecondUs};
+	EXPECT_EQ(monitor.update(valid, 1.f, .02f, kEightHundredMillisecondsUs), ProgressResult::Idle);
 
-	monitor.start(0.2f, 1.f, 1_s);
-	PositionSample invalid{NAN, false, false, SensorSource::As5600, 1100_ms};
-	EXPECT_EQ(monitor.update(invalid, 1.f, .02f, 800_ms), ProgressResult::Invalid);
+	monitor.start(0.2f, 1.f, kOneSecondUs);
+	PositionSample invalid{NAN, false, false, SensorSource::As5600, kElevenHundredMillisecondsUs};
+	EXPECT_EQ(monitor.update(invalid, 1.f, .02f, kEightHundredMillisecondsUs), ProgressResult::Invalid);
 
-	PositionSample reached{1.f, true, true, SensorSource::As5600, 1200_ms};
-	EXPECT_EQ(monitor.update(reached, 1.f, .02f, 800_ms), ProgressResult::Reached);
-	EXPECT_EQ(monitor.update(valid, 1.f, .02f, 800_ms), ProgressResult::Idle);
+	PositionSample reached{1.f, true, true, SensorSource::As5600, kTwelveHundredMillisecondsUs};
+	EXPECT_EQ(monitor.update(reached, 1.f, .02f, kEightHundredMillisecondsUs), ProgressResult::Reached);
+	EXPECT_EQ(monitor.update(valid, 1.f, .02f, kEightHundredMillisecondsUs), ProgressResult::Idle);
 }

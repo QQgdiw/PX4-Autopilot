@@ -9,7 +9,6 @@ namespace
 {
 constexpr float kMinimumTmagMagnitude = 1e-6f;
 constexpr float kTmagFilterAlpha = 0.25f;
-constexpr float kProgressEpsilon = 1e-6f;
 
 float wrappedDifference(float value, float reference)
 {
@@ -101,13 +100,13 @@ ProgressResult DirectedProgressMonitor::update(const PositionSample &sample, flo
 
 	const float directed_progress = (sample.normalized - _anchor) * _direction;
 
-	if (directed_progress + kProgressEpsilon >= minimum_progress) {
+	if (directed_progress >= minimum_progress) {
 		_anchor = sample.normalized;
 		_anchor_time_us = sample.timestamp_us;
 		return ProgressResult::Progress;
 	}
 
-	if (noProgressElapsed(sample.timestamp_us) > timeout_us) {
+	if (noProgressElapsed(sample.timestamp_us) >= timeout_us) {
 		return ProgressResult::NoProgress;
 	}
 
