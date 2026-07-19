@@ -225,6 +225,7 @@ int HybridVehicleControl::clear_fault()
 	}
 
 	_transformation_output = _transformation.clearFault(true);
+	_hx8_last_target = HybridTarget::None;
 	_manual_commissioning_active = false;
 	_transition_timing_active = false;
 
@@ -513,7 +514,9 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 	}
 
 	TransformationInput state_input = input;
-	state_input.actuator_command_effective = transformation_pwm_command_effective();
+	state_input.actuator_command_effective = _transformation_config_tracker.active().backend == hybrid_control::ActuatorBackend::Hx8
+		? (input.actuator.command_accepted && input.actuator.online)
+		: transformation_pwm_command_effective();
 	_transformation_output = _transformation.update(state_input);
 
 	if (hybrid_control::isTransformationFaulted(_transformation_output)) {
@@ -673,6 +676,7 @@ void HybridVehicleControl::publish_hx8_command(hrt_abstime now)
 	if (faulted) {
 		if (_hx8_release_attempts >= 3) { return; }
 		command.type = hx8_servo_command_s::COMMAND_RELEASE;
+		command.sequence = ++_hx8_sequence;
 		++_hx8_release_attempts;
 		_hx8_command_pub.publish(command);
 		return;
@@ -681,8 +685,10 @@ void HybridVehicleControl::publish_hx8_command(hrt_abstime now)
 	const auto target = _transformation_output.target;
 	if ((target == HybridTarget::Flying || target == HybridTarget::Driving) && target != _hx8_last_target) {
 		command.type = hx8_servo_command_s::COMMAND_MOVE;
-		command.target_angle_deg = (target == HybridTarget::Flying ? _transformation_config_tracker.active().quad_angle
-				: _transformation_config_tracker.active().rover_angle) * 180.f / static_cast<float>(M_PI);
+		const char *name = target == HybridTarget::Flying ? "HX8_ANG_QUD" : "HX8_ANG_ROV";
+		param_t angle_param = param_find(name); float angle_deg = 0.f;
+		if (angle_param != PARAM_INVALID) { param_get(angle_param, &angle_deg); }
+		command.target_angle_deg = angle_deg;
 		command.sequence = ++_hx8_sequence;
 		_hx8_last_target = target;
 		_hx8_command_pub.publish(command);
@@ -691,6 +697,8 @@ void HybridVehicleControl::publish_hx8_command(hrt_abstime now)
 	if ((now - _hx8_last_hold) >= 200_ms
 	    && (_transformation_output.state == HybridState::Flying || _transformation_output.state == HybridState::Driving)) {
 		command.type = hx8_servo_command_s::COMMAND_HOLD;
+		const char *name = _transformation_output.state == HybridState::Flying ? "HX8_ANG_QUD" : "HX8_ANG_ROV";
+		param_t angle_param = param_find(name); if (angle_param != PARAM_INVALID) { param_get(angle_param, &command.target_angle_deg); }
 		command.sequence = ++_hx8_sequence;
 		_hx8_last_hold = now;
 		_hx8_command_pub.publish(command);
