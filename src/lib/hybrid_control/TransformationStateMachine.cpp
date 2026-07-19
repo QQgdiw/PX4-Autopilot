@@ -91,6 +91,12 @@ TransformFault validateTransformationConfig(const TransformationConfig &config)
 		config.hx8_dec_ms, config.hx8_power, config.max_transition_s)) {
 		return TransformFault::InvalidConfiguration;
 	}
+	if (config.backend == ActuatorBackend::Hx8) {
+		const float span = fabsf((config.hx8_rover_angle - config.hx8_quad_angle) * static_cast<float>(M_PI / 180.0));
+		if (!(span > 1e-6f) || config.angle_tolerance / span >= 0.5f) {
+			return TransformFault::InvalidConfiguration;
+		}
+	}
 
 	return TransformFault::None;
 }
@@ -238,8 +244,9 @@ TransformationStateMachine::Endpoint TransformationStateMachine::hx8Endpoint(con
 	if (!input.position.valid || input.position.source != SensorSource::Hx8 || !std::isfinite(input.position.normalized)) {
 		return Endpoint::None;
 	}
-	if (fabsf(input.position.normalized) <= 0.02f) { return Endpoint::Quad; }
-	if (fabsf(input.position.normalized - 1.f) <= 0.02f) { return Endpoint::Rover; }
+	if (!input.position.endpoint_confirmed) { return Endpoint::None; }
+	if (fabsf(input.position.normalized) <= 0.5f) { return Endpoint::Quad; }
+	if (fabsf(input.position.normalized - 1.f) <= 0.5f) { return Endpoint::Rover; }
 	return Endpoint::None;
 }
 

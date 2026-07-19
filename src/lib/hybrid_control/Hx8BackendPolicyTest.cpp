@@ -24,6 +24,8 @@ TEST(Hx8BackendPolicy, UsesConfiguredHx8EndpointsAndTarget)
 	EXPECT_FALSE(Hx8BackendPolicy::endpointMatches(normalized, true));
 	EXPECT_FALSE(Hx8BackendPolicy::endpointMatches(0.f, true));
 	EXPECT_FALSE(Hx8BackendPolicy::endpointMatchesAngleTolerance(0.f, true, 0.05f, 0.f, 90.f));
+	EXPECT_TRUE(Hx8BackendPolicy::endpointAnyMatchesAngleTolerance(0.099f, 0.1745f, 0.f, 100.f));
+	EXPECT_FALSE(Hx8BackendPolicy::endpointAnyMatchesAngleTolerance(0.11f, 0.1745f, 0.f, 100.f));
 	EXPECT_TRUE(Hx8BackendPolicy::parametersValid(1, 0.f, 90.f, 1000, 100, 100, 500, 3.f));
 	EXPECT_FALSE(Hx8BackendPolicy::parametersValid(255, 0.f, 90.f, 1000, 100, 100, 500, 3.f));
 	EXPECT_FALSE(Hx8BackendPolicy::parametersValid(1, 0.f, 0.f, 1000, 100, 100, 500, 3.f));

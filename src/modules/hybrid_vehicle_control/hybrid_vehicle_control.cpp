@@ -291,9 +291,8 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 				_hx8_status.config_verified, _hx8_status.protection_flags, fresh, _hx8_status.angle_deg);
 		const float normalized = hybrid_control::Hx8BackendPolicy::normalizeAngle(_hx8_status.angle_deg,
 				_param_hx8_ang_qud.get(), _param_hx8_ang_rov.get());
-		const bool endpoint = valid && hybrid_control::Hx8BackendPolicy::endpointMatchesAngleTolerance(normalized,
-				_transformation_output.target == HybridTarget::Driving, config.angle_tolerance,
-				_param_hx8_ang_qud.get(), _param_hx8_ang_rov.get());
+		const bool endpoint = valid && hybrid_control::Hx8BackendPolicy::endpointAnyMatchesAngleTolerance(normalized,
+				config.angle_tolerance, _param_hx8_ang_qud.get(), _param_hx8_ang_rov.get());
 		position = {normalized, valid, endpoint, SensorSource::Hx8, _hx8_status.last_valid_response};
 		actuator.online = fresh && _hx8_status.online && _hx8_status.servo_id == static_cast<uint8_t>(_param_hx8_id.get());
 		actuator.healthy = _hx8_status.healthy && _hx8_status.protection_flags == 0;

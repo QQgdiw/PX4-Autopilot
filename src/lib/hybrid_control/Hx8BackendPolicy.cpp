@@ -34,6 +34,17 @@ bool Hx8BackendPolicy::endpointMatchesAngleTolerance(float normalized, bool driv
 	return span > 1e-6f && endpointMatches(normalized, driving_target, tolerance_rad / span);
 }
 
+bool Hx8BackendPolicy::endpointAnyMatchesAngleTolerance(float normalized, float tolerance_rad,
+		float quad_deg, float rover_deg)
+{
+	const float span = fabsf((rover_deg - quad_deg) * static_cast<float>(M_PI / 180.0));
+	if (!(span > 1e-6f) || !std::isfinite(tolerance_rad) || tolerance_rad < 0.f || tolerance_rad / span >= 0.5f) {
+		return false;
+	}
+	const float tol = tolerance_rad / span;
+	return std::isfinite(normalized) && (fabsf(normalized) <= tol || fabsf(normalized - 1.f) <= tol);
+}
+
 bool Hx8BackendPolicy::parametersValid(int32_t id, float quad_deg, float rover_deg, int32_t move, int32_t acc,
 		int32_t dec, int32_t power, float transition_s)
 {

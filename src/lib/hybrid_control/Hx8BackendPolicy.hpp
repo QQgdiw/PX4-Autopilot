@@ -15,6 +15,8 @@ struct Hx8BackendPolicy
 	static bool endpointMatches(float normalized, bool driving_target, float tolerance = 0.02f);
 	static bool endpointMatchesAngleTolerance(float normalized, bool driving_target, float tolerance_rad,
 				float quad_deg, float rover_deg);
+	static bool endpointAnyMatchesAngleTolerance(float normalized, float tolerance_rad,
+				float quad_deg, float rover_deg);
 	static bool parametersValid(int32_t id, float quad_deg, float rover_deg, int32_t move, int32_t acc,
 				int32_t dec, int32_t power, float transition_s);
 	static bool commandAccepted(bool accepted, uint8_t result, uint8_t pending_result,
