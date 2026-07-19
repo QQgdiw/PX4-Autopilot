@@ -13,6 +13,10 @@ struct Hx8BackendPolicy
 				bool config_verified, uint8_t protection_flags, bool fresh, float angle_deg);
 	static float normalizeAngle(float angle_deg, float quad_deg, float rover_deg);
 	static bool endpointMatches(float normalized, bool driving_target, float tolerance = 0.02f);
+	static bool endpointMatchesAngleTolerance(float normalized, bool driving_target, float tolerance_rad,
+				float quad_deg, float rover_deg);
+	static bool parametersValid(int32_t id, float quad_deg, float rover_deg, int32_t move, int32_t acc,
+				int32_t dec, int32_t power, float transition_s);
 	static bool commandAccepted(bool accepted, uint8_t result, uint8_t rejected_result,
 				uint8_t timeout_result, uint8_t protocol_error_result);
 };
@@ -40,6 +44,8 @@ private:
 	HybridTarget _last_target{HybridTarget::None};
 	uint64_t _last_hold_us{0};
 	uint8_t _release_attempts{0};
+	uint64_t _last_release_us{0};
+	bool _release_sent{false};
 };
 
 } // namespace hybrid_control

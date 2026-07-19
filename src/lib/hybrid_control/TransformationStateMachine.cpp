@@ -405,6 +405,20 @@ TransformationOutput TransformationStateMachine::update(const TransformationInpu
 	}
 
 	if (!transitioning) {
+		if (_config.backend == ActuatorBackend::Hx8 && (_output.state == HybridState::Flying || _output.state == HybridState::Driving)) {
+			if (!input.actuator.online) {
+				enterFault(TransformFault::ActuatorCommunication);
+				return _output;
+			}
+			if (!input.actuator.config_verified) {
+				enterFault(TransformFault::ActuatorConfigMismatch);
+				return _output;
+			}
+			if (!input.actuator.healthy || input.actuator.protection_flags != 0) {
+				enterFault(TransformFault::ActuatorProtection);
+				return _output;
+			}
+		}
 		if (_config.sensors_enabled && _output.state == HybridState::Unknown) {
 			const Endpoint endpoint = as5600Endpoint(input);
 

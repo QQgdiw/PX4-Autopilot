@@ -772,3 +772,23 @@ TEST(TransformationStateMachine, FaultClearRequiresDisarmedAndReturnsUnknown)
 	EXPECT_EQ(cleared.fault, TransformFault::None);
 	EXPECT_FALSE(cleared.release_requested);
 }
+
+TEST(TransformationStateMachine, StableHx8CommunicationLossIsPrimaryFault)
+{
+	TransformationStateMachine machine;
+	auto cfg = config();
+	cfg.backend = ActuatorBackend::Hx8;
+	cfg.sensors_enabled = true;
+	auto initial = input();
+	initial.position = {0.f, true, true, SensorSource::Hx8, 1};
+	initial.actuator = {};
+	machine.initialize(cfg, initial);
+	machine.request(HybridTarget::Driving, 0);
+	auto transitioning = initial;
+	transitioning.position = {1.f, true, true, SensorSource::Hx8, 2};
+	ASSERT_EQ(machine.update(transitioning).state, HybridState::Driving);
+	transitioning.now_us = 10;
+	transitioning.actuator.online = false;
+	const auto failed = machine.update(transitioning);
+	EXPECT_EQ(failed.fault, TransformFault::ActuatorCommunication);
+}

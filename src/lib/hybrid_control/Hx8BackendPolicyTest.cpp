@@ -8,16 +8,23 @@ TEST(Hx8BackendPolicy, RejectsMismatchedOrUnsafeStatus)
 {
 	EXPECT_FALSE(Hx8BackendPolicy::statusUsable(2, 1, true, true, true, 0, true, 20.f));
 	EXPECT_FALSE(Hx8BackendPolicy::statusUsable(1, 1, true, true, true, 0, false, 20.f));
+	EXPECT_FALSE(Hx8BackendPolicy::statusUsable(1, 1, false, true, true, 0, true, 20.f));
+	EXPECT_FALSE(Hx8BackendPolicy::statusUsable(1, 1, true, false, true, 0, true, 20.f));
+	EXPECT_FALSE(Hx8BackendPolicy::statusUsable(1, 1, true, true, false, 0, true, 20.f));
+	EXPECT_FALSE(Hx8BackendPolicy::statusUsable(1, 1, true, true, true, 1, true, 20.f));
 	EXPECT_TRUE(Hx8BackendPolicy::statusUsable(1, 1, true, true, true, 0, true, 20.f));
 }
 
 TEST(Hx8BackendPolicy, UsesConfiguredHx8EndpointsAndTarget)
 {
-	const float normalized = Hx8BackendPolicy::normalizeAngle(90.f, 90.f, -90.f);
+	const float normalized = Hx8BackendPolicy::normalizeAngle(0.f, 0.f, 90.f);
 	EXPECT_NEAR(normalized, 0.f, 1e-5f);
 	EXPECT_TRUE(Hx8BackendPolicy::endpointMatches(normalized, false));
 	EXPECT_FALSE(Hx8BackendPolicy::endpointMatches(normalized, true));
 	EXPECT_FALSE(Hx8BackendPolicy::endpointMatches(0.f, true));
+	EXPECT_FALSE(Hx8BackendPolicy::endpointMatchesAngleTolerance(0.f, true, 0.05f, 0.f, 90.f));
+	EXPECT_TRUE(Hx8BackendPolicy::parametersValid(1, 0.f, 90.f, 1000, 100, 100, 500, 3.f));
+	EXPECT_FALSE(Hx8BackendPolicy::parametersValid(255, 0.f, 90.f, 1000, 100, 100, 500, 3.f));
 }
 
 TEST(Hx8BackendPolicy, TimeoutAndProtocolAreNotAccepted)
@@ -53,7 +60,7 @@ TEST(Hx8CommandPolicy, FaultOnlyReleasesBoundedlyAndClearAllowsSameTargetAgain)
 	output.state = hybrid_control::HybridState::Fault;
 	output.fault = hybrid_control::TransformFault::Stall;
 	for (int i = 0; i < 3; ++i) {
-		auto release = policy.update(hybrid_control::ActuatorBackend::Hx8, output, i + 1);
+		auto release = policy.update(hybrid_control::ActuatorBackend::Hx8, output, i * 20'000 + 1);
 		EXPECT_EQ(release.action, hybrid_control::Hx8CommandAction::Release);
 		EXPECT_NE(release.sequence, 0u);
 	}

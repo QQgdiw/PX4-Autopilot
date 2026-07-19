@@ -27,6 +27,23 @@ bool Hx8BackendPolicy::endpointMatches(float normalized, bool driving_target, fl
 	       && fabsf(normalized - target) <= tolerance;
 }
 
+bool Hx8BackendPolicy::endpointMatchesAngleTolerance(float normalized, bool driving_target, float tolerance_rad,
+		float quad_deg, float rover_deg)
+{
+	const float span = fabsf((rover_deg - quad_deg) * static_cast<float>(M_PI / 180.0));
+	return span > 1e-6f && endpointMatches(normalized, driving_target, tolerance_rad / span);
+}
+
+bool Hx8BackendPolicy::parametersValid(int32_t id, float quad_deg, float rover_deg, int32_t move, int32_t acc,
+		int32_t dec, int32_t power, float transition_s)
+{
+	return id >= 0 && id <= 254 && std::isfinite(quad_deg) && std::isfinite(rover_deg)
+	       && quad_deg >= -180.f && quad_deg <= 180.f && rover_deg >= -180.f && rover_deg <= 180.f
+	       && fabsf(quad_deg - rover_deg) > 1e-4f && move > 0 && acc >= 0 && dec >= 0
+	       && move > acc + dec && move <= UINT16_MAX && power > 0 && power <= UINT16_MAX
+	       && std::isfinite(transition_s) && transition_s > 0.f && static_cast<float>(move) < transition_s * 1000.f;
+}
+
 bool Hx8BackendPolicy::commandAccepted(bool accepted, uint8_t result, uint8_t rejected_result,
 		uint8_t timeout_result, uint8_t protocol_error_result)
 {
@@ -49,15 +66,18 @@ Hx8CommandDecision Hx8CommandPolicy::update(ActuatorBackend backend, const Trans
 	}
 
 	if (isTransformationFaulted(output)) {
-		if (_release_attempts >= 3) {
+		if (_release_attempts >= 3 || (_release_sent && now_us - _last_release_us < 20'000)) {
 			return {};
 		}
 
 		++_release_attempts;
+		_last_release_us = now_us;
+		_release_sent = true;
 		return {Hx8CommandAction::Release, HybridTarget::None, nextSequence()};
 	}
 
 	_release_attempts = 0;
+	_release_sent = false;
 
 	if ((output.target == HybridTarget::Flying || output.target == HybridTarget::Driving)
 	    && (output.state == HybridState::TransitionToQuad || output.state == HybridState::TransitionToRover)
@@ -83,6 +103,7 @@ void Hx8CommandPolicy::resetAfterFaultClear()
 	_last_target = HybridTarget::None;
 	_last_motion_sequence = 0;
 	_release_attempts = 0;
+	_release_sent = false;
 	_last_hold_us = 0;
 }
 
