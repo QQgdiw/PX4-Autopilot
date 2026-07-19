@@ -47,6 +47,7 @@
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
 #include <lib/hybrid_control/TransformationStateMachine.hpp>
 #include <lib/hybrid_control/M2006DriveGate.hpp>
+#include <lib/hybrid_control/Hx8BackendPolicy.hpp>
 #include <uORB/SubscriptionMultiArray.hpp>
 
 // uORB 发布与订阅
@@ -161,6 +162,7 @@ private:
 	hybrid_control::HybridTarget _hx8_last_target{hybrid_control::HybridTarget::None};
 	uint64_t _hx8_last_hold{0};
 	uint8_t _hx8_release_attempts{0};
+	hybrid_control::Hx8CommandPolicy _hx8_command_policy;
 
 	bool _manual_commissioning_active{false};
 	bool _manual_value_initialized{false};
@@ -199,6 +201,13 @@ private:
 		,(ParamInt<px4::params::HYB_ACT_TYPE>) _param_hyb_act_type
 		,(ParamFloat<px4::params::HYB_STALL_T>) _param_hyb_stall_t
 		,(ParamFloat<px4::params::HYB_STALL_D>) _param_hyb_stall_d
+		,(ParamInt<px4::params::HX8_ID>) _param_hx8_id
+		,(ParamFloat<px4::params::HX8_ANG_QUD>) _param_hx8_ang_qud
+		,(ParamFloat<px4::params::HX8_ANG_ROV>) _param_hx8_ang_rov
+		,(ParamInt<px4::params::HX8_MOVE_T>) _param_hx8_move_t
+		,(ParamInt<px4::params::HX8_ACC_T>) _param_hx8_acc_t
+		,(ParamInt<px4::params::HX8_DEC_T>) _param_hx8_dec_t
+		,(ParamInt<px4::params::HX8_PWR_LIM>) _param_hx8_pwr_lim
 	)
 };
 

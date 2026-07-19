@@ -39,4 +39,14 @@ rover_differential start
 # 4. Custom Hybrid Arbiter (The Multiplexer/Hijacker)
 hybrid_vehicle_control start
 
+# rc.serial has already started hx8_uart_servo from HX8_SER_CFG.  Do not start
+# it a second time here; only query it when the HX8 backend is selected.
+if param compare HYB_ACT_TYPE 1
+then
+	if ! hx8_uart_servo status
+	then
+		echo "ERROR [Hybrid] HX8 UART status unavailable; transformation arming will be inhibited"
+	fi
+fi
+
 echo "[Hybrid] Core module start commands completed; check errors above."
