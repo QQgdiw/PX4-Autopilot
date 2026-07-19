@@ -135,6 +135,20 @@ Arming, prearming, lockdown, failsafe, timeout, protocol failure, or rejected
 write must deny/fail commissioning. Never repeatedly write configuration at
 normal startup.
 
+### Stopping the UART driver
+
+Use `hx8_uart_servo stop` only while the vehicle is fully disarmed and not
+prearmed, the mechanism is safely unloaded, and absence of motion has been
+confirmed; if necessary, first remove servo power with the external physical
+disconnect. Never stop the driver while armed, transitioning, holding an
+endpoint, or commissioning. In particular, `config write` and driver stop must
+not run concurrently.
+
+Driver stop does not send release. It closes the UART, after which PX4 cannot
+command release or observe the servo. Depending on its persistent/internal
+state the HX8 may continue producing torque, so stopping the driver is not an
+emergency-stop or torque-release operation.
+
 ## Fault handling and diagnosis
 
 On any transformation fault, expect latched `TRANSITION_FAULT`, inhibited
