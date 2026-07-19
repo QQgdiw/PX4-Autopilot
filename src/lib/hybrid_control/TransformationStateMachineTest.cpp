@@ -792,3 +792,27 @@ TEST(TransformationStateMachine, StableHx8CommunicationLossIsPrimaryFault)
 	const auto failed = machine.update(transitioning);
 	EXPECT_EQ(failed.fault, TransformFault::ActuatorCommunication);
 }
+
+TEST(TransformationStateMachine, SecondaryReleaseFailurePreservesStallPrimary)
+{
+	TransformationStateMachine machine;
+	auto cfg = config();
+	cfg.backend = ActuatorBackend::Hx8;
+	const auto initial = input();
+	machine.initialize(cfg, initial);
+	machine.request(HybridTarget::Driving, 0);
+	auto stalled = initial;
+	stalled.actuator_command_effective = true;
+	stalled.position = {0.2f, true, false, SensorSource::Hx8, 1};
+	EXPECT_EQ(machine.update(stalled).state, HybridState::TransitionToRover);
+	stalled.now_us = 900'000;
+	stalled.position.timestamp_us = stalled.now_us;
+	auto output = machine.update(stalled);
+	ASSERT_EQ(output.fault, TransformFault::Stall);
+	EXPECT_TRUE(output.release_requested);
+	stalled.now_us += 20'000;
+	stalled.actuator.online = false;
+	output = machine.update(stalled);
+	EXPECT_EQ(output.fault, TransformFault::Stall);
+	EXPECT_TRUE(output.release_requested);
+}
