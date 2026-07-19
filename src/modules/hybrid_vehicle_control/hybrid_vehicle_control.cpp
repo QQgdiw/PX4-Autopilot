@@ -37,6 +37,7 @@
 
 #include <px4_platform_common/cli.h>
 #include <px4_platform_common/getopt.h>
+#include <parameters/param.h>
 
 using namespace time_literals;
 using hybrid_control::HybridState;
@@ -141,8 +142,9 @@ extern "C" __EXPORT int hybrid_vehicle_control_main(int argc, char *argv[])
 
 TransformationConfig HybridVehicleControl::transformation_config() const
 {
+	const auto backend = static_cast<hybrid_control::ActuatorBackend>(_param_hyb_act_type.get());
 	return {
-		_param_hyb_sens_en.get(),
+		_param_hyb_sens_en.get() || backend == hybrid_control::ActuatorBackend::Hx8,
 		_param_hyb_boot_st.get(),
 		_param_hyb_sv_qud.get(),
 		_param_hyb_sv_rov.get(),
@@ -155,12 +157,20 @@ TransformationConfig HybridVehicleControl::transformation_config() const
 		_param_hyb_mag_id_qud.get(),
 		_param_hyb_mag_id_rov.get(),
 		_param_hyb_mag_thr_qud.get(),
-		_param_hyb_mag_thr_rov.get()
+		_param_hyb_mag_thr_rov.get(),
+		backend,
+		_param_hyb_stall_t.get(), _param_hyb_stall_d.get()
 	};
 }
 
 bool HybridVehicleControl::selected_feedback_fresh(hrt_abstime now, const TransformationConfig &config) const
 {
+	if (config.backend == hybrid_control::ActuatorBackend::Hx8) {
+		return timestamp_fresh(_hx8_status.last_valid_response, now, 500_ms)
+		       && _hx8_status.online && _hx8_status.healthy && _hx8_status.config_verified
+		       && _hx8_status.protection_flags == 0 && std::isfinite(_hx8_status.angle_deg);
+	}
+
 	if (!config.sensors_enabled) {
 		return true;
 	}
@@ -228,6 +238,7 @@ int HybridVehicleControl::clear_fault()
 
 TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstime now, const TransformationConfig &config)
 {
+	_hx8_status_sub.update(&_hx8_status);
 	sensor_encoder_s encoder{};
 
 	if (_encoder_sub.update(&encoder)) {
@@ -263,8 +274,30 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 	const bool tmag_rover_active = tmag_pair_valid
 				       && fabsf(_tmag_rover_cache.vector().z) >= config.tmag_rover_threshold;
 	hybrid_control::PositionSample position{};
+	hybrid_control::ActuatorHealth actuator{};
+	actuator.online = true;
+	actuator.healthy = true;
+	actuator.config_verified = true;
+	actuator.command_accepted = true;
+	if (config.backend == hybrid_control::ActuatorBackend::Hx8) {
+		const float angle = _hx8_status.angle_deg * static_cast<float>(M_PI / 180.0);
+		const bool fresh = timestamp_fresh(_hx8_status.last_valid_response, now, 500_ms);
+		const bool valid = fresh && _hx8_status.online && _hx8_status.healthy && _hx8_status.config_verified
+				   && _hx8_status.protection_flags == 0 && std::isfinite(angle);
+		const float normalized = hybrid_control::normalizeAs5600(angle, config.quad_angle, config.rover_angle);
+		const bool endpoint = valid && ((normalized <= 0.02f) || (normalized >= 0.98f));
+		position = {normalized, valid, endpoint, SensorSource::Hx8, _hx8_status.last_valid_response};
+		actuator.online = fresh && _hx8_status.online;
+		actuator.healthy = _hx8_status.healthy;
+		actuator.config_verified = _hx8_status.config_verified;
+		actuator.command_accepted = _hx8_status.command_accepted
+					|| _hx8_status.command_result != hx8_servo_status_s::RESULT_REJECTED;
+		actuator.protection_flags = _hx8_status.protection_flags;
+	}
 
-	if (encoder_valid) {
+	if (config.backend == hybrid_control::ActuatorBackend::Hx8) {
+		// Internal HX8 angle is authoritative.
+	} else if (encoder_valid) {
 		position = {hybrid_control::normalizeAs5600(_current_mechanism_angle, config.quad_angle, config.rover_angle),
 			    true, false, SensorSource::As5600, _last_encoder_timestamp};
 
@@ -293,8 +326,11 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 		tmag_pair_valid,
 		tmag_rover_active,
 		position,
-		{},
-		transformation_pwm_command_effective()
+		actuator,
+		(config.backend == hybrid_control::ActuatorBackend::Hx8)
+			? (_transformation_output.state == HybridState::TransitionToQuad
+			   || _transformation_output.state == HybridState::TransitionToRover)
+			: transformation_pwm_command_effective()
 	};
 }
 
@@ -340,6 +376,7 @@ void HybridVehicleControl::Run()
 	update_state_machine(input);
 	publish_status(input, now);
 	publish_servo(now);
+	publish_hx8_command(now);
 	publish_motor_outputs(now);
 }
 
@@ -507,6 +544,15 @@ void HybridVehicleControl::publish_status(const TransformationInput &input, hrt_
 	status.tmag_rover_valid = input.tmag_rover_valid;
 	status.sensors_enabled = _transformation_config_tracker.active().sensors_enabled;
 	status.position_confirmed = _transformation_output.position_confirmed;
+	status.actuator_backend = _transformation_config_tracker.active().backend == hybrid_control::ActuatorBackend::Hx8
+					 ? hybrid_vehicle_status_s::ACTUATOR_HX8 : hybrid_vehicle_status_s::ACTUATOR_PWM;
+	status.position_normalized = input.position.normalized;
+	status.position_valid = input.position.valid;
+	status.actuator_online = input.actuator.online;
+	status.actuator_healthy = input.actuator.healthy;
+	status.actuator_config_verified = input.actuator.config_verified;
+	status.actuator_protection_flags = input.actuator.protection_flags;
+	status.no_progress_elapsed = _transformation_output.no_progress_elapsed_us;
 	const bool transformation_faulted = hybrid_control::isTransformationFaulted(_transformation_output);
 
 	if (_manual_commissioning_active && !transformation_faulted) {
@@ -601,6 +647,54 @@ void HybridVehicleControl::publish_servo(hrt_abstime now)
 	}
 
 	_actuator_servos_pub.publish(servos);
+}
+
+void HybridVehicleControl::publish_hx8_command(hrt_abstime now)
+{
+	if (!_transformation_config_tracker.hasActive()
+	    || _transformation_config_tracker.active().backend != hybrid_control::ActuatorBackend::Hx8) {
+		return;
+	}
+
+	hx8_servo_command_s command{};
+	command.timestamp = now;
+	command.servo_id = 0;
+	param_t id = param_find("HX8_ID");
+	if (id != PARAM_INVALID) { int32_t v{}; param_get(id, &v); command.servo_id = static_cast<uint8_t>(v); }
+	command.move_time_ms = 1000;
+	command.acceleration_time_ms = 100;
+	command.deceleration_time_ms = 100;
+	param_t p = param_find("HX8_MOVE_T"); if (p != PARAM_INVALID) { int32_t v{}; param_get(p, &v); command.move_time_ms = v; }
+	p = param_find("HX8_ACC_T"); if (p != PARAM_INVALID) { int32_t v{}; param_get(p, &v); command.acceleration_time_ms = v; }
+	p = param_find("HX8_DEC_T"); if (p != PARAM_INVALID) { int32_t v{}; param_get(p, &v); command.deceleration_time_ms = v; }
+	p = param_find("HX8_PWR_LIM"); if (p != PARAM_INVALID) { int32_t v{}; param_get(p, &v); command.power_mw = v; }
+
+	const bool faulted = hybrid_control::isTransformationFaulted(_transformation_output);
+	if (faulted) {
+		if (_hx8_release_attempts >= 3) { return; }
+		command.type = hx8_servo_command_s::COMMAND_RELEASE;
+		++_hx8_release_attempts;
+		_hx8_command_pub.publish(command);
+		return;
+	}
+	_hx8_release_attempts = 0;
+	const auto target = _transformation_output.target;
+	if ((target == HybridTarget::Flying || target == HybridTarget::Driving) && target != _hx8_last_target) {
+		command.type = hx8_servo_command_s::COMMAND_MOVE;
+		command.target_angle_deg = (target == HybridTarget::Flying ? _transformation_config_tracker.active().quad_angle
+				: _transformation_config_tracker.active().rover_angle) * 180.f / static_cast<float>(M_PI);
+		command.sequence = ++_hx8_sequence;
+		_hx8_last_target = target;
+		_hx8_command_pub.publish(command);
+		return;
+	}
+	if ((now - _hx8_last_hold) >= 200_ms
+	    && (_transformation_output.state == HybridState::Flying || _transformation_output.state == HybridState::Driving)) {
+		command.type = hx8_servo_command_s::COMMAND_HOLD;
+		command.sequence = ++_hx8_sequence;
+		_hx8_last_hold = now;
+		_hx8_command_pub.publish(command);
+	}
 }
 
 void HybridVehicleControl::publish_motor_outputs(hrt_abstime now)

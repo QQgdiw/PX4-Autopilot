@@ -63,6 +63,8 @@
 #include <uORB/topics/actuator_motors.h>
 #include <uORB/topics/vehicle_command_ack.h>
 #include <uORB/topics/magnetic_sensor.h>
+#include <uORB/topics/hx8_servo_status.h>
+#include <uORB/topics/hx8_servo_command.h>
 
 class HybridVehicleControl : public ModuleBase<HybridVehicleControl>, public ModuleParams, public px4::ScheduledWorkItem
 {
@@ -95,6 +97,7 @@ private:
 		hrt_abstime now, const hybrid_control::TransformationConfig &config);
 	void publish_status(const hybrid_control::TransformationInput &input, hrt_abstime now);
 	void publish_servo(hrt_abstime now);
+	void publish_hx8_command(hrt_abstime now);
 	void publish_motor_outputs(hrt_abstime now);
 	hybrid_control::TransformationConfig transformation_config() const;
 	int clear_fault();
@@ -116,6 +119,7 @@ private:
 	uORB::Subscription _vehicle_control_mode_sub{ORB_ID(vehicle_control_mode)};
 	uORB::Subscription _encoder_sub{ORB_ID(sensor_encoder)};
 	uORB::SubscriptionMultiArray<magnetic_sensor_s, 2> _magnetic_subs{ORB_ID::magnetic_sensor};
+	uORB::Subscription _hx8_status_sub{ORB_ID(hx8_servo_status)};
 	// 监听多旋翼分配器发出的电机指令 (Motor 1-4)
 	uORB::Subscription _actuator_motors_mc_sub{ORB_ID(actuator_motors_mc)};
 	// 监听官方差速模块发出的车轮指令 (Motor 5-6)
@@ -125,6 +129,7 @@ private:
 	uORB::Publication<actuator_servos_s>      _actuator_servos_pub{ORB_ID(actuator_servos)};
 	uORB::Publication<hybrid_vehicle_status_s> _hybrid_status_pub{ORB_ID(hybrid_vehicle_status)};
 	uORB::Publication<vehicle_command_s>      _vehicle_command_pub{ORB_ID(vehicle_command)};
+	uORB::Publication<hx8_servo_command_s> _hx8_command_pub{ORB_ID(hx8_servo_command)};
 	// 全系统唯一允许向最终物理引脚发送电机指令的模块
 	uORB::Publication<actuator_motors_s> _actuator_motors_final_pub{ORB_ID(actuator_motors)};
 
@@ -151,6 +156,11 @@ private:
 	hrt_abstime _transition_start_time{0};
 	bool _transition_timing_active{false};
 	actuator_armed_s _actuator_armed{};
+	hx8_servo_status_s _hx8_status{};
+	uint32_t _hx8_sequence{0};
+	hybrid_control::HybridTarget _hx8_last_target{hybrid_control::HybridTarget::None};
+	uint64_t _hx8_last_hold{0};
+	uint8_t _hx8_release_attempts{0};
 
 	bool _manual_commissioning_active{false};
 	bool _manual_value_initialized{false};
@@ -186,6 +196,9 @@ private:
 		(ParamInt<px4::params::HYB_MAG_ID_ROV>) 	_param_hyb_mag_id_rov,
 		(ParamFloat<px4::params::HYB_MAG_THR_QUD>) 	_param_hyb_mag_thr_qud,
 		(ParamFloat<px4::params::HYB_MAG_THR_ROV>) 	_param_hyb_mag_thr_rov
+		,(ParamInt<px4::params::HYB_ACT_TYPE>) _param_hyb_act_type
+		,(ParamFloat<px4::params::HYB_STALL_T>) _param_hyb_stall_t
+		,(ParamFloat<px4::params::HYB_STALL_D>) _param_hyb_stall_d
 	)
 };
 

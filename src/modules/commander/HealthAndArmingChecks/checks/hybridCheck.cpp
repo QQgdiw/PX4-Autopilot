@@ -140,6 +140,7 @@ bool HybridChecks::getConfiguration(HybridCheckConfiguration &configuration) con
 	}
 
 	return getIntParameter("M2K_EN", configuration.m2006_enabled)
+	       && getOptionalIntParameter("HYB_ACT_TYPE", configuration.actuator_backend)
 	       && getIntParameter("UAVCAN_ENABLE", configuration.uavcan_enabled)
 	       && getOptionalIntParameter("CYPHAL_ENABLE", configuration.cyphal_enabled)
 	       && getIntParameter("PWM_MAIN_FUNC5", configuration.motor5_function)
@@ -157,6 +158,11 @@ bool HybridChecks::getConfiguration(HybridCheckConfiguration &configuration) con
 
 bool HybridChecks::hasSafeServoMapping(const HybridCheckConfiguration &configuration) const
 {
+	if (configuration.actuator_backend == hybrid_vehicle_status_s::ACTUATOR_HX8) {
+		return configuration.motor5_function == 0 && configuration.motor6_function == 0
+		       && configuration.m8_disarmed == 0 && configuration.m8_failsafe == 0;
+	}
+
 	return configuration.motor5_function == 0 && configuration.motor6_function == 0
 	       && configuration.servo_function == Servo1Function && configuration.m8_disarmed == 0
 	       && configuration.m8_failsafe == 0 && std::isfinite(configuration.quad_servo_target)

@@ -6,6 +6,14 @@
 
 echo "[Hybrid] Starting Quad-Rover Hybrid Control Modules..."
 
+if param compare HYB_ACT_TYPE 1
+then
+	if ! hx8_uart_servo start -d /dev/ttyS3
+	then
+		echo "ERROR [Hybrid] HX8 UART servo unavailable; transformation disabled"
+	fi
+fi
+
 # Board and external sensors have already been started by rcS before vehicle setup.
 # CAN ownership parameters are applied at boot; change them only before a reboot.
 if param greater -s M2K_EN 0
