@@ -75,6 +75,18 @@ void Controller::setExpectedConfig(const ProtectionConfig &config)
 	_status.persistent_write_active = false;
 }
 
+void Controller::setServoId(uint8_t servo_id)
+{
+	if (servo_id > 254) {
+		_status.healthy = false;
+		_status.config_verified = false;
+		return;
+	}
+
+	_servo_id = servo_id;
+	_status.servo_id = servo_id;
+}
+
 void Controller::setTarget(const MotionCommand &command)
 {
 	if (command.sequence <= _last_target_sequence || command.type != 0 || !std::isfinite(command.target_angle_deg)

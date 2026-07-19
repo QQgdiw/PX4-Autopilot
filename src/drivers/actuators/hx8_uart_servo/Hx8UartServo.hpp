@@ -27,11 +27,14 @@ public:
 	void Run() override;
 	int init();
 	int print_status() override;
+	int cli_config_check();
+	int cli_config_write();
 
 private:
 	bool load_parameters();
 	bool valid_parameters() const;
 	void publish_status();
+	void emit_events();
 	void receive();
 	int send(const hx8::PendingRequest &request);
 	int configure_uart();
@@ -49,5 +52,9 @@ private:
 	hx8_servo_command_s _command {};
 	uint32_t _last_sequence{0};
 	bool _explicit_commissioning{false};
+	bool _event_offline{false};
+	bool _event_protection{false};
+	bool _event_config{false};
+	bool _event_rejected{false};
 	hx8::ProtectionConfig _protection {};
 };

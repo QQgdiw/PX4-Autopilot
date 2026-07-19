@@ -140,6 +140,17 @@ TEST(Hx8Controller, AllowsOnlyOneOutstandingRequestAndEnforcesSpacing)
 	EXPECT_TRUE(controller.update(input(Controller::MinimumCommandSpacingUs)).valid);
 }
 
+TEST(Hx8Controller, ConfiguredServoIdIsUsedForBootBeforeAnyTarget)
+{
+	Controller controller;
+	controller.setExpectedConfig(validConfig());
+	controller.setServoId(ServoId);
+	const PendingRequest request = controller.update(input(0));
+	ASSERT_TRUE(request.valid);
+	EXPECT_EQ(request.command, CommandId::Ping);
+	EXPECT_EQ(controller.status().servo_id, ServoId);
+}
+
 TEST(Hx8Controller, RetriesTwiceThenMarksOfflineAndStillReleases)
 {
 	Controller controller;

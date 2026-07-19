@@ -85,6 +85,7 @@ public:
 	static constexpr uint64_t CommandExpiryUs = 500000;
 
 	void setExpectedConfig(const ProtectionConfig &config);
+	void setServoId(uint8_t servo_id);
 	void setTarget(const MotionCommand &command);
 	void requestRelease(uint32_t sequence);
 	void requestPersistentWrite();
