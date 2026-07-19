@@ -446,3 +446,45 @@ TEST(Hx8Controller, RejectsUnexpectedAndMalformedResponses)
 	EXPECT_EQ(controller.status().rx_valid_count, 0u);
 	EXPECT_FALSE(controller.status().online);
 }
+
+TEST(Hx8Controller, AbortsOutstandingWriteWhenCommissioningGateIsLost)
+{
+	Controller controller;
+	uint64_t now = finishBoot(controller);
+	controller.requestPersistentWrite();
+	ControllerInput commissioning = input(now += Controller::MinimumCommandSpacingUs);
+	commissioning.explicit_commissioning = true;
+	PendingRequest write = controller.update(commissioning);
+	ASSERT_TRUE(write.valid);
+	ASSERT_EQ(write.command, CommandId::ParamWrite);
+	EXPECT_TRUE(controller.status().persistent_write_active);
+
+	ControllerInput unsafe = input(now += Controller::MinimumCommandSpacingUs, true);
+	unsafe.explicit_commissioning = true;
+	EXPECT_FALSE(controller.update(unsafe).valid);
+	EXPECT_FALSE(controller.status().persistent_write_active);
+	EXPECT_FALSE(controller.status().config_verified);
+
+	controller.acceptResponse(response(CommandId::ParamWrite, ServoId, 0, 1), now);
+	EXPECT_FALSE(controller.status().persistent_write_active);
+}
+
+TEST(Hx8Controller, AbortsWriteOnUnexpectedResponseAndIgnoresLaterValidResponse)
+{
+	Controller controller;
+	uint64_t now = finishBoot(controller);
+	controller.requestPersistentWrite();
+	ControllerInput commissioning = input(now += Controller::MinimumCommandSpacingUs);
+	commissioning.explicit_commissioning = true;
+	PendingRequest write = controller.update(commissioning);
+	ASSERT_TRUE(write.valid);
+	ASSERT_EQ(write.command, CommandId::ParamWrite);
+
+	controller.acceptResponse(response(CommandId::Status, ServoId, 0, 15), now);
+	EXPECT_FALSE(controller.status().persistent_write_active);
+	EXPECT_FALSE(controller.status().config_verified);
+
+	controller.acceptResponse(response(CommandId::ParamWrite, ServoId, 0, 1), now);
+	EXPECT_FALSE(controller.status().persistent_write_active);
+	EXPECT_EQ(controller.status().rx_error_count, 2u);
+}

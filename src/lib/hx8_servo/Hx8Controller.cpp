@@ -155,6 +155,17 @@ PendingRequest Controller::makeParameterWrite(uint8_t parameter, uint64_t now_us
 PendingRequest Controller::update(const ControllerInput &input)
 {
 	PendingRequest none {};
+	const bool fully_disarmed = !input.armed && !input.prearmed;
+	const bool commissioning_allowed = fully_disarmed && input.explicit_commissioning && !input.lockdown
+					   && !input.failsafe;
+
+	if (_write_state != WriteState::Idle && !commissioning_allowed) {
+		_outstanding = {};
+		_retry_request = {};
+		_retry_pending = false;
+		_request_retry_count = 0;
+		abortPersistentWrite();
+	}
 
 	if (_outstanding.valid) {
 		return none;
@@ -176,14 +187,6 @@ PendingRequest Controller::update(const ControllerInput &input)
 		_outstanding = _retry_request;
 		_last_request_us = input.now_us;
 		return _outstanding;
-	}
-
-	const bool fully_disarmed = !input.armed && !input.prearmed;
-	const bool commissioning_allowed = fully_disarmed && input.explicit_commissioning && !input.lockdown
-					   && !input.failsafe;
-
-	if (_write_state != WriteState::Idle && !commissioning_allowed) {
-		abortPersistentWrite();
 	}
 
 	if (_persistent_write_requested && _write_state == WriteState::Idle && commissioning_allowed
@@ -268,6 +271,15 @@ void Controller::acceptResponse(const Frame &frame, uint64_t now_us)
 	if (!_outstanding.valid || frame.command != _outstanding.command || frame.servo_id != _servo_id
 	    || !responseShapeValid(frame)) {
 		++_status.rx_error_count;
+
+		if (_write_state != WriteState::Idle) {
+			_outstanding = {};
+			_retry_request = {};
+			_retry_pending = false;
+			_request_retry_count = 0;
+			abortPersistentWrite();
+		}
+
 		return;
 	}
 
