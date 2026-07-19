@@ -286,7 +286,8 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 		const bool valid = fresh && _hx8_status.online && _hx8_status.healthy && _hx8_status.config_verified
 				   && _hx8_status.protection_flags == 0 && std::isfinite(angle);
 		const float normalized = hybrid_control::normalizeAs5600(angle, config.quad_angle, config.rover_angle);
-		const bool endpoint = valid && ((normalized <= 0.02f) || (normalized >= 0.98f));
+		const float wanted = _transformation_output.target == HybridTarget::Flying ? 0.f : 1.f;
+		const bool endpoint = valid && ((normalized - wanted) >= -0.02f && (normalized - wanted) <= 0.02f);
 		position = {normalized, valid, endpoint, SensorSource::Hx8, _hx8_status.last_valid_response};
 		actuator.online = fresh && _hx8_status.online;
 		actuator.healthy = _hx8_status.healthy;
