@@ -489,10 +489,18 @@ TEST(Hx8Controller, MonitorsAtMovingAndStableCadencesAndDecodesStatus)
 	EXPECT_FALSE(controller.update(input(now + Controller::MovingMonitorIntervalUs - 1)).valid);
 	request = controller.update(input(now += Controller::MovingMonitorIntervalUs));
 	EXPECT_EQ(request.priority, RequestPriority::Status);
-	status.payload[8] = 0x44;
+	status.payload[8] = 0x02;
+	controller.acceptResponse(status, now);
+	EXPECT_EQ(controller.status().status_flags, 0x02);
+	EXPECT_EQ(controller.status().protection_flags, 0);
+	EXPECT_TRUE(controller.status().healthy);
+
+	request = controller.update(input(now += Controller::StableMonitorIntervalUs));
+	EXPECT_EQ(request.priority, RequestPriority::Status);
+	status.payload[8] = 0x04;
 	controller.acceptResponse(status, now);
 	EXPECT_FALSE(controller.status().healthy);
-	EXPECT_EQ(controller.status().protection_flags, 0x44);
+	EXPECT_EQ(controller.status().protection_flags, 0x04);
 	EXPECT_FALSE(controller.update(input(now + Controller::StableMonitorIntervalUs - 1)).valid);
 	EXPECT_EQ(controller.update(input(now + Controller::StableMonitorIntervalUs)).priority, RequestPriority::Status);
 }

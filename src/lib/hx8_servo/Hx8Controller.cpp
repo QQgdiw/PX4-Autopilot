@@ -19,7 +19,7 @@ namespace
 constexpr uint8_t BootParameters[] {33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 46};
 constexpr uint8_t WritableParameters[] {33, 37, 38, 39, 40, 41, 42, 43, 46};
 constexpr uint8_t MovingFlag = 1u << 0;
-constexpr uint8_t ErrorAndProtectionFlags = 0xfe;
+constexpr uint8_t ErrorAndProtectionFlags = 0xfc;
 
 uint16_t read16(const uint8_t *bytes)
 {
