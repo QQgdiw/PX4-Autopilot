@@ -124,12 +124,18 @@ bool Hx8UartServo::load_parameters()
 	return true;
 }
 
+bool Hx8UartServo::endpoint_angle_match(float angle_deg) const
+{
+	constexpr float AngleToleranceDeg = 0.05f;
+	return std::isfinite(angle_deg)
+	       && (fabsf(angle_deg - _quad_angle_deg) <= AngleToleranceDeg
+		   || fabsf(angle_deg - _rover_angle_deg) <= AngleToleranceDeg);
+}
+
 bool Hx8UartServo::valid_motion_command(const hx8_servo_command_s &command) const
 {
-	if (command.servo_id != _configured_servo_id || !std::isfinite(command.target_angle_deg)
+	if (command.servo_id != _configured_servo_id || !endpoint_angle_match(command.target_angle_deg)
 	    || command.target_angle_deg < -180.f || command.target_angle_deg > 180.f
-	    || command.target_angle_deg < fminf(_quad_angle_deg, _rover_angle_deg)
-	    || command.target_angle_deg > fmaxf(_quad_angle_deg, _rover_angle_deg)
 	    || command.move_time_ms != _move_time_ms || command.acceleration_time_ms != _acceleration_time_ms
 	    || command.deceleration_time_ms != _deceleration_time_ms || command.power_mw == 0
 	    || command.power_mw > _run_power_mw || command.move_time_ms <= command.acceleration_time_ms

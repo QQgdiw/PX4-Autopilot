@@ -59,6 +59,7 @@ private:
 	void finish_commissioning_request();
 	void complete_commissioning(CommissioningState state);
 	int consume_commissioning_terminal();
+	bool endpoint_angle_match(float angle_deg) const;
 	bool valid_motion_command(const hx8_servo_command_s &command) const;
 	int send(const hx8::PendingRequest &request);
 	int configure_uart();

@@ -93,26 +93,12 @@ void Controller::setTarget(const MotionCommand &command)
 {
 	if (command.sequence <= _last_target_sequence || command.type != 0 || !std::isfinite(command.target_angle_deg)
 	    || command.target_angle_deg < -180.f || command.target_angle_deg > 180.f
-	    || command.servo_id > 254 || command.power_mw == 0
+	    || command.servo_id > 254 || command.servo_id != _servo_id || command.power_mw == 0
 	    || command.move_time_ms <= static_cast<uint32_t>(command.acceleration_time_ms)
 			+ static_cast<uint32_t>(command.deceleration_time_ms)) {
 		_status.command_accepted = false;
 		_status.command_result = static_cast<uint8_t>(OperationResult::Rejected);
 		return;
-	}
-
-	if (_servo_id != command.servo_id) {
-		_servo_id = command.servo_id;
-		_status.servo_id = command.servo_id;
-
-		if (_sent_any) {
-			_status.config_verified = false;
-			_status.config_check_complete = false;
-			_status.healthy = false;
-			_boot_matches = true;
-			_boot_index = 0;
-			_boot_state = BootState::Ping;
-		}
 	}
 
 	_target = command;

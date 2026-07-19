@@ -94,6 +94,7 @@ Frame response(CommandId command, uint8_t servo_id, uint16_t value = 0, uint8_t 
 uint64_t finishBoot(Controller &controller, const ProtectionConfig &config = validConfig())
 {
 	controller.setExpectedConfig(config);
+	controller.setServoId(ServoId);
 	// Select the configured servo ID without leaving a runnable target after boot.
 	controller.setTarget(motion(1, UINT64_MAX));
 	uint64_t now = 0;
@@ -130,6 +131,7 @@ TEST(Hx8Controller, AllowsOnlyOneOutstandingRequestAndEnforcesSpacing)
 {
 	Controller controller;
 	controller.setExpectedConfig(validConfig());
+	controller.setServoId(ServoId);
 	controller.setTarget(motion(1));
 	PendingRequest request = controller.update(input(0));
 	ASSERT_TRUE(request.valid);
@@ -155,6 +157,7 @@ TEST(Hx8Controller, RetriesTwiceThenMarksOfflineAndStillReleases)
 {
 	Controller controller;
 	controller.setExpectedConfig(validConfig());
+	controller.setServoId(ServoId);
 	controller.setTarget(motion(1));
 	ASSERT_TRUE(controller.update(input(0)).valid);
 
@@ -252,6 +255,27 @@ TEST(Hx8Controller, RejectsUnsafeMotionParametersBeforeChangingServoId)
 	EXPECT_EQ(controller.status().command_result, static_cast<uint8_t>(OperationResult::Rejected));
 }
 
+TEST(Hx8Controller, RejectsRuntimeServoIdChangeWithoutTouchingBootState)
+{
+	Controller controller;
+	controller.setExpectedConfig(validConfig());
+	controller.setServoId(ServoId);
+	const auto before = controller.status();
+
+	MotionCommand invalid = motion(1);
+	invalid.servo_id = ServoId + 1;
+	controller.setTarget(invalid);
+
+	EXPECT_EQ(controller.status().command_result, static_cast<uint8_t>(OperationResult::Rejected));
+	EXPECT_EQ(controller.status().servo_id, before.servo_id);
+	EXPECT_EQ(controller.status().config_verified, before.config_verified);
+	EXPECT_EQ(controller.status().config_check_complete, before.config_check_complete);
+	EXPECT_EQ(controller.status().persistent_write_active, before.persistent_write_active);
+	const PendingRequest request = controller.update(input(0));
+	ASSERT_TRUE(request.valid);
+	EXPECT_EQ(request.command, CommandId::Ping);
+}
+
 TEST(Hx8Controller, GatesMotionOnArmingSafetyAndVerifiedCalibration)
 {
 	Controller controller;
@@ -307,6 +331,7 @@ TEST(Hx8Controller, BootPingsAndReadsCompleteConfigurationWithoutWriting)
 	Controller controller;
 	const ProtectionConfig config = validConfig();
 	controller.setExpectedConfig(config);
+	controller.setServoId(ServoId);
 	controller.setTarget(motion(1));
 	uint64_t now = 0;
 	bool seen[47] {};
@@ -336,6 +361,7 @@ TEST(Hx8Controller, ConfigurationMismatchPreventsVerification)
 	Controller controller;
 	const ProtectionConfig config = validConfig();
 	controller.setExpectedConfig(config);
+	controller.setServoId(ServoId);
 	controller.setTarget(motion(1));
 	uint64_t now = 0;
 	PendingRequest request = controller.update(input(now));
