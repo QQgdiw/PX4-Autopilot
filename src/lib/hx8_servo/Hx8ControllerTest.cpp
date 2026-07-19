@@ -389,6 +389,7 @@ TEST(Hx8Controller, PersistentWriteUsesPerItemReadbackAndCompletes)
 	EXPECT_EQ(reads, 9u);
 	EXPECT_FALSE(controller.status().persistent_write_active);
 	EXPECT_TRUE(controller.status().config_verified);
+	EXPECT_EQ(controller.status().persistent_write_result, OperationResult::Accepted);
 }
 
 TEST(Hx8Controller, PersistentReadbackMismatchAbortsAndMarksUnverified)
@@ -482,7 +483,7 @@ TEST(Hx8Controller, AbortsOutstandingWriteWhenCommissioningGateIsLost)
 
 TEST(Hx8Controller, AbortsWriteOnUnexpectedResponseAndIgnoresLaterValidResponse)
 {
-	auto verifyMismatchAbortsWrite = [](const Frame &mismatch) {
+	auto verifyMismatchAbortsWrite = [](const Frame & mismatch) {
 		Controller controller;
 		uint64_t now = finishBoot(controller);
 		controller.requestPersistentWrite();
@@ -517,4 +518,61 @@ TEST(Hx8Controller, AbortsWriteOnUnexpectedResponseAndIgnoresLaterValidResponse)
 		SCOPED_TRACE("malformed payload length");
 		verifyMismatchAbortsWrite(response(CommandId::ParamWrite, ServoId, 0, 2));
 	}
+}
+
+TEST(Hx8Controller, ReportsConfigurationCheckOnlyAfterBootReadCompletes)
+{
+	Controller controller;
+	controller.setExpectedConfig(validConfig());
+	controller.setServoId(ServoId);
+	EXPECT_FALSE(controller.status().config_check_complete);
+
+	finishBoot(controller);
+	EXPECT_TRUE(controller.status().config_check_complete);
+	EXPECT_TRUE(controller.status().config_verified);
+}
+
+TEST(Hx8Controller, ProtocolErrorAbortsPersistentWriteFailClosed)
+{
+	Controller controller;
+	uint64_t now = finishBoot(controller);
+	controller.requestPersistentWrite();
+	ControllerInput commissioning = input(now += Controller::MinimumCommandSpacingUs);
+	commissioning.explicit_commissioning = true;
+	ASSERT_EQ(controller.update(commissioning).command, CommandId::ParamWrite);
+
+	controller.notifyProtocolError();
+
+	EXPECT_EQ(controller.status().protocol_error_count, 1u);
+	EXPECT_FALSE(controller.status().persistent_write_active);
+	EXPECT_FALSE(controller.status().config_verified);
+	EXPECT_EQ(controller.status().persistent_write_result, OperationResult::ProtocolError);
+}
+
+TEST(Hx8Controller, TransportErrorIsExplicitAndAbortsPersistentWrite)
+{
+	Controller controller;
+	uint64_t now = finishBoot(controller);
+	controller.requestPersistentWrite();
+	ControllerInput commissioning = input(now += Controller::MinimumCommandSpacingUs);
+	commissioning.explicit_commissioning = true;
+	ASSERT_EQ(controller.update(commissioning).command, CommandId::ParamWrite);
+
+	controller.notifyTransportError();
+
+	EXPECT_EQ(controller.status().transport_error_count, 1u);
+	EXPECT_FALSE(controller.status().online);
+	EXPECT_FALSE(controller.status().healthy);
+	EXPECT_FALSE(controller.status().persistent_write_active);
+	EXPECT_EQ(controller.status().persistent_write_result, OperationResult::ProtocolError);
+}
+
+TEST(Hx8Controller, LocalCommandRejectionHasExplicitTerminalResult)
+{
+	Controller controller;
+	controller.rejectCommand(42);
+
+	EXPECT_EQ(controller.status().command_sequence, 42u);
+	EXPECT_FALSE(controller.status().command_accepted);
+	EXPECT_EQ(controller.status().command_result, static_cast<uint8_t>(OperationResult::Rejected));
 }

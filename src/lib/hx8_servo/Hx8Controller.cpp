@@ -67,12 +67,14 @@ void Controller::setExpectedConfig(const ProtectionConfig &config)
 	_expected = config;
 	_expected_calibrated = calibrated(config);
 	_status.config_verified = false;
+	_status.config_check_complete = false;
 	_status.healthy = false;
 	_boot_matches = true;
 	_boot_index = 0;
 	_boot_state = BootState::Ping;
 	_write_state = WriteState::Idle;
 	_status.persistent_write_active = false;
+	_status.persistent_write_result = OperationResult::None;
 }
 
 void Controller::setServoId(uint8_t servo_id)
@@ -92,6 +94,7 @@ void Controller::setTarget(const MotionCommand &command)
 	if (command.sequence <= _last_target_sequence || command.type != 0 || !std::isfinite(command.target_angle_deg)
 	    || command.target_angle_deg < -180.f || command.target_angle_deg > 180.f) {
 		_status.command_accepted = false;
+		_status.command_result = static_cast<uint8_t>(OperationResult::Rejected);
 		return;
 	}
 
@@ -101,6 +104,7 @@ void Controller::setTarget(const MotionCommand &command)
 
 		if (_sent_any) {
 			_status.config_verified = false;
+			_status.config_check_complete = false;
 			_status.healthy = false;
 			_boot_matches = true;
 			_boot_index = 0;
@@ -113,6 +117,7 @@ void Controller::setTarget(const MotionCommand &command)
 	_target_pending = true;
 	_status.command_sequence = command.sequence;
 	_status.command_accepted = false;
+	_status.command_result = static_cast<uint8_t>(OperationResult::None);
 }
 
 void Controller::requestRelease(uint32_t sequence)
@@ -120,12 +125,30 @@ void Controller::requestRelease(uint32_t sequence)
 	if (sequence > _last_release_sequence) {
 		_last_release_sequence = sequence;
 		_release_pending = true;
+		_status.command_result = static_cast<uint8_t>(OperationResult::None);
 	}
+}
+
+void Controller::rejectCommand(uint32_t sequence)
+{
+	_status.command_sequence = sequence;
+	_status.command_accepted = false;
+	_status.command_result = static_cast<uint8_t>(OperationResult::Rejected);
 }
 
 void Controller::requestPersistentWrite()
 {
 	_persistent_write_requested = true;
+	_status.persistent_write_result = OperationResult::None;
+}
+
+void Controller::cancelPersistentWrite()
+{
+	_outstanding = {};
+	_retry_request = {};
+	_retry_pending = false;
+	_request_retry_count = 0;
+	abortPersistentWrite(OperationResult::Rejected);
 }
 
 PendingRequest Controller::makeRequest(RequestPriority priority, CommandId command, const uint8_t *payload,
@@ -176,7 +199,7 @@ PendingRequest Controller::update(const ControllerInput &input)
 		_retry_request = {};
 		_retry_pending = false;
 		_request_retry_count = 0;
-		abortPersistentWrite();
+		abortPersistentWrite(OperationResult::Rejected);
 	}
 
 	if (_outstanding.valid) {
@@ -206,6 +229,7 @@ PendingRequest Controller::update(const ControllerInput &input)
 		_write_index = 0;
 		_write_state = WriteState::Write;
 		_status.persistent_write_active = true;
+		_status.persistent_write_result = OperationResult::None;
 		_status.config_verified = false;
 		_status.healthy = false;
 	}
@@ -233,6 +257,7 @@ PendingRequest Controller::update(const ControllerInput &input)
 		if (input.now_us < _target.timestamp_us || input.now_us - _target.timestamp_us > CommandExpiryUs) {
 			_target_pending = false;
 			_status.command_accepted = false;
+			_status.command_result = static_cast<uint8_t>(OperationResult::Rejected);
 
 		} else if (motion_allowed) {
 			uint8_t payload[10] {};
@@ -282,16 +307,7 @@ void Controller::acceptResponse(const Frame &frame, uint64_t now_us)
 {
 	if (!_outstanding.valid || frame.command != _outstanding.command || frame.servo_id != _servo_id
 	    || !responseShapeValid(frame)) {
-		++_status.rx_error_count;
-
-		if (_write_state != WriteState::Idle) {
-			_outstanding = {};
-			_retry_request = {};
-			_retry_pending = false;
-			_request_retry_count = 0;
-			abortPersistentWrite();
-		}
-
+		notifyProtocolError();
 		return;
 	}
 
@@ -332,7 +348,7 @@ void Controller::handleParameterRead(const Frame &frame, uint64_t now_us)
 
 	if (_write_state == WriteState::Readback) {
 		if (!matches) {
-			abortPersistentWrite();
+			abortPersistentWrite(OperationResult::Rejected);
 			return;
 		}
 
@@ -342,6 +358,7 @@ void Controller::handleParameterRead(const Frame &frame, uint64_t now_us)
 			_write_state = WriteState::Idle;
 			_persistent_write_requested = false;
 			_status.persistent_write_active = false;
+			_status.persistent_write_result = OperationResult::Accepted;
 			_status.config_verified = _expected_calibrated;
 			_status.healthy = _status.config_verified && (_status.status_flags & ErrorAndProtectionFlags) == 0;
 
@@ -359,11 +376,9 @@ void Controller::handleParameterRead(const Frame &frame, uint64_t now_us)
 
 void Controller::handleCommandResponse(const Frame &frame)
 {
-	_status.command_result = frame.payload[0];
-
 	if (frame.command == CommandId::ParamWrite) {
 		if (_write_state != WriteState::Write || frame.payload[0] != 0) {
-			abortPersistentWrite();
+			abortPersistentWrite(OperationResult::Rejected);
 
 		} else {
 			_write_state = WriteState::Readback;
@@ -371,6 +386,8 @@ void Controller::handleCommandResponse(const Frame &frame)
 
 	} else {
 		_status.command_accepted = frame.payload[0] == 0;
+		_status.command_result = static_cast<uint8_t>(_status.command_accepted ? OperationResult::Accepted :
+					 OperationResult::Rejected);
 	}
 }
 
@@ -394,16 +411,18 @@ void Controller::finishBootRead(bool matches, uint64_t now_us)
 	if (_boot_index == sizeof(BootParameters)) {
 		_boot_state = BootState::Complete;
 		_status.config_verified = _expected_calibrated && _boot_matches;
+		_status.config_check_complete = true;
 		_status.healthy = _status.config_verified;
 		_last_monitor_us = now_us;
 	}
 }
 
-void Controller::abortPersistentWrite()
+void Controller::abortPersistentWrite(OperationResult result)
 {
 	_write_state = WriteState::Idle;
 	_persistent_write_requested = false;
 	_status.persistent_write_active = false;
+	_status.persistent_write_result = result;
 	_status.config_verified = false;
 	_status.healthy = false;
 }
@@ -443,6 +462,11 @@ void Controller::notifyTimeout(uint64_t now_us)
 		return;
 	}
 
+	if (_outstanding.priority == RequestPriority::Target || _outstanding.priority == RequestPriority::EmergencyRelease) {
+		_status.command_accepted = false;
+		_status.command_result = static_cast<uint8_t>(OperationResult::Timeout);
+	}
+
 	_outstanding.valid = false;
 
 	if (_request_retry_count < MaxRetries) {
@@ -459,11 +483,64 @@ void Controller::notifyTimeout(uint64_t now_us)
 	_retry_pending = false;
 
 	if (_write_state != WriteState::Idle) {
-		abortPersistentWrite();
+		abortPersistentWrite(OperationResult::Timeout);
 	}
 
 	if (_boot_state != BootState::Complete) {
 		_boot_state = BootState::Failed;
+	}
+}
+
+void Controller::notifyProtocolError()
+{
+	++_status.rx_error_count;
+	++_status.protocol_error_count;
+
+	if (_outstanding.priority == RequestPriority::Target || _outstanding.priority == RequestPriority::EmergencyRelease) {
+		_status.command_accepted = false;
+		_status.command_result = static_cast<uint8_t>(OperationResult::ProtocolError);
+	}
+
+	if (_write_state != WriteState::Idle) {
+		cancelPersistentWrite();
+		_status.persistent_write_result = OperationResult::ProtocolError;
+	}
+}
+
+void Controller::notifyTransportError()
+{
+	++_status.rx_error_count;
+	++_status.transport_error_count;
+	_status.online = false;
+	_status.healthy = false;
+	_status.config_verified = false;
+
+	if (_outstanding.priority == RequestPriority::Target || _outstanding.priority == RequestPriority::EmergencyRelease) {
+		_status.command_accepted = false;
+		_status.command_result = static_cast<uint8_t>(OperationResult::ProtocolError);
+	}
+
+	if (_write_state != WriteState::Idle) {
+		cancelPersistentWrite();
+		_status.persistent_write_result = OperationResult::ProtocolError;
+		return;
+	}
+
+	if (_outstanding.valid) {
+		_outstanding = {};
+
+		if (_request_retry_count < MaxRetries) {
+			++_request_retry_count;
+			++_status.retry_count;
+			_retry_pending = true;
+
+		} else {
+			_retry_pending = false;
+
+			if (_boot_state != BootState::Complete) {
+				_boot_state = BootState::Failed;
+			}
+		}
 	}
 }
 

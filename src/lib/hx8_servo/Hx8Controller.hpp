@@ -21,6 +21,8 @@ struct ProtectionConfig {
 
 enum class RequestPriority : uint8_t { EmergencyRelease, Target, Status, Angle, Config, Diagnostic };
 
+enum class OperationResult : uint8_t { None, Accepted, Rejected, Timeout, ProtocolError };
+
 struct ControllerInput {
 	uint64_t now_us;
 	bool armed;
@@ -50,12 +52,16 @@ struct ControllerStatus {
 	uint32_t rx_error_count;
 	uint32_t timeout_count;
 	uint32_t retry_count;
+	uint32_t protocol_error_count;
+	uint32_t transport_error_count;
 	uint8_t servo_id;
 	bool online;
 	bool healthy;
 	bool config_verified;
+	bool config_check_complete;
 	bool command_accepted;
 	bool persistent_write_active;
+	OperationResult persistent_write_result;
 	float angle_deg;
 	float voltage_v;
 	float current_a;
@@ -88,10 +94,14 @@ public:
 	void setServoId(uint8_t servo_id);
 	void setTarget(const MotionCommand &command);
 	void requestRelease(uint32_t sequence);
+	void rejectCommand(uint32_t sequence);
 	void requestPersistentWrite();
+	void cancelPersistentWrite();
 	PendingRequest update(const ControllerInput &input);
 	void acceptResponse(const Frame &frame, uint64_t now_us);
 	void notifyTimeout(uint64_t now_us);
+	void notifyProtocolError();
+	void notifyTransportError();
 	const ControllerStatus &status() const { return _status; }
 
 private:
@@ -110,7 +120,7 @@ private:
 	void handleCommandResponse(const Frame &frame);
 	void handleStatusResponse(const Frame &frame);
 	void finishBootRead(bool matches, uint64_t now_us);
-	void abortPersistentWrite();
+	void abortPersistentWrite(OperationResult result);
 
 	ProtectionConfig _expected {};
 	MotionCommand _target {};

@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include <px4_platform_common/module.h>
+#include <px4_platform_common/atomic.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
 #include <px4_platform_common/Serial.hpp>
 #include <uORB/Publication.hpp>
@@ -31,11 +32,31 @@ public:
 	int cli_config_write();
 
 private:
+	enum class CommissioningState : uint8_t {
+		Idle,
+		Requested,
+		Active,
+		Success,
+		Denied,
+		Failed,
+		CancelRequested
+	};
+
+	enum StatusSnapshot : uint32_t {
+		StatusOnline = 1u << 0,
+		StatusHealthy = 1u << 1,
+		StatusConfigVerified = 1u << 2,
+		StatusConfigCheckComplete = 1u << 3
+	};
+
 	bool load_parameters();
-	bool valid_parameters() const;
 	void publish_status();
+	void publish_atomic_status();
 	void emit_events();
 	void receive();
+	void process_commissioning_request(uint64_t now);
+	void finish_commissioning_request();
+	void complete_commissioning(CommissioningState state);
 	int send(const hx8::PendingRequest &request);
 	int configure_uart();
 
@@ -52,9 +73,15 @@ private:
 	hx8_servo_command_s _command {};
 	uint32_t _last_sequence{0};
 	bool _explicit_commissioning{false};
+	bool _commissioning_started{false};
+	uint64_t _commissioning_deadline{0};
+	px4::atomic<uint8_t> _commissioning_state{static_cast<uint8_t>(CommissioningState::Idle)};
+	px4::atomic<uint32_t> _status_snapshot{0};
+	px4::atomic<uint32_t> _status_error_count{0};
 	bool _event_offline{false};
 	bool _event_protection{false};
 	bool _event_config{false};
 	bool _event_rejected{false};
+	bool _event_protocol{false};
 	hx8::ProtectionConfig _protection {};
 };
