@@ -471,20 +471,39 @@ TEST(Hx8Controller, AbortsOutstandingWriteWhenCommissioningGateIsLost)
 
 TEST(Hx8Controller, AbortsWriteOnUnexpectedResponseAndIgnoresLaterValidResponse)
 {
-	Controller controller;
-	uint64_t now = finishBoot(controller);
-	controller.requestPersistentWrite();
-	ControllerInput commissioning = input(now += Controller::MinimumCommandSpacingUs);
-	commissioning.explicit_commissioning = true;
-	PendingRequest write = controller.update(commissioning);
-	ASSERT_TRUE(write.valid);
-	ASSERT_EQ(write.command, CommandId::ParamWrite);
+	auto verifyMismatchAbortsWrite = [](const Frame &mismatch) {
+		Controller controller;
+		uint64_t now = finishBoot(controller);
+		controller.requestPersistentWrite();
+		ControllerInput commissioning = input(now += Controller::MinimumCommandSpacingUs);
+		commissioning.explicit_commissioning = true;
+		PendingRequest write = controller.update(commissioning);
+		ASSERT_TRUE(write.valid);
+		ASSERT_EQ(write.command, CommandId::ParamWrite);
+		ASSERT_TRUE(controller.status().persistent_write_active);
 
-	controller.acceptResponse(response(CommandId::Status, ServoId, 0, 15), now);
-	EXPECT_FALSE(controller.status().persistent_write_active);
-	EXPECT_FALSE(controller.status().config_verified);
+		controller.acceptResponse(mismatch, now);
+		EXPECT_FALSE(controller.status().persistent_write_active);
+		EXPECT_FALSE(controller.status().config_verified);
+		EXPECT_EQ(controller.status().rx_error_count, 1u);
 
-	controller.acceptResponse(response(CommandId::ParamWrite, ServoId, 0, 1), now);
-	EXPECT_FALSE(controller.status().persistent_write_active);
-	EXPECT_EQ(controller.status().rx_error_count, 2u);
+		// Once aborted, a later response must not resurrect the transaction.
+		controller.acceptResponse(response(CommandId::ParamWrite, ServoId, 0, 1), now);
+		EXPECT_FALSE(controller.status().persistent_write_active);
+		EXPECT_FALSE(controller.status().config_verified);
+		EXPECT_EQ(controller.status().rx_error_count, 2u);
+	};
+
+	{
+		SCOPED_TRACE("wrong command");
+		verifyMismatchAbortsWrite(response(CommandId::Status, ServoId, 0, 15));
+	}
+	{
+		SCOPED_TRACE("wrong servo ID");
+		verifyMismatchAbortsWrite(response(CommandId::ParamWrite, ServoId + 1, 0, 1));
+	}
+	{
+		SCOPED_TRACE("malformed payload length");
+		verifyMismatchAbortsWrite(response(CommandId::ParamWrite, ServoId, 0, 2));
+	}
 }
