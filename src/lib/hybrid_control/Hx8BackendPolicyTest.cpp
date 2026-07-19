@@ -12,6 +12,7 @@ TEST(Hx8BackendPolicy, RejectsMismatchedOrUnsafeStatus)
 	EXPECT_FALSE(Hx8BackendPolicy::statusUsable(1, 1, true, false, true, 0, true, 20.f));
 	EXPECT_FALSE(Hx8BackendPolicy::statusUsable(1, 1, true, true, false, 0, true, 20.f));
 	EXPECT_FALSE(Hx8BackendPolicy::statusUsable(1, 1, true, true, true, 1, true, 20.f));
+	EXPECT_FALSE(Hx8BackendPolicy::statusUsable(1, 1, true, true, true, 0, true, NAN));
 	EXPECT_TRUE(Hx8BackendPolicy::statusUsable(1, 1, true, true, true, 0, true, 20.f));
 }
 
@@ -25,6 +26,9 @@ TEST(Hx8BackendPolicy, UsesConfiguredHx8EndpointsAndTarget)
 	EXPECT_FALSE(Hx8BackendPolicy::endpointMatchesAngleTolerance(0.f, true, 0.05f, 0.f, 90.f));
 	EXPECT_TRUE(Hx8BackendPolicy::parametersValid(1, 0.f, 90.f, 1000, 100, 100, 500, 3.f));
 	EXPECT_FALSE(Hx8BackendPolicy::parametersValid(255, 0.f, 90.f, 1000, 100, 100, 500, 3.f));
+	EXPECT_FALSE(Hx8BackendPolicy::parametersValid(1, 0.f, 0.f, 1000, 100, 100, 500, 3.f));
+	EXPECT_FALSE(Hx8BackendPolicy::parametersValid(1, 0.f, 90.f, INT32_MAX, 100, 100, 500, 3.f));
+	EXPECT_FALSE(Hx8BackendPolicy::parametersValid(1, 0.f, 90.f, 1000, UINT16_MAX + 1, 0, 500, 3.f));
 }
 
 TEST(Hx8BackendPolicy, TimeoutAndProtocolAreNotAccepted)
@@ -64,6 +68,8 @@ TEST(Hx8CommandPolicy, FaultOnlyReleasesBoundedlyAndClearAllowsSameTargetAgain)
 		EXPECT_EQ(release.action, hybrid_control::Hx8CommandAction::Release);
 		EXPECT_NE(release.sequence, 0u);
 	}
+	EXPECT_EQ(policy.update(hybrid_control::ActuatorBackend::Hx8, output, 3 * 20'000 + 2).action,
+		hybrid_control::Hx8CommandAction::None);
 	EXPECT_EQ(policy.update(hybrid_control::ActuatorBackend::Hx8, output, 4).action,
 		hybrid_control::Hx8CommandAction::None);
 	policy.resetAfterFaultClear();

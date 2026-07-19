@@ -37,11 +37,14 @@ bool Hx8BackendPolicy::endpointMatchesAngleTolerance(float normalized, bool driv
 bool Hx8BackendPolicy::parametersValid(int32_t id, float quad_deg, float rover_deg, int32_t move, int32_t acc,
 		int32_t dec, int32_t power, float transition_s)
 {
-	return id >= 0 && id <= 254 && std::isfinite(quad_deg) && std::isfinite(rover_deg)
+	if (!(id >= 0 && id <= 254 && std::isfinite(quad_deg) && std::isfinite(rover_deg)
 	       && quad_deg >= -180.f && quad_deg <= 180.f && rover_deg >= -180.f && rover_deg <= 180.f
 	       && fabsf(quad_deg - rover_deg) > 1e-4f && move > 0 && acc >= 0 && dec >= 0
-	       && move > acc + dec && move <= UINT16_MAX && power > 0 && power <= UINT16_MAX
-	       && std::isfinite(transition_s) && transition_s > 0.f && static_cast<float>(move) < transition_s * 1000.f;
+	       && move <= UINT16_MAX && acc <= UINT16_MAX && dec <= UINT16_MAX && power > 0 && power <= UINT16_MAX
+	       && std::isfinite(transition_s) && transition_s > 0.f && static_cast<float>(move) < transition_s * 1000.f)) {
+		return false;
+	}
+	return static_cast<uint32_t>(move) > static_cast<uint32_t>(acc) + static_cast<uint32_t>(dec);
 }
 
 bool Hx8BackendPolicy::commandAccepted(bool accepted, uint8_t result, uint8_t rejected_result,
