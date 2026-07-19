@@ -111,8 +111,33 @@ bool Hx8UartServo::load_parameters()
 	_protection.voltage_min_mv = static_cast<uint16_t>(voltage_min);
 	_protection.voltage_max_mv = static_cast<uint16_t>(voltage_max);
 	_protection.power_on_lock = static_cast<uint8_t>(power_on_lock);
+	_configured_servo_id = static_cast<uint8_t>(id);
+	_quad_angle_deg = quad_angle;
+	_rover_angle_deg = rover_angle;
+	_move_time_ms = static_cast<uint16_t>(move);
+	_acceleration_time_ms = static_cast<uint16_t>(acceleration);
+	_deceleration_time_ms = static_cast<uint16_t>(deceleration);
+	_run_power_mw = static_cast<uint16_t>(run_power);
+	_transition_time_s = transition_time;
 	_controller.setExpectedConfig(_protection);
-	_controller.setServoId(static_cast<uint8_t>(id));
+	_controller.setServoId(_configured_servo_id);
+	return true;
+}
+
+bool Hx8UartServo::valid_motion_command(const hx8_servo_command_s &command) const
+{
+	if (command.servo_id != _configured_servo_id || !std::isfinite(command.target_angle_deg)
+	    || command.target_angle_deg < -180.f || command.target_angle_deg > 180.f
+	    || command.target_angle_deg < fminf(_quad_angle_deg, _rover_angle_deg)
+	    || command.target_angle_deg > fmaxf(_quad_angle_deg, _rover_angle_deg)
+	    || command.move_time_ms != _move_time_ms || command.acceleration_time_ms != _acceleration_time_ms
+	    || command.deceleration_time_ms != _deceleration_time_ms || command.power_mw == 0
+	    || command.power_mw > _run_power_mw || command.move_time_ms <= command.acceleration_time_ms
+	    + command.deceleration_time_ms
+	    || static_cast<float>(command.move_time_ms) >= _transition_time_s * 1000.f) {
+		return false;
+	}
+
 	return true;
 }
 
@@ -223,6 +248,26 @@ void Hx8UartServo::complete_commissioning(CommissioningState state)
 	_commissioning_started = false;
 	_commissioning_deadline = 0;
 	_commissioning_state.store(static_cast<uint8_t>(state));
+}
+
+int Hx8UartServo::consume_commissioning_terminal()
+{
+	uint8_t observed = _commissioning_state.load();
+
+	while (observed == static_cast<uint8_t>(CommissioningState::Success)
+	       || observed == static_cast<uint8_t>(CommissioningState::Denied)
+	       || observed == static_cast<uint8_t>(CommissioningState::Failed)) {
+		const uint8_t terminal = observed;
+		if (_commissioning_state.compare_exchange(&observed, static_cast<uint8_t>(CommissioningState::Idle))) {
+			if (terminal == static_cast<uint8_t>(CommissioningState::Success)) {
+				return PX4_OK;
+			}
+
+			return terminal == static_cast<uint8_t>(CommissioningState::Denied) ? -EPERM : -EIO;
+		}
+	}
+
+	return -EAGAIN;
 }
 
 void Hx8UartServo::process_commissioning_request(uint64_t now)
@@ -397,11 +442,16 @@ void Hx8UartServo::Run()
 
 			} else if (_command.type == hx8_servo_command_s::COMMAND_MOVE
 				   || _command.type == hx8_servo_command_s::COMMAND_HOLD) {
-				hx8::MotionCommand command {_command.timestamp, _command.sequence, 0, _command.servo_id,
-							    _command.target_angle_deg, _command.move_time_ms,
-							    _command.acceleration_time_ms, _command.deceleration_time_ms,
-							    _command.power_mw};
-				_controller.setTarget(command);
+				if (!valid_motion_command(_command)) {
+					_controller.rejectCommand(_command.sequence);
+
+				} else {
+					hx8::MotionCommand command {_command.timestamp, _command.sequence, 0, _configured_servo_id,
+								    _command.target_angle_deg, _move_time_ms,
+								    _acceleration_time_ms, _deceleration_time_ms,
+								    _run_power_mw};
+					_controller.setTarget(command);
+				}
 
 			} else {
 				_controller.rejectCommand(_command.sequence);
@@ -453,17 +503,10 @@ int Hx8UartServo::cli_config_write()
 	const uint64_t deadline = hrt_absolute_time() + CliCommissioningTimeoutUs;
 
 	while (hrt_absolute_time() < deadline) {
-		const auto state = static_cast<CommissioningState>(_commissioning_state.load());
+		const int result = consume_commissioning_terminal();
 
-		if (state == CommissioningState::Success || state == CommissioningState::Denied
-		    || state == CommissioningState::Failed) {
-			_commissioning_state.store(static_cast<uint8_t>(CommissioningState::Idle));
-
-			if (state == CommissioningState::Success) {
-				return PX4_OK;
-			}
-
-			return state == CommissioningState::Denied ? -EPERM : -EIO;
+		if (result != -EAGAIN) {
+			return result;
 		}
 
 		px4_usleep(20_ms);
@@ -473,7 +516,16 @@ int Hx8UartServo::cli_config_write()
 
 	if (!_commissioning_state.compare_exchange(&expected, static_cast<uint8_t>(CommissioningState::CancelRequested))) {
 		expected = static_cast<uint8_t>(CommissioningState::Active);
-		_commissioning_state.compare_exchange(&expected, static_cast<uint8_t>(CommissioningState::CancelRequested));
+
+		if (!_commissioning_state.compare_exchange(&expected, static_cast<uint8_t>(CommissioningState::CancelRequested))) {
+			// The work queue may have completed between the last poll and cancel CAS.
+			// Consume that terminal state so the next config write is not stranded busy.
+			const int result = consume_commissioning_terminal();
+
+			if (result != -EAGAIN) {
+				return result;
+			}
+		}
 	}
 
 	return -ETIMEDOUT;

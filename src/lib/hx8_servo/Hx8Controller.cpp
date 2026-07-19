@@ -92,7 +92,10 @@ void Controller::setServoId(uint8_t servo_id)
 void Controller::setTarget(const MotionCommand &command)
 {
 	if (command.sequence <= _last_target_sequence || command.type != 0 || !std::isfinite(command.target_angle_deg)
-	    || command.target_angle_deg < -180.f || command.target_angle_deg > 180.f) {
+	    || command.target_angle_deg < -180.f || command.target_angle_deg > 180.f
+	    || command.servo_id > 254 || command.power_mw == 0
+	    || command.move_time_ms <= static_cast<uint32_t>(command.acceleration_time_ms)
+			+ static_cast<uint32_t>(command.deceleration_time_ms)) {
 		_status.command_accepted = false;
 		_status.command_result = static_cast<uint8_t>(OperationResult::Rejected);
 		return;

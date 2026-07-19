@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fcntl.h>
+#include <cmath>
 #include <termios.h>
 #include <unistd.h>
 
@@ -57,6 +58,8 @@ private:
 	void process_commissioning_request(uint64_t now);
 	void finish_commissioning_request();
 	void complete_commissioning(CommissioningState state);
+	int consume_commissioning_terminal();
+	bool valid_motion_command(const hx8_servo_command_s &command) const;
 	int send(const hx8::PendingRequest &request);
 	int configure_uart();
 
@@ -84,4 +87,12 @@ private:
 	bool _event_rejected{false};
 	bool _event_protocol{false};
 	hx8::ProtectionConfig _protection {};
+	uint8_t _configured_servo_id{0};
+	float _quad_angle_deg{NAN};
+	float _rover_angle_deg{NAN};
+	uint16_t _move_time_ms{0};
+	uint16_t _acceleration_time_ms{0};
+	uint16_t _deceleration_time_ms{0};
+	uint16_t _run_power_mw{0};
+	float _transition_time_s{NAN};
 };

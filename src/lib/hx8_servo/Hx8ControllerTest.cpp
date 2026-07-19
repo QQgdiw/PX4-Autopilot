@@ -228,6 +228,30 @@ TEST(Hx8Controller, RejectsRepeatedOutOfOrderAndExpiredCommands)
 	EXPECT_FALSE(controller.status().command_accepted);
 }
 
+TEST(Hx8Controller, RejectsUnsafeMotionParametersBeforeChangingServoId)
+{
+	Controller controller;
+	controller.setServoId(ServoId);
+
+	MotionCommand invalid = motion(1);
+	invalid.servo_id = 255;
+	controller.setTarget(invalid);
+	EXPECT_EQ(controller.status().command_result, static_cast<uint8_t>(OperationResult::Rejected));
+	EXPECT_EQ(controller.status().servo_id, ServoId);
+
+	invalid = motion(2);
+	invalid.move_time_ms = 200;
+	invalid.acceleration_time_ms = 100;
+	invalid.deceleration_time_ms = 100;
+	controller.setTarget(invalid);
+	EXPECT_EQ(controller.status().command_result, static_cast<uint8_t>(OperationResult::Rejected));
+
+	invalid = motion(3);
+	invalid.power_mw = 0;
+	controller.setTarget(invalid);
+	EXPECT_EQ(controller.status().command_result, static_cast<uint8_t>(OperationResult::Rejected));
+}
+
 TEST(Hx8Controller, GatesMotionOnArmingSafetyAndVerifiedCalibration)
 {
 	Controller controller;
