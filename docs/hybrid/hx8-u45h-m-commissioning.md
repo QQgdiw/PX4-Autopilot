@@ -48,6 +48,18 @@ Perform calibration with the linkage unloaded, propulsion inhibited, and the
 vehicle fully disarmed and not prearmed. Save the parameter export used for
 each run.
 
+Use these parameter units exactly:
+
+- `HYB_ANG_TOL`: radians; the HX8 adapter converts the tolerance for its
+  degree-based endpoint comparison;
+- `HX8_ANG_QUD` and `HX8_ANG_ROV`: degrees;
+- `HX8_MOVE_T`, `HX8_ACC_T`, and `HX8_DEC_T`: milliseconds;
+- `HYBRID_TRANS_T`: seconds;
+- `HX8_PWR_LIM`, `HX8_CFG_SPWR`, and `HX8_CFG_PWR`: mW;
+- `HX8_CFG_CUR`: mA;
+- `HX8_CFG_VMIN` and `HX8_CFG_VMAX`: mV;
+- `HX8_CFG_TADC`: raw ADC value, not degrees Celsius.
+
 1. Verify the responding device ID and set `HX8_ID`. Confirm that only the
    intended servo responds.
 2. Measure the two mechanical endpoints, then set `HX8_ANG_QUD` and
@@ -75,31 +87,50 @@ protection are uncommissioned and must not be accepted for operation.
 
 ## Check and write persistent HX8 configuration
 
+All HX8_* parameters are reboot-required. The driver reads them only during
+`init()`; an old running driver instance caches its startup values and does not
+reload them after `param set` or `param save`. Use this order:
+
+1. Fully disarm and leave prearm. Unload or mechanically secure the linkage,
+   inhibit propulsion, and either remove servo power or otherwise stop motion
+   with the verified physical emergency stop.
+2. Set and save all HX8 parameters, including `HX8_SER_CFG`, endpoint, timing,
+   power, and expected protection values. Recheck the saved parameter export.
+   Do not run `hx8_uart_servo config write` before this reboot: the old instance
+   would write its cached values rather than the newly saved parameter set.
+3. Restore the safe bench wiring and reboot the complete vehicle. Confirm the
+   boot log shows `rc.serial` starting one new driver instance on the port
+   selected by `HX8_SER_CFG`; do not start another instance manually. Confirm
+   `hx8_uart_servo status` now reports that new instance online with a completed
+   configuration check before continuing.
+4. Run `hx8_uart_servo config check`. This command returns only an overall
+   pass/fail result. `hx8_uart_servo status` and `hx8_servo_status` expose the
+   overall online, healthy, check-complete, and config-verified state; they do
+   not provide the values themselves. PX4 status/uORB does not expose per-item
+   configuration values.
+5. If the overall check fails, first use `hx8_uart_servo status` and
+   `listener hx8_servo_status 5` to separate communication/ID/freshness errors
+   from a completed configuration mismatch. Check wiring, supply, selected
+   serial port, baud, ID, saved PX4 parameters, and boot log. For the exact
+   mismatching servo item, use the vendor configuration tool, a protocol
+   capture from a logic analyzer, or the installation record. Do not infer a
+   specific item from the aggregate PX4 result.
+6. Only after the new driver instance has loaded the reviewed, nonzero expected
+   values may fully disarmed explicit commissioning use
+   `hx8_uart_servo config write`. Do this only when the external evidence shows
+   that programming those exact values is intentional. The driver performs
+   internal per-item readback, but the production CLI reports only the overall
+   operation result. Follow with `config check` and `status`:
+
+   ```sh
+   hx8_uart_servo config write
+   hx8_uart_servo config check
+   hx8_uart_servo status
+   ```
+
 Normal driver startup is read-only: it pings `HX8_ID`, reads every expected
 protection item, and reports healthy/configured only after a complete match.
 It never repairs a mismatch or writes servo nonvolatile memory automatically.
-
-After setting the expected PX4 parameters, use the following workflow:
-
-```sh
-hx8_uart_servo status
-hx8_uart_servo config check
-```
-
-If `config check` fails, compare every returned protection value and diagnose
-the wiring, device ID, or expected parameters. To intentionally program the
-servo, enter explicit commissioning by invoking the write command while fully
-disarmed, not prearmed, and with lockdown/failsafe inactive:
-
-```sh
-hx8_uart_servo config write
-hx8_uart_servo config check
-hx8_uart_servo status
-```
-
-`config write` is the only persistent-write path. It must write each expected
-item and perform mandatory per-item readback; success requires the complete
-readback to match and the driver to be online, healthy, and config-verified.
 Arming, prearming, lockdown, failsafe, timeout, protocol failure, or rejected
 write must deny/fail commissioning. Never repeatedly write configuration at
 normal startup.
@@ -146,6 +177,18 @@ while active. A confirmed endpoint restores the stable shape; an intermediate
 position remains `UNKNOWN` and unarmable. Never resume the failed target or
 retry a transformation automatically.
 
+## Host-only negative command evidence
+
+Wrong servo ID, intermediate angle, stale/out-of-order sequence, and invalid
+timing or power envelope rejection are covered by the focused
+`Hx8BackendPolicy` and `Hx8Controller` host tests. The production CLI cannot
+inject these arbitrary motion commands. They are not mandatory physical bench
+rows and must not be attempted by changing a flight configuration to invalid
+values. Any optional protocol-level negative hardware experiment requires a
+temporary, separately reviewed bench uORB publisher or protocol injector that
+is never included in flight firmware and is not exposed through production
+CLI.
+
 ## Pending PWM physical acceptance matrix
 
 Run this complete matrix separately for AS5600 and TMAG5273; do not combine
@@ -180,9 +223,14 @@ blind-region data over full travel.
    record.
 3. Correlate angle, voltage, current, power, temperature, protection flags,
    and command telemetry with independent instruments.
-4. Exercise both endpoint move commands using the calibrated ID, timing, and
-   power. Verify intermediate angles, wrong IDs, stale sequences, and invalid
-   envelopes are rejected; verify stable-state hold monitoring.
+4. With the vehicle in the permitted bench arming/prearming state, use
+   QGroundControl or another controlled MAVLink ground-station interface to
+   send `VEHICLE_CMD_DO_VTOL_TRANSITION`: `param1=3` requests the configured
+   Quad endpoint and `param1=4` requests the configured Rover endpoint. Do not
+   invent a shell command or publish arbitrary angles. Exercise both QUD/ROV
+   transitions with the calibrated ID, timing, and power; record the accepted
+   command/result sequence, endpoint angle, telemetry, and stable-state hold
+   monitoring.
 5. Induce stalls at several positions and prove stall release plus current
    reduction. Record detection time, release command/result, onboard
    protection timing, and the latched primary fault.
