@@ -38,6 +38,8 @@ public:
 	Hx8CommandDecision update(ActuatorBackend backend, const TransformationOutput &output, uint64_t now_us);
 	void resetAfterFaultClear();
 	uint32_t lastMotionSequence() const { return _last_motion_sequence; }
+	bool motionCommandHealthy(uint32_t status_sequence, bool accepted, uint8_t result,
+			uint8_t pending_result, uint8_t accepted_result) const;
 	bool motionAcknowledged(uint32_t status_sequence, bool accepted, uint8_t result, uint8_t accepted_result) const;
 
 private:

@@ -99,3 +99,39 @@ TEST(Hx8CommandPolicy, StableHoldCarriesCurrentEndpointAndAckMatchesSequence)
 	EXPECT_EQ(hold.action, hybrid_control::Hx8CommandAction::Hold);
 	EXPECT_EQ(hold.target, hybrid_control::HybridTarget::Flying);
 }
+
+TEST(Hx8CommandPolicy, MotionHealthUsesOnlyCurrentMoveSequence)
+{
+	hybrid_control::Hx8CommandPolicy policy;
+	hybrid_control::TransformationOutput output{hybrid_control::HybridState::TransitionToRover,
+		hybrid_control::HybridTarget::Driving, hybrid_control::SensorSource::None,
+		hybrid_control::TransformFault::None, false, false, 0.f};
+
+	// Before the module publishes the first MOVE there is no current motion result to reject.
+	EXPECT_TRUE(policy.motionCommandHealthy(0, false, 0, 0, 1));
+	const auto move = policy.update(hybrid_control::ActuatorBackend::Hx8, output, 0);
+	ASSERT_EQ(move.action, hybrid_control::Hx8CommandAction::Move);
+
+	// A last-value result from an older MOVE/HOLD must not poison this transition.
+	EXPECT_TRUE(policy.motionCommandHealthy(move.sequence + 10, false, 2, 0, 1));
+	EXPECT_TRUE(policy.motionCommandHealthy(move.sequence, false, 0, 0, 1));
+	EXPECT_TRUE(policy.motionCommandHealthy(move.sequence, true, 1, 0, 1));
+	EXPECT_TRUE(policy.motionAcknowledged(move.sequence, true, 1, 1));
+
+	EXPECT_FALSE(policy.motionCommandHealthy(move.sequence, false, 2, 0, 1));
+	EXPECT_FALSE(policy.motionCommandHealthy(move.sequence, false, 3, 0, 1));
+	EXPECT_FALSE(policy.motionCommandHealthy(move.sequence, false, 4, 0, 1));
+	EXPECT_FALSE(policy.motionCommandHealthy(move.sequence, false, 99, 0, 1));
+
+	output.state = hybrid_control::HybridState::Driving;
+	const auto hold = policy.update(hybrid_control::ActuatorBackend::Hx8, output, 200'000);
+	ASSERT_EQ(hold.action, hybrid_control::Hx8CommandAction::Hold);
+	EXPECT_TRUE(policy.motionCommandHealthy(hold.sequence, false, 2, 0, 1));
+
+	policy.resetAfterFaultClear();
+	output.state = hybrid_control::HybridState::TransitionToRover;
+	const auto retry = policy.update(hybrid_control::ActuatorBackend::Hx8, output, 200'001);
+	ASSERT_EQ(retry.action, hybrid_control::Hx8CommandAction::Move);
+	EXPECT_NE(retry.sequence, move.sequence);
+	EXPECT_TRUE(policy.motionCommandHealthy(move.sequence, false, 2, 0, 1));
+}

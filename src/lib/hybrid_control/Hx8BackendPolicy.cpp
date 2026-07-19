@@ -127,6 +127,16 @@ void Hx8CommandPolicy::resetAfterFaultClear()
 	_last_hold_us = 0;
 }
 
+bool Hx8CommandPolicy::motionCommandHealthy(uint32_t status_sequence, bool accepted, uint8_t result,
+		uint8_t pending_result, uint8_t accepted_result) const
+{
+	if (_last_motion_sequence == 0 || status_sequence != _last_motion_sequence || result == pending_result) {
+		return true;
+	}
+
+	return accepted && result == accepted_result;
+}
+
 bool Hx8CommandPolicy::motionAcknowledged(uint32_t status_sequence, bool accepted, uint8_t result,
 		uint8_t accepted_result) const
 {

@@ -297,9 +297,9 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 		actuator.online = fresh && _hx8_status.online && _hx8_status.servo_id == static_cast<uint8_t>(_param_hx8_id.get());
 		actuator.healthy = _hx8_status.healthy && _hx8_status.protection_flags == 0;
 		actuator.config_verified = _hx8_status.config_verified;
-		actuator.command_accepted = hybrid_control::Hx8BackendPolicy::commandAccepted(_hx8_status.command_accepted,
-				_hx8_status.command_result, hx8_servo_status_s::RESULT_NONE,
-				hx8_servo_status_s::RESULT_ACCEPTED);
+		actuator.command_accepted = _hx8_command_policy.motionCommandHealthy(_hx8_status.command_sequence,
+				_hx8_status.command_accepted, _hx8_status.command_result,
+				hx8_servo_status_s::RESULT_NONE, hx8_servo_status_s::RESULT_ACCEPTED);
 		actuator.protection_flags = _hx8_status.protection_flags;
 	}
 
