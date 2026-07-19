@@ -81,6 +81,10 @@ int Hx8UartServo::init()
 void Hx8UartServo::receive()
 {
 	uint8_t buf[64]; const ssize_t n = read(_fd, buf, sizeof(buf));
+	if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+		_controller.notifyTimeout(hrt_absolute_time() + hx8::Controller::ResponseTimeoutUs);
+		return;
+	}
 	for (ssize_t i=0; i<n; i++) { hx8::Frame frame{}; if (_parser.push(buf[i], _controller.status().servo_id, frame) == hx8::ParseResult::FrameReady) _controller.acceptResponse(frame, hrt_absolute_time()); }
 }
 
@@ -153,7 +157,11 @@ void Hx8UartServo::Run()
 	receive();
 	_controller.notifyTimeout(now);
 	hx8::ControllerInput input{now, _armed.armed, _armed.prearmed, _armed.lockdown || _armed.manual_lockdown, _armed.force_failsafe, _explicit_commissioning};
-	const auto request = _controller.update(input); if (request.valid) send(request); emit_events(); publish_status();
+	const auto request = _controller.update(input);
+	if (request.valid && send(request) != 0) {
+		_controller.notifyTimeout(now + hx8::Controller::ResponseTimeoutUs);
+	}
+	emit_events(); publish_status();
 }
 
 int Hx8UartServo::print_status() { PX4_INFO("HX8 UART fd=%d online=%d verified=%d", _fd, _controller.status().online, _controller.status().config_verified); return 0; }
