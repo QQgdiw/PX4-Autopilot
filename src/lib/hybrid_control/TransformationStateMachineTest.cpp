@@ -816,3 +816,20 @@ TEST(TransformationStateMachine, SecondaryReleaseFailurePreservesStallPrimary)
 	EXPECT_EQ(output.fault, TransformFault::Stall);
 	EXPECT_TRUE(output.release_requested);
 }
+
+TEST(TransformationStateMachine, Hx8PositionIsAuthoritativeAgainstExternalSensors)
+{
+	TransformationStateMachine machine;
+	auto cfg = config(); cfg.backend = ActuatorBackend::Hx8; cfg.sensors_enabled = true;
+	auto in = input(); in.position = {0.f, true, true, SensorSource::Hx8, 1};
+	in.as5600_valid = true; in.as5600_angle = cfg.rover_angle; in.tmag_quad_valid = true; in.tmag_quad_active = true;
+	in.tmag_rover_valid = true; in.tmag_rover_active = true;
+	auto out = machine.initialize(cfg, in);
+	EXPECT_EQ(out.state, HybridState::Flying);
+	EXPECT_EQ(out.source, SensorSource::Hx8);
+	EXPECT_EQ(machine.request(HybridTarget::Driving, 10).state, HybridState::TransitionToRover);
+	in.now_us = 20; in.position = {1.f, true, true, SensorSource::Hx8, 20};
+	out = machine.update(in);
+	EXPECT_EQ(out.state, HybridState::Driving);
+	EXPECT_EQ(out.source, SensorSource::Hx8);
+}

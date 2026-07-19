@@ -33,9 +33,11 @@ TEST(Hx8BackendPolicy, UsesConfiguredHx8EndpointsAndTarget)
 
 TEST(Hx8BackendPolicy, TimeoutAndProtocolAreNotAccepted)
 {
-	EXPECT_TRUE(Hx8BackendPolicy::commandAccepted(false, 1, 2, 3, 4));
-	EXPECT_FALSE(Hx8BackendPolicy::commandAccepted(false, 3, 2, 3, 4));
-	EXPECT_FALSE(Hx8BackendPolicy::commandAccepted(false, 4, 2, 3, 4));
+	EXPECT_TRUE(Hx8BackendPolicy::commandAccepted(false, 0, 0, 1));
+	EXPECT_TRUE(Hx8BackendPolicy::commandAccepted(true, 1, 0, 1));
+	EXPECT_FALSE(Hx8BackendPolicy::commandAccepted(false, 2, 0, 1));
+	EXPECT_FALSE(Hx8BackendPolicy::commandAccepted(false, 99, 0, 1));
+	EXPECT_FALSE(Hx8BackendPolicy::commandAccepted(true, 2, 0, 1));
 }
 
 TEST(Hx8CommandPolicy, PwmNeverCommandsAndHx8MovesOncePerNewTarget)

@@ -51,6 +51,8 @@ struct TransformationConfig {
 	ActuatorBackend backend{ActuatorBackend::Pwm};
 	float stall_timeout_s{0.8f};
 	float stall_distance{0.05f};
+	int32_t hx8_id{0}; float hx8_quad_angle{0.f}; float hx8_rover_angle{90.f};
+	int32_t hx8_move_ms{1000}; int32_t hx8_acc_ms{100}; int32_t hx8_dec_ms{100}; int32_t hx8_power{1};
 };
 
 TransformFault validateTransformationConfig(const TransformationConfig &config);
@@ -142,6 +144,7 @@ private:
 	Endpoint as5600Endpoint(const TransformationInput &input) const;
 	SensorSource stablePositionSource(const TransformationInput &input) const;
 	bool sensorConflict(const TransformationInput &input) const;
+	Endpoint hx8Endpoint(const TransformationInput &input) const;
 	bool targetDetected(const TransformationInput &input);
 	void enterFault(TransformFault fault);
 	void setStable(HybridState state, SensorSource source);

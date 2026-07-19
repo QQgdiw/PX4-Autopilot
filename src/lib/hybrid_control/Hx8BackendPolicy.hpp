@@ -17,8 +17,8 @@ struct Hx8BackendPolicy
 				float quad_deg, float rover_deg);
 	static bool parametersValid(int32_t id, float quad_deg, float rover_deg, int32_t move, int32_t acc,
 				int32_t dec, int32_t power, float transition_s);
-	static bool commandAccepted(bool accepted, uint8_t result, uint8_t rejected_result,
-				uint8_t timeout_result, uint8_t protocol_error_result);
+	static bool commandAccepted(bool accepted, uint8_t result, uint8_t pending_result,
+				uint8_t accepted_result);
 };
 
 enum class Hx8CommandAction : uint8_t { None, Move, Hold, Release };

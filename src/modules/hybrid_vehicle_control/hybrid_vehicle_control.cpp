@@ -159,7 +159,9 @@ TransformationConfig HybridVehicleControl::transformation_config() const
 		_param_hyb_mag_thr_qud.get(),
 		_param_hyb_mag_thr_rov.get(),
 		backend,
-		_param_hyb_stall_t.get(), _param_hyb_stall_d.get()
+		_param_hyb_stall_t.get(), _param_hyb_stall_d.get(), _param_hx8_id.get(), _param_hx8_ang_qud.get(),
+		_param_hx8_ang_rov.get(), _param_hx8_move_t.get(), _param_hx8_acc_t.get(), _param_hx8_dec_t.get(),
+		_param_hx8_pwr_lim.get()
 	};
 }
 
@@ -297,8 +299,8 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 		actuator.healthy = _hx8_status.healthy && _hx8_status.protection_flags == 0;
 		actuator.config_verified = _hx8_status.config_verified;
 		actuator.command_accepted = hybrid_control::Hx8BackendPolicy::commandAccepted(_hx8_status.command_accepted,
-				_hx8_status.command_result, hx8_servo_status_s::RESULT_REJECTED,
-				hx8_servo_status_s::RESULT_TIMEOUT, hx8_servo_status_s::RESULT_PROTOCOL_ERROR);
+				_hx8_status.command_result, hx8_servo_status_s::RESULT_NONE,
+				hx8_servo_status_s::RESULT_ACCEPTED);
 		actuator.protection_flags = _hx8_status.protection_flags;
 	}
 
@@ -324,14 +326,15 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 
 	_position_source = position.source;
 
+	const bool hx8_backend = config.backend == hybrid_control::ActuatorBackend::Hx8;
 	return {
 		now,
-		encoder_valid,
+		hx8_backend ? false : encoder_valid,
 		_current_mechanism_angle,
-		tmag_pair_valid,
-		tmag_quad_active,
-		tmag_pair_valid,
-		tmag_rover_active,
+		hx8_backend ? false : tmag_pair_valid,
+		hx8_backend ? false : tmag_quad_active,
+		hx8_backend ? false : tmag_pair_valid,
+		hx8_backend ? false : tmag_rover_active,
 		position,
 		actuator,
 		(config.backend == hybrid_control::ActuatorBackend::Hx8)

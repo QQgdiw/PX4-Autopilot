@@ -47,10 +47,10 @@ bool Hx8BackendPolicy::parametersValid(int32_t id, float quad_deg, float rover_d
 	return static_cast<uint32_t>(move) > static_cast<uint32_t>(acc) + static_cast<uint32_t>(dec);
 }
 
-bool Hx8BackendPolicy::commandAccepted(bool accepted, uint8_t result, uint8_t rejected_result,
-		uint8_t timeout_result, uint8_t protocol_error_result)
+bool Hx8BackendPolicy::commandAccepted(bool accepted, uint8_t result, uint8_t pending_result,
+		uint8_t accepted_result)
 {
-	return accepted || (result != rejected_result && result != timeout_result && result != protocol_error_result);
+	return (!accepted && result == pending_result) || (accepted && result == accepted_result);
 }
 
 uint32_t Hx8CommandPolicy::nextSequence()
