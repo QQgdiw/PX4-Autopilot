@@ -92,7 +92,8 @@ TransformFault validateTransformationConfig(const TransformationConfig &config)
 		return TransformFault::InvalidConfiguration;
 	}
 	if (config.backend == ActuatorBackend::Hx8) {
-		const float span = fabsf((config.hx8_rover_angle - config.hx8_quad_angle) * static_cast<float>(M_PI / 180.0));
+		const float span = Hx8BackendPolicy::wrappedSpanDegrees(config.hx8_quad_angle, config.hx8_rover_angle)
+				* static_cast<float>(M_PI / 180.0);
 		if (!(span > 1e-6f) || config.angle_tolerance / span >= 0.5f) {
 			return TransformFault::InvalidConfiguration;
 		}

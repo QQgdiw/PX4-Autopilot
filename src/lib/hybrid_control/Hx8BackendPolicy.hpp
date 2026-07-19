@@ -9,6 +9,7 @@ namespace hybrid_control
 
 struct Hx8BackendPolicy
 {
+	static float wrappedSpanDegrees(float quad_deg, float rover_deg);
 	static bool statusUsable(uint8_t status_id, uint8_t configured_id, bool online, bool healthy,
 				bool config_verified, uint8_t protection_flags, bool fresh, float angle_deg);
 	static float normalizeAngle(float angle_deg, float quad_deg, float rover_deg);

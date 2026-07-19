@@ -18,6 +18,8 @@ TEST(Hx8BackendPolicy, RejectsMismatchedOrUnsafeStatus)
 
 TEST(Hx8BackendPolicy, UsesConfiguredHx8EndpointsAndTarget)
 {
+	EXPECT_NEAR(Hx8BackendPolicy::wrappedSpanDegrees(170.f, -170.f), 20.f, 1e-3f);
+	EXPECT_NEAR(Hx8BackendPolicy::wrappedSpanDegrees(-170.f, 170.f), 20.f, 1e-3f);
 	const float normalized = Hx8BackendPolicy::normalizeAngle(0.f, 0.f, 90.f);
 	EXPECT_NEAR(normalized, 0.f, 1e-5f);
 	EXPECT_TRUE(Hx8BackendPolicy::endpointMatches(normalized, false));

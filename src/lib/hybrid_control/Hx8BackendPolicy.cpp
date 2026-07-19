@@ -7,6 +7,12 @@
 namespace hybrid_control
 {
 
+float Hx8BackendPolicy::wrappedSpanDegrees(float quad_deg, float rover_deg)
+{
+	const float delta = (rover_deg - quad_deg) * static_cast<float>(M_PI / 180.0);
+	return fabsf(std::atan2(std::sin(delta), std::cos(delta))) * static_cast<float>(180.0 / M_PI);
+}
+
 bool Hx8BackendPolicy::statusUsable(uint8_t status_id, uint8_t configured_id, bool online, bool healthy,
 		bool config_verified, uint8_t protection_flags, bool fresh, float angle_deg)
 {
@@ -30,14 +36,14 @@ bool Hx8BackendPolicy::endpointMatches(float normalized, bool driving_target, fl
 bool Hx8BackendPolicy::endpointMatchesAngleTolerance(float normalized, bool driving_target, float tolerance_rad,
 		float quad_deg, float rover_deg)
 {
-	const float span = fabsf((rover_deg - quad_deg) * static_cast<float>(M_PI / 180.0));
+	const float span = wrappedSpanDegrees(quad_deg, rover_deg) * static_cast<float>(M_PI / 180.0);
 	return span > 1e-6f && endpointMatches(normalized, driving_target, tolerance_rad / span);
 }
 
 bool Hx8BackendPolicy::endpointAnyMatchesAngleTolerance(float normalized, float tolerance_rad,
 		float quad_deg, float rover_deg)
 {
-	const float span = fabsf((rover_deg - quad_deg) * static_cast<float>(M_PI / 180.0));
+	const float span = wrappedSpanDegrees(quad_deg, rover_deg) * static_cast<float>(M_PI / 180.0);
 	if (!(span > 1e-6f) || !std::isfinite(tolerance_rad) || tolerance_rad < 0.f || tolerance_rad / span >= 0.5f) {
 		return false;
 	}
