@@ -1,0 +1,5 @@
+menuconfig DRIVERS_ACTUATORS_HX8_UART_SERVO
+	bool "HX8 UART servo"
+	default n
+	---help---
+		Enable the FashionStar HX8 UART servo actuator driver.

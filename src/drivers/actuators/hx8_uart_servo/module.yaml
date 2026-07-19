@@ -1,0 +1,27 @@
+module_name: HX8 UART Servo
+serial_config:
+  - command: hx8_uart_servo start -d ${SERIAL_DEV}
+    port_config_param:
+      name: HX8_SER_CFG
+      group: HX8 UART Servo
+      default: EXT2
+parameters:
+  - group: HX8 UART Servo
+    definitions:
+      HX8_BAUD: {description: {short: HX8 UART baud rate}, type: int32, reboot_required: true, default: 115200}
+      HX8_ID: {description: {short: HX8 servo ID}, type: int32, min: 0, max: 254, reboot_required: true, default: 0}
+      HX8_ANG_QUD: {description: {short: Quad endpoint angle}, type: float, min: -180, max: 180, reboot_required: true, default: 0}
+      HX8_ANG_ROV: {description: {short: Rover endpoint angle}, type: float, min: -180, max: 180, reboot_required: true, default: 0}
+      HX8_MOVE_T: {description: {short: Timed move duration ms}, type: int32, min: 1, reboot_required: true, default: 1000}
+      HX8_ACC_T: {description: {short: Acceleration duration ms}, type: int32, min: 0, reboot_required: true, default: 100}
+      HX8_DEC_T: {description: {short: Deceleration duration ms}, type: int32, min: 0, reboot_required: true, default: 100}
+      HX8_PWR_LIM: {description: {short: Run power limit mW}, type: int32, min: 0, reboot_required: true, default: 0}
+      HX8_CFG_SPWR: {description: {short: Expected stall power mW}, type: int32, min: 0, reboot_required: true, default: 0}
+      HX8_CFG_TADC: {description: {short: Expected temperature ADC}, type: int32, min: 0, reboot_required: true, default: 0}
+      HX8_CFG_PWR: {description: {short: Expected power limit mW}, type: int32, min: 0, reboot_required: true, default: 0}
+      HX8_CFG_CUR: {description: {short: Expected current limit mA}, type: int32, min: 0, reboot_required: true, default: 0}
+      HX8_CFG_VMIN: {description: {short: Expected minimum voltage mV}, type: int32, min: 0, reboot_required: true, default: 9000}
+      HX8_CFG_VMAX: {description: {short: Expected maximum voltage mV}, type: int32, min: 0, reboot_required: true, default: 12600}
+      HX8_CFG_STL: {description: {short: Expected stall release enable}, type: int32, min: 0, max: 1, reboot_required: true, default: 1}
+      HX8_CFG_RSP: {description: {short: Expected response enable}, type: int32, min: 0, max: 1, reboot_required: true, default: 1}
+      HX8_CFG_BOOT: {description: {short: Expected power-on lock}, type: int32, min: 0, max: 1, reboot_required: true, default: 0}

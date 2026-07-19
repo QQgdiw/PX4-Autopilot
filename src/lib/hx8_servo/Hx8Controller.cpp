@@ -224,7 +224,7 @@ PendingRequest Controller::update(const ControllerInput &input)
 
 		} else if (motion_allowed) {
 			uint8_t payload[10] {};
-			write16(payload, static_cast<uint16_t>(static_cast<int16_t>(std::lround(_target.target_angle_deg * 10.f))));
+			write16(payload, static_cast<uint16_t>(static_cast<int16_t>(::lround(_target.target_angle_deg * 10.f))));
 			write16(&payload[2], _target.move_time_ms);
 			write16(&payload[4], _target.acceleration_time_ms);
 			write16(&payload[6], _target.deceleration_time_ms);
