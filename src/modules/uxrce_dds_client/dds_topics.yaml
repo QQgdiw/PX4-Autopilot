@@ -112,6 +112,9 @@ subscriptions:
   - topic: /fmu/in/offboard_control_mode
     type: px4_msgs::msg::OffboardControlMode
 
+  - topic: /fmu/in/rover_velocity_setpoint
+    type: px4_msgs::msg::RoverVelocitySetpoint
+
   - topic: /fmu/in/onboard_computer_status
     type: px4_msgs::msg::OnboardComputerStatus
 
