@@ -1,15 +1,15 @@
 #!/bin/sh
 #
-# @name Quad-Rover Hybrid (Native Config)
+# @name Quad-Rover Hybrid
 #
-# @type VTOL Quadrotor
-# @class VTOL
+# @type Quad-Rover
+# @class Quad-Rover
 #
 # @maintainer YourName <your.email@example.com>
 #
 
 set VEHICLE_TYPE hybrid
-param set-default MAV_TYPE 22
+param set-default MAV_TYPE 200
 
 # Navigation and Sensors
 param set-default NAV_ACC_RAD 2

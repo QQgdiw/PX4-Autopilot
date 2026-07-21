@@ -76,7 +76,7 @@ PARAM_DEFINE_INT32(MAV_SIK_RADIO_ID, 0);
  * MAVLink airframe type
  *
  * @min 0
- * @max 22
+ * @max 200
  * @value 0 Generic micro air vehicle
  * @value 1 Fixed wing aircraft
  * @value 2 Quadrotor
@@ -95,6 +95,7 @@ PARAM_DEFINE_INT32(MAV_SIK_RADIO_ID, 0);
  * @value 21 VTOL Tiltrotor
  * @value 22 VTOL Standard (separate fixed rotors for hover and cruise flight)
  * @value 23 VTOL Tailsitter
+ * @value 200 Quad-Rover hybrid vehicle
  * @group MAVLink
  */
 PARAM_DEFINE_INT32(MAV_TYPE, 0);
