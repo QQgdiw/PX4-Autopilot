@@ -84,6 +84,7 @@ set_source_files_properties(${MAVLINK_LIBRARY_DIR}/${CONFIG_MAVLINK_DIALECT}/${C
 # mavlink header only library
 add_library(mavlink_c INTERFACE)
 target_compile_options(mavlink_c INTERFACE -Wno-address-of-packed-member -Wno-cast-align)
+target_compile_definitions(mavlink_c INTERFACE PX4_PRIMARY_MAVLINK_DIALECT_AVAILABLE=1)
 target_sources(mavlink_c
 	INTERFACE
 		${MAVLINK_LIBRARY_DIR}/${CONFIG_MAVLINK_DIALECT}/${CONFIG_MAVLINK_DIALECT}.h

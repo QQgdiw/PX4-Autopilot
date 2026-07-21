@@ -34,7 +34,12 @@
 #pragma once
 
 #include <stdint.h>
-#include <mavlink/common/mavlink.h>
+
+#if defined(PX4_PRIMARY_MAVLINK_DIALECT_AVAILABLE)
+# include <mavlink.h>
+#else
+# include <mavlink/common/mavlink.h>
+#endif
 
 namespace open_drone_id_translations
 {
