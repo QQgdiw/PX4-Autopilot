@@ -386,7 +386,7 @@ Remove `HYBRID_MAX_Z` from the header parameter binding, parameter definition, a
 
 - [ ] **Step 3: Implement custom-command lifecycle**
 
-Filter only `vehicle_command_s::VEHICLE_CMD_DO_HYBRID_TRANSITION`. Validate `param1` as Quad/Rover and require `param2..7` to be zero or NaN. Use the Task 3 policy with a land sample freshness window of `2_s` (the land detector normally republishes at least every second).
+Filter only `vehicle_command_s::VEHICLE_CMD_DO_HYBRID_TRANSITION`. Validate `param1` as Quad/Rover and require `param2..7` to be zero or NaN. Use the Task 3 policy with a land sample freshness window of `2_s` (the land detector normally republishes at least every second). Route every existing request source--custom MAVLink command, Mission command, and RC transfer switch--through that same policy before it can call `_transformation.request()`. Both Quad and Rover targets require the fresh landed result; no source may retain the former height-only or Quad-bypass behavior.
 
 Store this exact pending-request record on a started external request:
 
@@ -486,6 +486,8 @@ Expected: FAIL because the independent type helper and mode guard do not exist.
 Define `is_quad_rover()` from `system_type == MAV_TYPE_QUAD_ROVER`. In `Commander::updateParameters()`, set `is_quad_rover` from that helper, retain the static system type, set `is_vtol=false`, and remove the custom `HYBR_QUAD_ROV && is_vtol()` condition. Do not alter generic `is_vtol()` behavior for standard vehicle types.
 
 For a hybrid vehicle, do not call the custom VTOL remapping path in `vtolStatusUpdate()`. Instead use fresh `hybrid_vehicle_status` to set `vehicle_type` only for stable Flying/Driving states. In transition, unknown, or fault, do not report fixed-wing and do not enable a physical controller chain.
+
+Add `VEHICLE_CMD_DO_HYBRID_TRANSITION` to Commander's existing "handled by other parts of the system" switch cases. Commander must not publish `UNSUPPORTED` or a duplicate acknowledgement: `hybrid_vehicle_control` is the sole acknowledgement owner for this command.
 
 - [ ] **Step 4: Gate mode changes before UserModeIntention accepts them**
 
@@ -694,6 +696,8 @@ if (offboard_control_mode.rover_velocity) {
 ```
 
 Do not set position, altitude, climb-rate, or attitude flags in this branch. In `OffboardChecks`, include `rover_velocity` in signal availability and require the velocity and angular-velocity estimates used by the Rover loops. Commander must deny entering this selection unless fresh hybrid status reports stable Rover.
+
+Reject any `OffboardControlMode` sample that sets `rover_velocity` together with `position`, `velocity`, `acceleration`, `attitude`, `body_rate`, `thrust_and_torque`, or `direct_actuator`. This dedicated selection has exactly one valid control bit and cannot be interpreted through the existing priority chain.
 
 - [ ] **Step 3: Route speed without a bearing target**
 
