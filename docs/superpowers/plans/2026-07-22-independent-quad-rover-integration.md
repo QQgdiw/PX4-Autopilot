@@ -578,6 +578,7 @@ git commit -m "feat[commander]: route independent quad-rover modes"
 - Modify: `src/modules/navigator/mission_base.cpp`
 - Modify: `src/modules/navigator/mission.cpp`
 - Modify: `src/modules/navigator/MissionFeasibility/FeasibilityChecker.cpp`
+- Create: `src/modules/navigator/HybridTransitionMission.hpp`
 - Test: create `src/modules/navigator/HybridTransitionMissionTest.cpp`
 - Modify: `src/modules/navigator/CMakeLists.txt`
 
@@ -592,18 +593,23 @@ Create tests covering the pure item acceptance predicate:
 ```cpp
 TEST(HybridTransitionMission, CompletesOnlyMatchingStableSequence)
 {
-    EXPECT_FALSE(hybridTransitionMissionReached(7, HYBRID_VEHICLE_SHAPE_ROVER,
-                                                makeHybridStatus(6, HYBRID_STATE_DRIVING, TARGET_DRIVING)));
-    EXPECT_FALSE(hybridTransitionMissionReached(7, HYBRID_VEHICLE_SHAPE_ROVER,
-                                                makeHybridStatus(7, HYBRID_STATE_TRANSITIONING, TARGET_DRIVING)));
-    EXPECT_TRUE(hybridTransitionMissionReached(7, HYBRID_VEHICLE_SHAPE_ROVER,
-                                               makeHybridStatus(7, HYBRID_STATE_DRIVING, TARGET_DRIVING)));
+    EXPECT_FALSE(hybridTransitionMissionReached(7, hybrid_vehicle_status_s::TARGET_DRIVING,
+                                                makeHybridStatus(6, hybrid_vehicle_status_s::HYBRID_STATE_DRIVING,
+                                                        hybrid_vehicle_status_s::TARGET_DRIVING)));
+    EXPECT_FALSE(hybridTransitionMissionReached(7, hybrid_vehicle_status_s::TARGET_DRIVING,
+                                                makeHybridStatus(7, hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING,
+                                                        hybrid_vehicle_status_s::TARGET_DRIVING)));
+    EXPECT_TRUE(hybridTransitionMissionReached(7, hybrid_vehicle_status_s::TARGET_DRIVING,
+                                               makeHybridStatus(7, hybrid_vehicle_status_s::HYBRID_STATE_DRIVING,
+                                                       hybrid_vehicle_status_s::TARGET_DRIVING)));
 }
 
 TEST(HybridTransitionMission, FaultNeverCompletesItem)
 {
-    EXPECT_FALSE(hybridTransitionMissionReached(7, HYBRID_VEHICLE_SHAPE_QUAD,
-                                                makeHybridStatus(7, HYBRID_STATE_TRANSITION_FAULT, TARGET_FLYING)));
+    EXPECT_FALSE(hybridTransitionMissionReached(7, hybrid_vehicle_status_s::TARGET_FLYING,
+                                                makeHybridStatus(7,
+                                                        hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT,
+                                                        hybrid_vehicle_status_s::TARGET_FLYING)));
 }
 ```
 
@@ -612,14 +618,23 @@ TEST(HybridTransitionMission, FaultNeverCompletesItem)
 Run:
 
 ```bash
-ctest --test-dir build/zeroone_x6_hybrid -R HybridTransitionMission --output-on-failure
+cmake --build build/px4_sitl_test --target unit-HybridTransitionMission functional-FeasibilityChecker
+ctest --test-dir build/px4_sitl_test -R HybridTransitionMission --output-on-failure
 ```
 
 Expected: FAIL because no custom navigation command or helper exists.
 
 - [ ] **Step 3: Parse and store the custom item**
 
-Add `NAV_CMD_DO_HYBRID_TRANSITION = MAV_CMD_DO_HYBRID_TRANSITION` to `navigation.h`. Add it to both MAVLink mission upload and download switch cases alongside other non-positional `DO` items. Validate `param1` is exactly 1 or 2 and reject unsupported reserved parameters at upload time.
+Add `NAV_CMD_DO_HYBRID_TRANSITION = 50000` to `navigation.h`. The value must
+remain identical to private `MAV_CMD_DO_HYBRID_TRANSITION=50000`, but shared
+Navigator, MAVLink mission, and host-test code must not include the
+board-selected generated hybrid dialect. Add it to both MAVLink mission upload
+and download switch cases alongside other non-positional `DO` items. Validate
+`param1` is exactly 1 or 2 and reject unsupported reserved parameters at upload
+time. Put the pure sequence/target/state predicate in
+`HybridTransitionMission.hpp` so its unit test does not construct a fake
+Navigator work-queue/module instance.
 
 - [ ] **Step 4: Publish once and wait for matching status**
 
@@ -638,7 +653,9 @@ For the hybrid command, do not call `handleVtolTransition()`, `set_vtol_transiti
 
 - [ ] **Step 6: Run mission tests and commit**
 
-Run the command from Step 2 plus existing `MissionFeasibility` tests. Expected: all pass.
+Run the host command from Step 2, the `functional-FeasibilityChecker` test,
+`git diff --check`, and `make zeroone_x6_hybrid`. Expected: all focused tests
+and the hybrid-only firmware build pass.
 
 ```bash
 git add src/modules/navigator src/modules/mavlink/mavlink_mission.cpp
