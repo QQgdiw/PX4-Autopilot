@@ -187,6 +187,10 @@ void M2006Can::sendZeroBestEffort()
 		return;
 	}
 
+	if (!hybrid_control::shouldTransmitM2006Command(_online_previous[0], _online_previous[1])) {
+		return;
+	}
+
 	for (unsigned attempt = 0; attempt < 3; ++attempt) {
 		(void)sendCommand(0, 0);
 	}
@@ -225,6 +229,11 @@ void M2006Can::Run()
 		exit_and_cleanup();
 		return;
 	}
+
+	uavcan::CanSelectMasks masks{};
+	const uavcan::CanFrame *pending_tx[uavcan::MaxCanIfaces] {};
+	const uavcan::MonotonicTime can_now = UAVCAN_DRIVER::SystemClock::instance().getMonotonic();
+	(void)static_cast<uavcan::ICanDriver &>(_can.driver).select(masks, pending_tx, can_now);
 
 	receiveFeedback();
 	_motors_sub.update(&_motors);
@@ -296,7 +305,9 @@ void M2006Can::Run()
 		_current_command[1] = 0;
 	}
 
-	(void)sendCommand(_current_command[0], _current_command[1]);
+	if (hybrid_control::shouldTransmitM2006Command(online[0], online[1])) {
+		(void)sendCommand(_current_command[0], _current_command[1]);
+	}
 
 	if (_last_status_publish == 0 || now - _last_status_publish >= StatusIntervalUs) {
 		publishStatus(now, online);

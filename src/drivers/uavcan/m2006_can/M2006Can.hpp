@@ -5,6 +5,7 @@
 #include <lib/hybrid_control/M2006CommandAdapter.hpp>
 #include <lib/hybrid_control/M2006DriveGate.hpp>
 #include <lib/hybrid_control/M2006SpeedController.hpp>
+#include <lib/hybrid_control/M2006TxPolicy.hpp>
 #include <px4_platform_common/module.h>
 #include <px4_platform_common/module_params.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
