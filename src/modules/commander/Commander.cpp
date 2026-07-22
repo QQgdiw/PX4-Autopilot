@@ -728,9 +728,8 @@ Commander::~Commander()
 commander::HybridModeRequestResult Commander::hybridModeRequestResult(uint8_t nav_state,
 		bool supported_in_stable_shape) const
 {
-	return _vehicle_status.is_quad_rover
-	       ? commander::hybridModeRequestResult(_current_hybrid_state, nav_state, supported_in_stable_shape)
-	       : commander::HybridModeRequestResult::Allowed;
+	return commander::hybridModeRequestResult(_vehicle_status.is_quad_rover, _current_hybrid_state, nav_state,
+		       supported_in_stable_shape);
 }
 
 uint8_t Commander::hybridModeCommandRejection(uint8_t nav_state, bool supported_in_stable_shape) const
@@ -1245,7 +1244,6 @@ Commander::handle_command(const vehicle_command_s &cmd)
 		break;
 
 	case vehicle_command_s::VEHICLE_CMD_DO_FIGUREEIGHT: {
-#ifdef CONFIG_FIGURE_OF_EIGHT
 			constexpr uint8_t desired_nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER;
 
 			if (hybridModeRequestResult(desired_nav_state, false)
@@ -1254,6 +1252,7 @@ Commander::handle_command(const vehicle_command_s &cmd)
 				break;
 			}
 
+#ifdef CONFIG_FIGURE_OF_EIGHT
 			if (!((_vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING) || (_vehicle_status.is_vtol))) {
 				cmd_result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_UNSUPPORTED;
 				mavlink_log_critical(&_mavlink_log_pub, "Figure 8 command only available for fixed wing and vtol vehicles.");

@@ -73,6 +73,13 @@ inline HybridModeRequestResult hybridModeRequestResult(uint8_t state, uint8_t na
 	       ? HybridModeRequestResult::Allowed : HybridModeRequestResult::Denied;
 }
 
+inline HybridModeRequestResult hybridModeRequestResult(bool is_quad_rover, uint8_t state, uint8_t nav_state,
+		bool supported_in_stable_shape = true)
+{
+	return is_quad_rover ? hybridModeRequestResult(state, nav_state, supported_in_stable_shape)
+	       : HybridModeRequestResult::Allowed;
+}
+
 inline uint8_t hybridVehicleType(uint8_t state)
 {
 	if (state == hybrid_vehicle_status_s::HYBRID_STATE_FLYING) {

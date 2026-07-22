@@ -55,11 +55,13 @@ TEST(ModeManagementTest, HybridModeGateDistinguishesUnsupportedFromUnavailable)
 
 TEST(ModeManagementTest, FigureEightHybridGateClassifiesShapeSupportBeforeGenericVehicleSupport)
 {
-	EXPECT_EQ(commander::hybridModeRequestResult(hybrid_vehicle_status_s::HYBRID_STATE_DRIVING,
+	EXPECT_EQ(commander::hybridModeRequestResult(false, hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN,
+		  vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER, false), HybridModeRequestResult::Allowed);
+	EXPECT_EQ(commander::hybridModeRequestResult(true, hybrid_vehicle_status_s::HYBRID_STATE_DRIVING,
 		  vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER, false), HybridModeRequestResult::Denied);
-	EXPECT_EQ(commander::hybridModeRequestResult(hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING,
+	EXPECT_EQ(commander::hybridModeRequestResult(true, hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING,
 		  vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER, false), HybridModeRequestResult::TemporarilyRejected);
-	EXPECT_EQ(commander::hybridModeRequestResult(hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN,
+	EXPECT_EQ(commander::hybridModeRequestResult(true, hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN,
 		  vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER, false), HybridModeRequestResult::TemporarilyRejected);
 }
 
