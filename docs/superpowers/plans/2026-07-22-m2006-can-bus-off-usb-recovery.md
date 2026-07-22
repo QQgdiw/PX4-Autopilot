@@ -20,6 +20,10 @@
 - Redirect complete build/test output to files and inspect no more than 50 relevant lines.
 - Report firmware build success and physical USB/CAN acceptance separately.
 - Commit messages must use `<type>[scope]: <description>`.
+- Pure decision logic must follow red-green TDD. By explicit user approval,
+  the thin MMIO/uORB adapter changes are verified by focused policy tests,
+  target compilation, and hardware acceptance because the repository has no
+  practical host harness for those adapters.
 
 ---
 
@@ -57,15 +61,6 @@ TEST(M2006TxPolicy, RequiresAtLeastOneOnlineMotor)
 	EXPECT_TRUE(shouldTransmitM2006Command(true, false));
 	EXPECT_TRUE(shouldTransmitM2006Command(false, true));
 	EXPECT_TRUE(shouldTransmitM2006Command(true, true));
-}
-
-TEST(M2006TxPolicy, OnlineMotorMayReceiveZeroCommand)
-{
-	const int16_t left_command = 0;
-	const int16_t right_command = 0;
-	EXPECT_EQ(left_command, 0);
-	EXPECT_EQ(right_command, 0);
-	EXPECT_TRUE(shouldTransmitM2006Command(true, false));
 }
 ```
 
