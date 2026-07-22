@@ -77,6 +77,12 @@ private:
 		if (_status_sub.copy(&status)) {
 			updated = true;
 
+#if defined(MAVLINK_MSG_ID_HYBRID_VEHICLE_STATUS)
+			if (_mavlink->get_system_type() == MAV_TYPE_QUAD_ROVER) {
+				_msg.vtol_state = MAV_VTOL_STATE_UNDEFINED;
+
+			} else
+#endif
 			if (status.is_vtol) {
 				if (!status.in_transition_mode && status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING) {
 					_msg.vtol_state = MAV_VTOL_STATE_MC;
