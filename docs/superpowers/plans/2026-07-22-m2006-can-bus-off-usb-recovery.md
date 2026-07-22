@@ -112,8 +112,8 @@ git commit -m "test[m2006]: define feedback-aware transmit policy"
 
 **Files:**
 - Create: `src/drivers/uavcan/uavcan_drivers/stm32h7/driver/include/uavcan_stm32h7/bus_off.hpp`
-- Create: `src/drivers/uavcan/BusOffCleanupTest.cpp`
-- Modify: `src/drivers/uavcan/CMakeLists.txt`
+- Create: `src/lib/hybrid_control/BusOffCleanupTest.cpp`
+- Modify: `src/lib/hybrid_control/CMakeLists.txt`
 
 **Interfaces:**
 - Consumes: a software-pending mailbox bit mask and the hardware `TXBRP` value.
@@ -121,18 +121,22 @@ git commit -m "test[m2006]: define feedback-aware transmit policy"
 
 - [ ] **Step 1: Register and write the failing cleanup test**
 
-Add this test after `CanOwnershipTest` registration:
+Add this test after `M2006TxPolicyTest` registration:
 
 ```cmake
-px4_add_unit_gtest(SRC BusOffCleanupTest.cpp)
+px4_add_unit_gtest(
+	SRC BusOffCleanupTest.cpp
+	INCLUDES
+		${PX4_SOURCE_DIR}/src/drivers/uavcan/uavcan_drivers/stm32h7/driver/include
+)
 ```
 
-Create `BusOffCleanupTest.cpp` before the header exists:
+Create `src/lib/hybrid_control/BusOffCleanupTest.cpp` before the header exists:
 
 ```cpp
 #include <gtest/gtest.h>
 
-#include "uavcan_drivers/stm32h7/driver/include/uavcan_stm32h7/bus_off.hpp"
+#include <uavcan_stm32h7/bus_off.hpp>
 
 TEST(BusOffCleanup, CancelsOnlyMatchingPendingMailboxes)
 {
@@ -154,6 +158,7 @@ TEST(BusOffCleanup, HandlesNoHardwarePendingMailboxes)
 Run:
 
 ```bash
+rm -rf build/px4_sitl_test
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make tests TESTFILTER=BusOffCleanup > /tmp/bus_off_cleanup_red.log 2>&1
 ```
 
@@ -195,7 +200,7 @@ Expected: exit 0 and both cleanup cases pass.
 - [ ] **Step 5: Commit the independently tested cleanup policy**
 
 ```bash
-git add src/drivers/uavcan/BusOffCleanupTest.cpp src/drivers/uavcan/CMakeLists.txt src/drivers/uavcan/uavcan_drivers/stm32h7/driver/include/uavcan_stm32h7/bus_off.hpp
+git add src/lib/hybrid_control/BusOffCleanupTest.cpp src/lib/hybrid_control/CMakeLists.txt src/drivers/uavcan/uavcan_drivers/stm32h7/driver/include/uavcan_stm32h7/bus_off.hpp
 git commit -m "test[uavcan]: define bus-off mailbox cleanup policy"
 ```
 

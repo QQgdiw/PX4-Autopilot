@@ -96,6 +96,20 @@ Implementation will follow red-green-refactor:
    - reconnecting nodes after disarm allows normal CAN communication after the
      controller recovery sequence.
 
+### Bus-off policy host-test placement
+
+The default `make tests` configuration is `px4_sitl_test`; it does not configure
+the UAVCAN CMake subtree, so a test registered in `src/drivers/uavcan` is not
+built or discovered. The pure `makeBusOffCleanup()` policy therefore keeps its
+production header in the STM32H7 driver include directory, but its GoogleTest is
+registered in `src/lib/hybrid_control`, which is already part of the default SITL
+test graph.
+
+The test target receives only the STM32H7 driver include directory. It does not
+link UAVCAN, enable UAVCAN in SITL, or change any board configuration. This keeps
+the pure bit-mask policy host-testable while the later ISR adapter remains verified
+by the policy test, target compilation, and hardware acceptance.
+
 ## Risks and Constraints
 
 The shared STM32H7 driver change affects other boards using this backend, so the
