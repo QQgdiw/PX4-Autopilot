@@ -356,7 +356,7 @@ git commit -m "feat[hybrid]: add transition and mode policy"
 - Consumes `vehicle_command`, `vehicle_land_detected`, and the Task 3 policy.
 - Produces sequence-aware `hybrid_vehicle_status` and exactly one command acknowledgement per external transition request.
 
-- [ ] **Step 1: Extend failing tests for command lifecycle**
+- [ ] **Step 1: Extend regression tests and establish the migration failure**
 
 Add policy-level lifecycle cases:
 
@@ -366,12 +366,29 @@ TEST(HybridTransitionPolicy, OppositeTransitionIsTemporarilyRejected)
     const auto result = decideTransition({true, true, false, HybridState::TransitionToRover,
                                           HybridTarget::Flying, HybridTarget::Driving});
     EXPECT_FALSE(result.start);
-    EXPECT_EQ(result.ack_result, MAV_RESULT_TEMPORARILY_REJECTED);
+    EXPECT_EQ(result.ack_result, CommandResult::TemporarilyRejected);
     EXPECT_EQ(result.reject_reason, RejectReason::OppositeTransition);
 }
 ```
 
-Run the focused target; expected FAIL until the policy handles an active opposite target.
+Run the focused host target; expected PASS because Task 3 already implements
+the opposite-transition policy and this is a regression assertion:
+
+```bash
+cmake --build build/px4_sitl_test --target unit-HybridTransitionPolicy
+ctest --test-dir build/px4_sitl_test -R HybridTransitionPolicy --output-on-failure
+```
+
+Before changing the module, run:
+
+```bash
+rg "VEHICLE_CMD_DO_VTOL_TRANSITION|HYBRID_MAX_Z" \
+  src/modules/hybrid_vehicle_control \
+  ROMFS/px4fmu_common/init.d/airframes/22001_quad_rover
+```
+
+Expected: the source-contract check finds the obsolete command and height
+parameter, demonstrating that the Task 4 migration is not yet implemented.
 
 - [ ] **Step 2: Replace the old input and parameter**
 
@@ -422,11 +439,14 @@ Increment `_transition_sequence` only after a request is accepted to start. Reco
 Run:
 
 ```bash
-ctest --test-dir build/zeroone_x6_hybrid -R HybridTransitionPolicy --output-on-failure
+cmake --build build/px4_sitl_test --target unit-HybridTransitionPolicy
+ctest --test-dir build/px4_sitl_test -R HybridTransitionPolicy --output-on-failure
 rg "VEHICLE_CMD_DO_VTOL_TRANSITION|HYBRID_MAX_Z" src/modules/hybrid_vehicle_control ROMFS/px4fmu_common/init.d/airframes/22001_quad_rover
+make zeroone_x6_hybrid
 ```
 
-Expected: policy tests pass; the search produces no active hybrid-control/airframe use of either obsolete symbol.
+Expected: policy tests and the hybrid-only firmware build pass; the search
+produces no active hybrid-control/airframe use of either obsolete symbol.
 
 - [ ] **Step 6: Commit the transformation command migration**
 
