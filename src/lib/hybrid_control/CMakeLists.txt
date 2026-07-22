@@ -18,3 +18,8 @@ px4_add_unit_gtest(SRC TransformationStateMachineTest.cpp LINKLIBS hybrid_contro
 px4_add_unit_gtest(SRC TransformationPositionTest.cpp LINKLIBS hybrid_control)
 px4_add_unit_gtest(SRC Hx8BackendPolicyTest.cpp LINKLIBS hybrid_control)
 px4_add_unit_gtest(SRC M2006TxPolicyTest.cpp LINKLIBS hybrid_control)
+px4_add_unit_gtest(
+	SRC BusOffCleanupTest.cpp
+	INCLUDES
+		${PX4_SOURCE_DIR}/src/drivers/uavcan/uavcan_drivers/stm32h7/driver/include
+)
