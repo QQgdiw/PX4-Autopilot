@@ -36,6 +36,22 @@
 
 #include <uORB/topics/hybrid_vehicle_status.h>
 
+namespace hybrid_vehicle_status_stream
+{
+constexpr uint32_t elapsed_us_to_ms(uint64_t elapsed_us)
+{
+	const uint64_t elapsed_ms = elapsed_us / 1000ULL;
+	return elapsed_ms > UINT32_MAX ? UINT32_MAX : static_cast<uint32_t>(elapsed_ms);
+}
+
+static_assert(elapsed_us_to_ms(0) == 0);
+static_assert(elapsed_us_to_ms(999) == 0);
+static_assert(elapsed_us_to_ms(1000) == 1);
+static_assert(elapsed_us_to_ms(1'000'000) == 1000);
+static_assert(elapsed_us_to_ms(static_cast<uint64_t>(UINT32_MAX) * 1000) == UINT32_MAX);
+static_assert(elapsed_us_to_ms((static_cast<uint64_t>(UINT32_MAX) + 1) * 1000) == UINT32_MAX);
+}
+
 class MavlinkStreamHybridVehicleStatus : public MavlinkStream
 {
 public:
@@ -49,6 +65,10 @@ public:
 
 	unsigned get_size() override
 	{
+		if (_mavlink->get_status()->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) {
+			return 0;
+		}
+
 		return _hybrid_status_sub.advertised() ? MAVLINK_MSG_ID_HYBRID_VEHICLE_STATUS_LEN
 		       + MAVLINK_NUM_NON_PAYLOAD_BYTES : 0;
 	}
@@ -70,7 +90,7 @@ private:
 			mavlink_hybrid_vehicle_status_t msg{};
 			msg.timestamp = hybrid_status.timestamp;
 			msg.transition_sequence = hybrid_status.transition_sequence;
-			msg.transition_elapsed_ms = static_cast<uint32_t>(hybrid_status.transition_elapsed);
+			msg.transition_elapsed_ms = hybrid_vehicle_status_stream::elapsed_us_to_ms(hybrid_status.transition_elapsed);
 			msg.position_normalized = hybrid_status.position_normalized;
 			msg.current_state = hybrid_status.current_state;
 			msg.target_state = hybrid_status.target_state;
