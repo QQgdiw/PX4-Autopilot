@@ -368,10 +368,14 @@ git commit -m "fix[m2006]: avoid transmission without online motors"
 
 ```bash
 rm -rf build/px4_sitl_test
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make tests TESTFILTER='M2006*|BusOffCleanup' > /tmp/m2006_bus_off_final_tests.log 2>&1
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make tests TESTFILTER=M2006 > /tmp/m2006_bus_off_final_tests.log 2>&1
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make tests TESTFILTER=BusOffCleanup >> /tmp/m2006_bus_off_final_tests.log 2>&1
 ```
 
-Expected: exit 0, no failed tests, and no protobuf version conflict.
+Expected: both commands exit 0, no failed tests, and no protobuf version
+conflict. They are separate because the PX4 Make recipe expands `TESTFILTER`
+unquoted; an alternation containing `|` would otherwise be parsed by the shell
+as a pipeline.
 
 - [ ] **Step 2: Run the final target build**
 
