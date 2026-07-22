@@ -46,6 +46,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <uavcan_stm32h7/bus_off.hpp>
 #include <uavcan_stm32h7/can.hpp>
 #include <uavcan_stm32h7/clock.hpp>
 #include "internal.hpp"
@@ -889,6 +890,27 @@ void CanIface::handleBusOff()
 	 * sequence, the error management counters will be reset, and so PSR.BO, ECR.TEC, and ECR.REC.
 	*/
 
+	uint32_t software_pending = 0;
+
+	for (uint8_t i = 0; i < NumTxMailboxes; ++i) {
+		if (pending_tx_[i].pending) {
+			software_pending |= 1U << i;
+		}
+	}
+
+	const BusOffCleanup cleanup = makeBusOffCleanup(software_pending, can_->TXBRP);
+
+	if (cleanup.cancel_mask != 0) {
+		can_->TXBCR = cleanup.cancel_mask;
+	}
+
+	for (uint8_t i = 0; i < NumTxMailboxes; ++i) {
+		if ((cleanup.cancel_mask & (1U << i)) != 0) {
+			pending_tx_[i].pending = false;
+		}
+	}
+
+	update_event_.signalFromInterrupt();
 	can_->CCCR &= ~FDCAN_CCCR_INIT;
 
 }
