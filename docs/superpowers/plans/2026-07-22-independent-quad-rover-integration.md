@@ -427,6 +427,13 @@ struct PendingTransitionAck {
 
 Publish `IN_PROGRESS` only when a new transition starts. Publish terminal `ACCEPTED` or `FAILED` once when the matching sequence reaches a stable target or fault. Publish immediate rejection for invalid/unsafe requests. Internal Mission commands must start the same state machine but do not require an external terminal acknowledgement.
 
+If an external same-target command is received while that transition is
+already active, reply `IN_PROGRESS` immediately but do not restart the state
+machine, increment the sequence, replace the pending owner, or create another
+terminal acknowledgement. The original started external lifecycle remains the
+sole owner of the eventual terminal result. Opposite-target requests remain
+immediate `TEMPORARILY_REJECTED` responses.
+
 - [ ] **Step 4: Publish observable gate and lifecycle state**
 
 Set every newly added `hybrid_vehicle_status_s` field on every publication:
