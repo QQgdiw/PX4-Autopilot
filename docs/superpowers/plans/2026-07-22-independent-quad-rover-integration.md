@@ -346,6 +346,7 @@ git commit -m "feat[hybrid]: add transition and mode policy"
 ## Task 4: Convert Hybrid Control to the Independent Command and Land Gate
 
 **Files:**
+- Modify: `msg/versioned/VehicleCommand.msg`
 - Modify: `src/modules/hybrid_vehicle_control/hybrid_vehicle_control.hpp`
 - Modify: `src/modules/hybrid_vehicle_control/hybrid_vehicle_control.cpp`
 - Modify: `src/modules/hybrid_vehicle_control/hybrid_vehicle_control_params.c`
@@ -391,6 +392,13 @@ Expected: the source-contract check finds the obsolete command and height
 parameter, demonstrating that the Task 4 migration is not yet implemented.
 
 - [ ] **Step 2: Replace the old input and parameter**
+
+Mirror the private wire command into PX4's internal command constants without
+changing any `VehicleCommand` fields:
+
+```text
+uint16 VEHICLE_CMD_DO_HYBRID_TRANSITION = 50000 # Quad-Rover shape transition
+```
 
 In the module header, replace the `vehicle_local_position` subscription with:
 
@@ -451,7 +459,7 @@ produces no active hybrid-control/airframe use of either obsolete symbol.
 - [ ] **Step 6: Commit the transformation command migration**
 
 ```bash
-git add src/modules/hybrid_vehicle_control src/lib/hybrid_control ROMFS/px4fmu_common/init.d/airframes/22001_quad_rover
+git add msg/versioned/VehicleCommand.msg src/modules/hybrid_vehicle_control src/lib/hybrid_control ROMFS/px4fmu_common/init.d/airframes/22001_quad_rover
 git commit -m "feat[hybrid]: gate transformation by landed state"
 ```
 
