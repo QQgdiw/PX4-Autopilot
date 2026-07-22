@@ -279,9 +279,9 @@ Create tests with these exact assertions:
 ```cpp
 TEST(HybridTransitionPolicy, DeniesStaleOrUnlandedRequests)
 {
-    EXPECT_EQ(decideTransition({true, false, false, HybridState::Flying, HybridTarget::None}).reject_reason,
+    EXPECT_EQ(decideTransition({false, true, false, HybridState::Flying, HybridTarget::Driving, HybridTarget::None}).reject_reason,
               RejectReason::LandDetectorStale);
-    EXPECT_EQ(decideTransition({true, true, false, HybridState::Flying, HybridTarget::None}).reject_reason,
+    EXPECT_EQ(decideTransition({true, false, false, HybridState::Flying, HybridTarget::Driving, HybridTarget::None}).reject_reason,
               RejectReason::NotLanded);
 }
 
