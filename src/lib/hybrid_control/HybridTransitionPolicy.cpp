@@ -78,6 +78,12 @@ TransitionDecision decideTransition(const TransitionRequest &request)
 	return reject(CommandResult::Denied, RejectReason::UnknownState);
 }
 
+bool configurationUpdatePermitted(bool armed, bool prearmed, HybridState state)
+{
+	const bool transitioning = state == HybridState::TransitionToQuad || state == HybridState::TransitionToRover;
+	return !armed && !prearmed && !transitioning;
+}
+
 bool modeAllowedForShape(HybridState state, uint8_t nav_state)
 {
 	if (state == HybridState::Flying) {

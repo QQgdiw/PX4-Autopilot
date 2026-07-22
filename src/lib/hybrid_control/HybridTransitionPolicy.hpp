@@ -43,6 +43,7 @@ struct TransitionDecision {
 };
 
 TransitionDecision decideTransition(const TransitionRequest &request);
+bool configurationUpdatePermitted(bool armed, bool prearmed, HybridState state);
 bool modeAllowedForShape(HybridState state, uint8_t nav_state);
 bool offboardInputFreshAfter(uint64_t input_timestamp, uint64_t completion_timestamp, uint64_t now);
 

@@ -364,7 +364,8 @@ void HybridVehicleControl::Run()
 
 	const hrt_abstime now = hrt_absolute_time();
 	const TransformationConfig requested_config = transformation_config();
-	const bool safe_to_apply = !_actuator_armed.armed && !_actuator_armed.prearmed;
+	const bool safe_to_apply = hybrid_control::configurationUpdatePermitted(_actuator_armed.armed,
+				   _actuator_armed.prearmed, _transformation_output.state);
 	const bool configuration_applied = _transformation_config_tracker.update(requested_config, safe_to_apply);
 	TransformationInput input{now, false, 0.f, false, false, false, false};
 

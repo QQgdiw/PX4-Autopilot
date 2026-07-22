@@ -45,3 +45,13 @@ TEST(HybridTransitionPolicy, RequiresInputAfterCompletionEpoch)
 	EXPECT_FALSE(offboardInputFreshAfter(99, 100, 150));
 	EXPECT_TRUE(offboardInputFreshAfter(101, 100, 150));
 }
+
+TEST(HybridTransitionPolicy, DefersConfigurationUpdateDuringTransition)
+{
+	EXPECT_FALSE(configurationUpdatePermitted(false, false, HybridState::TransitionToQuad));
+	EXPECT_FALSE(configurationUpdatePermitted(false, false, HybridState::TransitionToRover));
+	EXPECT_TRUE(configurationUpdatePermitted(false, false, HybridState::Flying));
+	EXPECT_TRUE(configurationUpdatePermitted(false, false, HybridState::Fault));
+	EXPECT_FALSE(configurationUpdatePermitted(true, false, HybridState::Flying));
+	EXPECT_FALSE(configurationUpdatePermitted(false, true, HybridState::Driving));
+}
