@@ -785,11 +785,13 @@ git commit -m "feat[mavlink]: publish hybrid vehicle status"
 
 **Files:**
 - Modify: `src/modules/commander/ModeUtil/control_mode.cpp`
+- Modify: `src/modules/commander/HealthAndArmingChecks/checks/offboardCheck.hpp`
 - Modify: `src/modules/commander/HealthAndArmingChecks/checks/offboardCheck.cpp`
 - Modify: `src/modules/rover_differential/DifferentialVelControl/DifferentialVelControl.hpp`
 - Modify: `src/modules/rover_differential/DifferentialVelControl/DifferentialVelControl.cpp`
 - Modify: `src/modules/rover_differential/DifferentialRateControl/DifferentialRateControl.hpp`
 - Modify: `src/modules/rover_differential/DifferentialRateControl/DifferentialRateControl.cpp`
+- Create: `src/lib/rover_control/RoverVelocityOffboardPolicy.hpp`
 - Test: create `src/lib/rover_control/RoverVelocityOffboardPolicyTest.cpp`
 - Modify: `src/lib/rover_control/CMakeLists.txt`
 
@@ -804,11 +806,20 @@ Test pure PX4-side input validation and transition epoch handling:
 ```cpp
 TEST(RoverVelocityOffboardPolicy, RequiresFreshPostTransitionInput)
 {
-    EXPECT_FALSE(roverVelocityInputUsable({99, 0.3f, 0.2f}, 100, 150));
-    EXPECT_FALSE(roverVelocityInputUsable({120, NAN, 0.2f}, 100, 150));
-    EXPECT_TRUE(roverVelocityInputUsable({120, -0.3f, 0.2f}, 100, 150));
+    EXPECT_FALSE(roverVelocityInputUsable({99, 0.3f, 0.2f}, 100, 150, 100, true));
+    EXPECT_FALSE(roverVelocityInputUsable({120, NAN, 0.2f}, 100, 150, 100, true));
+    EXPECT_FALSE(roverVelocityInputUsable({120, -0.3f, 0.2f}, 100, 150, 100, false));
+    EXPECT_TRUE(roverVelocityInputUsable({120, -0.3f, 0.2f}, 100, 150, 100, true));
 }
 ```
+
+Define the pure helper in `RoverVelocityOffboardPolicy.hpp`; its arguments are
+the scalar input, transition completion epoch, current time, maximum age in
+microseconds, and a `driving_healthy` boolean. It must require a nonzero,
+nonfuture timestamp strictly newer than the completion epoch, age no greater
+than the maximum, finite signed speed and yaw rate, and healthy Rover shape.
+Add boundary tests for exact timeout, timeout+1, future time, both nonfinite
+fields, negative speed, and both yaw signs.
 
 Run the new CTest target. Expected: FAIL because helpers and target are absent.
 
@@ -827,6 +838,12 @@ if (offboard_control_mode.rover_velocity) {
 Do not set position, altitude, climb-rate, or attitude flags in this branch. In `OffboardChecks`, include `rover_velocity` in signal availability and require the velocity and angular-velocity estimates used by the Rover loops. Commander must deny entering this selection unless fresh hybrid status reports stable Rover.
 
 Reject any `OffboardControlMode` sample that sets `rover_velocity` together with `position`, `velocity`, `acceleration`, `attitude`, `body_rate`, `thrust_and_torque`, or `direct_actuator`. This dedicated selection has exactly one valid control bit and cannot be interpreted through the existing priority chain.
+
+Use an explicit one-second freshness check for `hybrid_vehicle_status` in the
+health check, matching Commander's existing hybrid-status timeout. The status
+must be nonfuture, `HYBRID_STATE_DRIVING`, and have zero fault reason. Add the
+status subscription in `offboardCheck.hpp`. Invalid mixed-bit selections must
+set Offboard unavailable rather than falling through to another priority bit.
 
 - [ ] **Step 3: Route speed without a bearing target**
 
@@ -880,19 +897,33 @@ rover_steering_setpoint.normalized_speed_diff = 0.f;
 This local stop is in addition to, not a replacement for, Commander Offboard
 loss handling.
 
+Both controllers must additionally require an exact-one-bit
+`offboard_control_mode.rover_velocity` selection whose mode timestamp is
+nonzero, nonfuture, and no older than `COM_OF_LOSS_T`, plus a nonzero,
+nonfuture hybrid-status timestamp no older than one second. Use the pure input
+policy in both controllers so speed and yaw owners accept/reject the same
+sample. On rejection, each controller publishes its owned exact-zero output on
+that cycle and resets its own PID/slew state; collectively throttle and
+steering become zero immediately.
+
 - [ ] **Step 6: Run Rover tests and commit**
 
 Run:
 
 ```bash
-ctest --test-dir build/zeroone_x6_hybrid -R "RoverControl|RoverVelocityOffboardPolicy" --output-on-failure
+cmake --build build/px4_sitl_test --target unit-RoverControl unit-RoverVelocityOffboardPolicy
+ctest --test-dir build/px4_sitl_test -R "RoverControl|RoverVelocityOffboardPolicy" --output-on-failure
+make zeroone_x6_hybrid
 ```
 
 Expected: speed sign, yaw sign, post-transition epoch, and existing Rover
 control tests pass.
 
 ```bash
-git add src/modules/commander/ModeUtil/control_mode.cpp src/modules/commander/HealthAndArmingChecks/checks/offboardCheck.cpp src/modules/rover_differential src/lib/rover_control
+git add src/modules/commander/ModeUtil/control_mode.cpp \
+  src/modules/commander/HealthAndArmingChecks/checks/offboardCheck.hpp \
+  src/modules/commander/HealthAndArmingChecks/checks/offboardCheck.cpp \
+  src/modules/rover_differential src/lib/rover_control
 git commit -m "feat[rover]: add body velocity offboard control"
 ```
 
