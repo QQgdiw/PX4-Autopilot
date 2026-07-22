@@ -19,12 +19,18 @@ Add one explicit CMake dependency immediately after the test declaration:
 
 ```cmake
 px4_add_unit_gtest(SRC CommanderHybridStatusTest.cpp)
-add_dependencies(unit-CommanderHybridStatus uorb_headers)
+
+if(BUILD_TESTING)
+	add_dependencies(unit-CommanderHybridStatus uorb_headers)
+endif()
 ```
 
 This makes Ninja generate all uORB topic headers before compiling the test. It
 does not add a runtime or link dependency, change the common GoogleTest macro,
-or affect production Commander behavior.
+or affect production Commander behavior. The guard is required because
+`px4_add_unit_gtest()` creates `unit-CommanderHybridStatus` only when
+`BUILD_TESTING` is enabled; a normal firmware configuration must not reference a
+target that does not exist.
 
 ## Alternatives Rejected
 
@@ -44,7 +50,9 @@ change:
    `TESTFILTER=M2006TxPolicy`, redirecting the full output.
 3. Require exit 0, successful compilation of `unit-CommanderHybridStatus`, and
    `unit-M2006TxPolicy` passing 1/1.
-4. Run `git diff --check` and confirm only the intended CMake file changed for
+4. Run `make zeroone_x6_hybrid`, with the full output redirected, and require a
+   successful normal firmware configuration/build with `BUILD_TESTING=OFF`.
+5. Run `git diff --check` and confirm only the intended CMake file changed for
    this fix.
 
 The fix is complete only if the test command succeeds from an absent SITL test

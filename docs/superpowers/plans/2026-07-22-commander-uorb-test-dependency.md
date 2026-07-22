@@ -45,8 +45,15 @@ Immediately after the existing test declaration, add exactly:
 
 ```cmake
 px4_add_unit_gtest(SRC CommanderHybridStatusTest.cpp)
-add_dependencies(unit-CommanderHybridStatus uorb_headers)
+
+if(BUILD_TESTING)
+	add_dependencies(unit-CommanderHybridStatus uorb_headers)
+endif()
 ```
+
+The guard is mandatory: `px4_add_unit_gtest()` only creates the unit-test target
+when `BUILD_TESTING` is enabled, while normal firmware builds configure with it
+disabled.
 
 - [ ] **Step 3: Verify clean GREEN**
 
@@ -60,7 +67,18 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make tests TES
 Expected: exit 0; `unit-CommanderHybridStatus` compiles after generated uORB
 headers and `unit-M2006TxPolicy` passes 1/1.
 
-- [ ] **Step 4: Verify scope and commit**
+- [ ] **Step 4: Verify normal firmware configuration**
+
+Run:
+
+```bash
+make zeroone_x6_hybrid > /tmp/commander_uorb_firmware_build.log 2>&1
+```
+
+Expected: exit 0 with no CMake error about an unknown
+`unit-CommanderHybridStatus` target.
+
+- [ ] **Step 5: Verify scope and commit**
 
 Run:
 
