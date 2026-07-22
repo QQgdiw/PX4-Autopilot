@@ -6,9 +6,39 @@
 
 #include <gtest/gtest.h>
 
+#include "commander_helper.h"
 #include "HybridStatusGuard.hpp"
 
 using namespace time_literals;
+
+TEST(CommanderHybridStatus, IndependentIdentityIsNotVtol)
+{
+	vehicle_status_s status{};
+	status.system_type = commander::VehicleTypeQuadRover;
+	EXPECT_TRUE(commander::is_quad_rover(status));
+	EXPECT_FALSE(commander::is_vtol(status));
+}
+
+TEST(CommanderHybridStatus, RoverRejectsAltitudeAndTransitionRejectsAllModes)
+{
+	EXPECT_FALSE(commander::hybridModeAllowed(hybrid_vehicle_status_s::HYBRID_STATE_DRIVING,
+			vehicle_status_s::NAVIGATION_STATE_ALTCTL));
+	EXPECT_TRUE(commander::hybridModeAllowed(hybrid_vehicle_status_s::HYBRID_STATE_DRIVING,
+			vehicle_status_s::NAVIGATION_STATE_AUTO_RTL));
+	EXPECT_FALSE(commander::hybridModeAllowed(hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING,
+			vehicle_status_s::NAVIGATION_STATE_MANUAL));
+}
+
+TEST(CommanderHybridStatus, UnstableShapeHasNoPhysicalVehicleType)
+{
+	EXPECT_EQ(int(commander::hybridVehicleType(hybrid_vehicle_status_s::HYBRID_STATE_FLYING)),
+		  int(vehicle_status_s::VEHICLE_TYPE_ROTARY_WING));
+	EXPECT_EQ(int(commander::hybridVehicleType(hybrid_vehicle_status_s::HYBRID_STATE_DRIVING)),
+		  int(vehicle_status_s::VEHICLE_TYPE_ROVER));
+	EXPECT_EQ(int(commander::hybridVehicleType(hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING)), 0);
+	EXPECT_EQ(int(commander::hybridVehicleType(hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT)), 0);
+	EXPECT_EQ(int(commander::hybridVehicleType(hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN)), 0);
+}
 
 TEST(CommanderHybridStatus, FaultOverridesStableState)
 {

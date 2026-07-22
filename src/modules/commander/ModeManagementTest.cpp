@@ -32,7 +32,26 @@
  ****************************************************************************/
 
 #include <gtest/gtest.h>
+#include "HybridStatusGuard.hpp"
 #include "ModeManagement.hpp"
+
+using commander::HybridModeRequestResult;
+
+TEST(ModeManagementTest, HybridModeGateDistinguishesUnsupportedFromUnavailable)
+{
+	EXPECT_EQ(commander::hybridModeRequestResult(hybrid_vehicle_status_s::HYBRID_STATE_DRIVING,
+		  vehicle_status_s::NAVIGATION_STATE_ALTCTL), HybridModeRequestResult::Denied);
+	EXPECT_EQ(commander::hybridModeRequestResult(hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING,
+		  vehicle_status_s::NAVIGATION_STATE_MANUAL), HybridModeRequestResult::TemporarilyRejected);
+	EXPECT_EQ(commander::hybridModeRequestResult(hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN,
+		  vehicle_status_s::NAVIGATION_STATE_AUTO_RTL), HybridModeRequestResult::TemporarilyRejected);
+	EXPECT_EQ(commander::hybridModeRequestResult(hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT,
+		  vehicle_status_s::NAVIGATION_STATE_MANUAL), HybridModeRequestResult::TemporarilyRejected);
+	EXPECT_EQ(commander::hybridModeRequestResult(hybrid_vehicle_status_s::HYBRID_STATE_FLYING,
+		  vehicle_status_s::NAVIGATION_STATE_ALTCTL), HybridModeRequestResult::Allowed);
+	EXPECT_EQ(commander::hybridModeRequestResult(hybrid_vehicle_status_s::HYBRID_STATE_DRIVING,
+		  vehicle_status_s::NAVIGATION_STATE_AUTO_RTL), HybridModeRequestResult::Allowed);
+}
 
 static bool modeValid(uint8_t mode)
 {

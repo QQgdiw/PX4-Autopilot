@@ -725,6 +725,20 @@ Commander::~Commander()
 	perf_free(_preflight_check_perf);
 }
 
+commander::HybridModeRequestResult Commander::hybridModeRequestResult(uint8_t nav_state) const
+{
+	return _vehicle_status.is_quad_rover
+	       ? commander::hybridModeRequestResult(_current_hybrid_state, nav_state)
+	       : commander::HybridModeRequestResult::Allowed;
+}
+
+uint8_t Commander::hybridModeCommandRejection(uint8_t nav_state) const
+{
+	return hybridModeRequestResult(nav_state) == commander::HybridModeRequestResult::Denied
+	       ? vehicle_command_ack_s::VEHICLE_CMD_RESULT_DENIED
+	       : vehicle_command_ack_s::VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED;
+}
+
 bool
 Commander::handle_command(const vehicle_command_s &cmd)
 {
@@ -753,6 +767,10 @@ Commander::handle_command(const vehicle_command_s &cmd)
 			if (mode_switch_not_requested || unsupported_bits_set) {
 				answer_command(cmd, vehicle_command_ack_s::VEHICLE_CMD_RESULT_UNSUPPORTED);
 
+			} else if (hybridModeRequestResult(vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER)
+				   != commander::HybridModeRequestResult::Allowed) {
+				cmd_result = hybridModeCommandRejection(vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER);
+
 			} else {
 				if (_user_mode_intention.change(vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER, getSourceFromCommand(cmd))) {
 					cmd_result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
@@ -772,7 +790,11 @@ Commander::handle_command(const vehicle_command_s &cmd)
 			// to not require navigator and command to receive / process
 			// the data at the exact same time.
 
-			if (_user_mode_intention.change(vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER)) {
+			if (hybridModeRequestResult(vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER)
+			    != commander::HybridModeRequestResult::Allowed) {
+				cmd_result = hybridModeCommandRejection(vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER);
+
+			} else if (_user_mode_intention.change(vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER)) {
 				cmd_result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
 
 			} else {
@@ -888,6 +910,12 @@ Commander::handle_command(const vehicle_command_s &cmd)
 			}
 
 			if (desired_nav_state != vehicle_status_s::NAVIGATION_STATE_MAX) {
+				const commander::HybridModeRequestResult hybrid_result = hybridModeRequestResult(desired_nav_state);
+
+				if (hybrid_result != commander::HybridModeRequestResult::Allowed) {
+					cmd_result = hybridModeCommandRejection(desired_nav_state);
+					break;
+				}
 
 				// Special handling for LAND mode: always allow to switch into it such that if used
 				// as emergency mode it is always available. When triggering it the user generally wants
@@ -919,7 +947,10 @@ Commander::handle_command(const vehicle_command_s &cmd)
 	case vehicle_command_s::VEHICLE_CMD_SET_NAV_STATE: { // Used from ROS
 			uint8_t desired_nav_state = (uint8_t)(cmd.param1 + 0.5f);
 
-			if (_user_mode_intention.change(desired_nav_state, getSourceFromCommand(cmd))) {
+			if (hybridModeRequestResult(desired_nav_state) != commander::HybridModeRequestResult::Allowed) {
+				cmd_result = hybridModeCommandRejection(desired_nav_state);
+
+			} else if (_user_mode_intention.change(desired_nav_state, getSourceFromCommand(cmd))) {
 				cmd_result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
 
 			} else {
@@ -1028,7 +1059,11 @@ Commander::handle_command(const vehicle_command_s &cmd)
 
 	case vehicle_command_s::VEHICLE_CMD_NAV_RETURN_TO_LAUNCH: {
 			/* switch to RTL which ends the mission */
-			if (_user_mode_intention.change(vehicle_status_s::NAVIGATION_STATE_AUTO_RTL, getSourceFromCommand(cmd))) {
+			if (hybridModeRequestResult(vehicle_status_s::NAVIGATION_STATE_AUTO_RTL)
+			    != commander::HybridModeRequestResult::Allowed) {
+				cmd_result = hybridModeCommandRejection(vehicle_status_s::NAVIGATION_STATE_AUTO_RTL);
+
+			} else if (_user_mode_intention.change(vehicle_status_s::NAVIGATION_STATE_AUTO_RTL, getSourceFromCommand(cmd))) {
 				mavlink_log_info(&_mavlink_log_pub, "Returning to launch\t");
 				events::send(events::ID("commander_rtl"), events::Log::Info, "Returning to launch");
 				cmd_result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
@@ -1042,7 +1077,11 @@ Commander::handle_command(const vehicle_command_s &cmd)
 
 	case vehicle_command_s::VEHICLE_CMD_NAV_TAKEOFF: {
 			/* ok, home set, use it to take off */
-			if (_user_mode_intention.change(vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF, getSourceFromCommand(cmd))) {
+			if (hybridModeRequestResult(vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF)
+			    != commander::HybridModeRequestResult::Allowed) {
+				cmd_result = hybridModeCommandRejection(vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF);
+
+			} else if (_user_mode_intention.change(vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF, getSourceFromCommand(cmd))) {
 				cmd_result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
 
 			} else {
@@ -1056,7 +1095,11 @@ Commander::handle_command(const vehicle_command_s &cmd)
 #if CONFIG_MODE_NAVIGATOR_VTOL_TAKEOFF
 
 		/* ok, home set, use it to take off */
-		if (_user_mode_intention.change(vehicle_status_s::NAVIGATION_STATE_AUTO_VTOL_TAKEOFF, getSourceFromCommand(cmd))) {
+		if (hybridModeRequestResult(vehicle_status_s::NAVIGATION_STATE_AUTO_VTOL_TAKEOFF)
+		    != commander::HybridModeRequestResult::Allowed) {
+			cmd_result = hybridModeCommandRejection(vehicle_status_s::NAVIGATION_STATE_AUTO_VTOL_TAKEOFF);
+
+		} else if (_user_mode_intention.change(vehicle_status_s::NAVIGATION_STATE_AUTO_VTOL_TAKEOFF, getSourceFromCommand(cmd))) {
 			cmd_result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
 
 		} else {
@@ -1075,7 +1118,11 @@ Commander::handle_command(const vehicle_command_s &cmd)
 			// the vehicle to descend immediately, and if that means to switch to DESCEND it is fine.
 			const bool force = true;
 
-			if (_user_mode_intention.change(vehicle_status_s::NAVIGATION_STATE_AUTO_LAND, getSourceFromCommand(cmd), false,
+			if (hybridModeRequestResult(vehicle_status_s::NAVIGATION_STATE_AUTO_LAND)
+			    != commander::HybridModeRequestResult::Allowed) {
+				cmd_result = hybridModeCommandRejection(vehicle_status_s::NAVIGATION_STATE_AUTO_LAND);
+
+			} else if (_user_mode_intention.change(vehicle_status_s::NAVIGATION_STATE_AUTO_LAND, getSourceFromCommand(cmd), false,
 							force)) {
 				mavlink_log_info(&_mavlink_log_pub, "Landing at current position\t");
 				events::send(events::ID("commander_landing_current_pos"), events::Log::Info,
@@ -1090,7 +1137,11 @@ Commander::handle_command(const vehicle_command_s &cmd)
 		break;
 
 	case vehicle_command_s::VEHICLE_CMD_NAV_PRECLAND: {
-			if (_user_mode_intention.change(vehicle_status_s::NAVIGATION_STATE_AUTO_PRECLAND, getSourceFromCommand(cmd))) {
+			if (hybridModeRequestResult(vehicle_status_s::NAVIGATION_STATE_AUTO_PRECLAND)
+			    != commander::HybridModeRequestResult::Allowed) {
+				cmd_result = hybridModeCommandRejection(vehicle_status_s::NAVIGATION_STATE_AUTO_PRECLAND);
+
+			} else if (_user_mode_intention.change(vehicle_status_s::NAVIGATION_STATE_AUTO_PRECLAND, getSourceFromCommand(cmd))) {
 				mavlink_log_info(&_mavlink_log_pub, "Precision landing\t");
 				events::send(events::ID("commander_landing_prec_land"), events::Log::Info,
 					     "Landing using precision landing");
@@ -1112,6 +1163,12 @@ Commander::handle_command(const vehicle_command_s &cmd)
 
 				// requested first mission item valid
 				if (PX4_ISFINITE(cmd.param1) && (cmd.param1 >= -1) && (cmd.param1 < _mission_result_sub.get().seq_total)) {
+
+					if (hybridModeRequestResult(vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION)
+					    != commander::HybridModeRequestResult::Allowed) {
+						cmd_result = hybridModeCommandRejection(vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION);
+						break;
+					}
 
 					// switch to AUTO_MISSION and ARM
 					if (_user_mode_intention.change(vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION, getSourceFromCommand(cmd))
@@ -1147,8 +1204,14 @@ Commander::handle_command(const vehicle_command_s &cmd)
 	case vehicle_command_s::VEHICLE_CMD_DO_ORBIT: {
 
 			transition_result_t main_ret;
+			const uint8_t desired_nav_state = _vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING
+						  ? vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER : vehicle_status_s::NAVIGATION_STATE_ORBIT;
 
-			if (_vehicle_status.in_transition_mode) {
+			if (hybridModeRequestResult(desired_nav_state) != commander::HybridModeRequestResult::Allowed) {
+				cmd_result = hybridModeCommandRejection(desired_nav_state);
+				break;
+
+			} else if (_vehicle_status.in_transition_mode) {
 				main_ret = TRANSITION_DENIED;
 
 			} else if (_vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING) {
@@ -1448,12 +1511,21 @@ Commander::handle_command(const vehicle_command_s &cmd)
 		}
 
 	case vehicle_command_s::VEHICLE_CMD_DO_SET_STANDARD_MODE: {
+			if (_vehicle_status.is_quad_rover
+			    && !commander::hybridStateEnablesControl(_current_hybrid_state)) {
+				answer_command(cmd, vehicle_command_ack_s::VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED);
+				break;
+			}
+
 			mode_util::StandardMode standard_mode = (mode_util::StandardMode) roundf(cmd.param1);
 			uint8_t nav_state = mode_util::getNavStateFromStandardMode(standard_mode, _vehicle_status.vehicle_type,
 					    _vehicle_status.is_vtol);
 
 			if (nav_state == vehicle_status_s::NAVIGATION_STATE_MAX) {
 				answer_command(cmd, vehicle_command_ack_s::VEHICLE_CMD_RESULT_FAILED);
+
+			} else if (hybridModeRequestResult(nav_state) != commander::HybridModeRequestResult::Allowed) {
+				answer_command(cmd, hybridModeCommandRejection(nav_state));
 
 			} else {
 				if (_user_mode_intention.change(nav_state, getSourceFromCommand(cmd))) {
@@ -1487,6 +1559,7 @@ Commander::handle_command(const vehicle_command_s &cmd)
 	case vehicle_command_s::VEHICLE_CMD_PAYLOAD_PREPARE_DEPLOY:
 	case vehicle_command_s::VEHICLE_CMD_PAYLOAD_CONTROL_DEPLOY:
 	case vehicle_command_s::VEHICLE_CMD_DO_VTOL_TRANSITION:
+	case vehicle_command_s::VEHICLE_CMD_DO_HYBRID_TRANSITION:
 	case vehicle_command_s::VEHICLE_CMD_DO_TRIGGER_CONTROL:
 	case vehicle_command_s::VEHICLE_CMD_DO_DIGICAM_CONTROL:
 	case vehicle_command_s::VEHICLE_CMD_DO_SET_CAM_TRIGG_DIST:
@@ -1694,6 +1767,10 @@ void Commander::executeActionRequest(const action_request_s &action_request)
 		break;
 
 	case action_request_s::ACTION_SWITCH_MODE:
+		if (hybridModeRequestResult(action_request.mode) != commander::HybridModeRequestResult::Allowed) {
+			printRejectMode(action_request.mode);
+			break;
+		}
 
 		if (!_user_mode_intention.change(action_request.mode, ModeChangeSource::User, false)) {
 			printRejectMode(action_request.mode);
@@ -1717,14 +1794,7 @@ void Commander::updateParameters()
 
         _auto_disarm_killed.set_hysteresis_time_from(false, _param_com_kill_disarm.get() * 1_s);
 
-        // ==========================================================
-        // [自定义注入]: 提前获取 Quad-Rover 身份
-        // ==========================================================
-        int32_t hybr_quad_rov = 0;
-        param_get(param_find("HYBR_QUAD_ROV"), &hybr_quad_rov);
-        // 如果开启了参数，且本身架构支持 VTOL，则确立 Quad-Rover 身份
-        const bool is_quad_rover = (hybr_quad_rov == 1) && is_vtol(_vehicle_status);
-        // ==========================================================
+	const bool is_quad_rover = commander::is_quad_rover(_vehicle_status);
 
         const bool is_rotary = is_rotary_wing(_vehicle_status) || (is_vtol(_vehicle_status)
                                && _vtol_vehicle_status.vehicle_vtol_state != vtol_vehicle_status_s::VEHICLE_VTOL_STATE_FW);
@@ -1732,32 +1802,23 @@ void Commander::updateParameters()
                               && _vtol_vehicle_status.vehicle_vtol_state == vtol_vehicle_status_s::VEHICLE_VTOL_STATE_FW);
         const bool is_ground = is_ground_vehicle(_vehicle_status);
 
-        /* disable manual override for all systems that rely on electronic stabilization */
-        if (is_rotary) {
-                _vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROTARY_WING;
+	if (is_quad_rover) {
+		_vehicle_status.vehicle_type = commander::hybridVehicleType(_current_hybrid_state);
 
-        } else if (is_fixed) {
-                // ==========================================================
-                // [自定义注入]: 核心状态篡改 (解决战役 2 的关键)
-                // ==========================================================
-                if (is_quad_rover) {
-                        // 系统处于 VTOL 的固定翼模式，但我们知道它是漫游车！
-                        // 强行将 vehicle_type 扭转为 ROVER！
-                        _vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROVER;
-                } else {
-                        // 普通 VTOL，保留原有固定翼逻辑
-                        _vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_FIXED_WING;
-                }
-                // ==========================================================
+	/* disable manual override for all systems that rely on electronic stabilization */
+	} else if (is_rotary) {
+		_vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROTARY_WING;
+
+	} else if (is_fixed) {
+		_vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_FIXED_WING;
 
         } else if (is_ground) {
                 _vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROVER;
         }
 
-        // 赋值到 uORB 消息结构体中广播给全系统
-        _vehicle_status.is_vtol = is_vtol(_vehicle_status);
-        _vehicle_status.is_vtol_tailsitter = is_vtol_tailsitter(_vehicle_status);
-        _vehicle_status.is_quad_rover = is_quad_rover; // [自定义注入] 广播新身份
+	_vehicle_status.is_quad_rover = is_quad_rover;
+	_vehicle_status.is_vtol = !is_quad_rover && is_vtol(_vehicle_status);
+	_vehicle_status.is_vtol_tailsitter = !is_quad_rover && is_vtol_tailsitter(_vehicle_status);
 
         // _mode_switch_mapped = (RC_MAP_FLTMODE > 0)
         if (_param_rc_map_fltmode != PARAM_INVALID && (param_get(_param_rc_map_fltmode, &value_int32) == PX4_OK)) {
@@ -1913,9 +1974,6 @@ void Commander::run()
 		// _actuator_armed.manual_lockdown // action_request_s::ACTION_KILL
 		_actuator_armed.force_failsafe = (_vehicle_status.nav_state == _vehicle_status.NAVIGATION_STATE_TERMINATION);
 		// _actuator_armed.in_esc_calibration_mode // VEHICLE_CMD_PREFLIGHT_CALIBRATION
-		const bool hybrid_status_updated = commander::shouldProcessHybridStatus(_vehicle_status.is_quad_rover,
-										_hybrid_vehicle_status_sub.updated());
-
 		// if force_failsafe or manual_lockdown activated send parachute command
 		if ((!actuator_armed_prev.force_failsafe && _actuator_armed.force_failsafe)
 		    || (!actuator_armed_prev.manual_lockdown && _actuator_armed.manual_lockdown)
@@ -1927,37 +1985,11 @@ void Commander::run()
 
 		// publish states (armed, control_mode, vehicle_status, failure_detector_status) at 2 Hz or immediately when changed
 		if ((now >= _vehicle_status.timestamp + 500_ms) || _status_changed || nav_state_or_failsafe_changed
-		    || hybrid_status_updated
 		    || !(_actuator_armed == actuator_armed_prev)) {
 
 			// publish actuator_armed first (used by output modules)
 			_actuator_armed.timestamp = hrt_absolute_time();
 			_actuator_armed_pub.publish(_actuator_armed);
-
-			// ==========================================================
-			// Quad-Rover 实时状态覆写
-			// Commander直接听命于 HybridVehicleControl！
-			// ==========================================================
-			if (_vehicle_status.is_quad_rover) {
-				if (_hybrid_vehicle_status_sub.copy(&_hybrid_vehicle_status)) {
-					_current_hybrid_state = commander::hybridStateForCommander(_hybrid_vehicle_status, now);
-
-				} else {
-					_current_hybrid_state = hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN;
-				}
-
-			if (_current_hybrid_state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING) {
-			// 我们的自定义大脑说现在是车 -> 强制广播为漫游车！
-			_vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROVER;
-			}
-			else if (_current_hybrid_state == hybrid_vehicle_status_s::HYBRID_STATE_FLYING) {
-			// 我们的自定义大脑说现在是飞机 -> 强制广播为四旋翼！
-			_vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROTARY_WING;
-			}
-			// 变形过渡态 (TRANSITIONING) 保持当前形态，由底下的掩码切断动力
-			}
-			// ==========================================================
-
 
 			// update and publish vehicle_control_mode
 			updateControlMode();
@@ -2195,6 +2227,31 @@ void Commander::safetyButtonUpdate()
 
 void Commander::vtolStatusUpdate()
 {
+	if (_vehicle_status.is_quad_rover) {
+		const bool status_updated = _hybrid_vehicle_status_sub.update(&_hybrid_vehicle_status);
+		const hrt_abstime now = hrt_absolute_time();
+		const uint8_t new_hybrid_state = commander::hybridStateForCommander(_hybrid_vehicle_status, now);
+		const uint8_t new_vehicle_type = commander::hybridVehicleType(new_hybrid_state);
+		const hrt_abstime new_transition_complete_time = commander::hybridStatusIsFresh(_hybrid_vehicle_status, now)
+				? _hybrid_vehicle_status.transition_completed_timestamp : 0;
+
+		if (status_updated
+		    || _current_hybrid_state != new_hybrid_state
+		    || _vehicle_status.vehicle_type != new_vehicle_type
+		    || _transition_complete_time != new_transition_complete_time
+		    || _vehicle_status.in_transition_mode
+		    || _vehicle_status.in_transition_to_fw) {
+			_current_hybrid_state = new_hybrid_state;
+			_vehicle_status.vehicle_type = new_vehicle_type;
+			_transition_complete_time = new_transition_complete_time;
+			_vehicle_status.in_transition_mode = false;
+			_vehicle_status.in_transition_to_fw = false;
+			_status_changed = true;
+		}
+
+		return;
+	}
+
 	// Make sure that this is only adjusted if vehicle really is of type vtol
 	if (_vtol_vehicle_status_sub.update(&_vtol_vehicle_status) && is_vtol(_vehicle_status)) {
 
@@ -3002,7 +3059,9 @@ void Commander::manualControlCheck()
 				if (override_enabled) {
 					// If no failsafe is active, directly change the mode, otherwise pass the request to the failsafe state machine
 					if (_failsafe.selectedAction() <= FailsafeBase::Action::Warn) {
-						if (_user_mode_intention.change(vehicle_status_s::NAVIGATION_STATE_POSCTL, ModeChangeSource::User, true)) {
+						if (hybridModeRequestResult(vehicle_status_s::NAVIGATION_STATE_POSCTL)
+						    == commander::HybridModeRequestResult::Allowed
+						    && _user_mode_intention.change(vehicle_status_s::NAVIGATION_STATE_POSCTL, ModeChangeSource::User, true)) {
 							tune_positive(true);
 							mavlink_log_info(&_mavlink_log_pub, "Pilot took over using sticks\t");
 							events::send(events::ID("commander_rc_override"), events::Log::Info, "Pilot took over using sticks");
@@ -3019,7 +3078,10 @@ void Commander::manualControlCheck()
 
 			// if there's never been a mode change force position control as initial state
 			if (!_user_mode_intention.everHadModeChange() && (is_mavlink || !_mode_switch_mapped)) {
-				_user_mode_intention.change(vehicle_status_s::NAVIGATION_STATE_POSCTL, ModeChangeSource::User, false, true);
+				if (hybridModeRequestResult(vehicle_status_s::NAVIGATION_STATE_POSCTL)
+				    == commander::HybridModeRequestResult::Allowed) {
+					_user_mode_intention.change(vehicle_status_s::NAVIGATION_STATE_POSCTL, ModeChangeSource::User, false, true);
+				}
 			}
 		}
 	}

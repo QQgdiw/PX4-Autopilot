@@ -7,7 +7,9 @@
 #pragma once
 
 #include <drivers/drv_hrt.h>
+#include <lib/hybrid_control/HybridTransitionPolicy.hpp>
 #include <uORB/topics/hybrid_vehicle_status.h>
+#include <uORB/topics/vehicle_status.h>
 
 namespace commander
 {
@@ -21,6 +23,62 @@ enum class HybridRedPattern : uint8_t {
 	StallDouble,
 	CombinedTriple
 };
+
+enum class HybridModeRequestResult : uint8_t {
+	Allowed,
+	Denied,
+	TemporarilyRejected
+};
+
+inline hybrid_control::HybridState hybridPolicyState(uint8_t state)
+{
+	switch (state) {
+	case hybrid_vehicle_status_s::HYBRID_STATE_FLYING:
+		return hybrid_control::HybridState::Flying;
+
+	case hybrid_vehicle_status_s::HYBRID_STATE_DRIVING:
+		return hybrid_control::HybridState::Driving;
+
+	case hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING:
+		return hybrid_control::HybridState::TransitionToRover;
+
+	case hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT:
+		return hybrid_control::HybridState::Fault;
+
+	case hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN:
+	default:
+		return hybrid_control::HybridState::Unknown;
+	}
+}
+
+inline bool hybridModeAllowed(uint8_t state, uint8_t nav_state)
+{
+	return hybrid_control::modeAllowedForShape(hybridPolicyState(state), nav_state);
+}
+
+inline HybridModeRequestResult hybridModeRequestResult(uint8_t state, uint8_t nav_state)
+{
+	if (hybridModeAllowed(state, nav_state)) {
+		return HybridModeRequestResult::Allowed;
+	}
+
+	return state == hybrid_vehicle_status_s::HYBRID_STATE_FLYING
+	       || state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING
+	       ? HybridModeRequestResult::Denied : HybridModeRequestResult::TemporarilyRejected;
+}
+
+inline uint8_t hybridVehicleType(uint8_t state)
+{
+	if (state == hybrid_vehicle_status_s::HYBRID_STATE_FLYING) {
+		return vehicle_status_s::VEHICLE_TYPE_ROTARY_WING;
+	}
+
+	if (state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING) {
+		return vehicle_status_s::VEHICLE_TYPE_ROVER;
+	}
+
+	return 0;
+}
 
 inline bool hybridStatusIsFresh(const hybrid_vehicle_status_s &status, hrt_abstime now)
 {

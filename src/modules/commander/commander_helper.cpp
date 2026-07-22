@@ -98,11 +98,7 @@ bool is_rotary_wing(const vehicle_status_s &current_status)
 
 bool is_vtol(const vehicle_status_s &current_status)
 {
-	return (current_status.system_type == VEHICLE_TYPE_VTOL_TAILSITTER_DUOROTOR ||
-		current_status.system_type == VEHICLE_TYPE_VTOL_TAILSITTER_QUADROTOR ||
-		current_status.system_type == VEHICLE_TYPE_VTOL_TILTROTOR ||
-		current_status.system_type == VEHICLE_TYPE_VTOL_FIXEDROTOR ||
-		current_status.system_type == VEHICLE_TYPE_VTOL_TAILSITTER);
+	return commander::is_vtol(current_status);
 }
 
 bool is_vtol_tailsitter(const vehicle_status_s &current_status)

@@ -156,6 +156,8 @@ private:
 	 * @param cmd 		Vehicle command to handle
 	 */
 	bool handle_command(const vehicle_command_s &cmd);
+	commander::HybridModeRequestResult hybridModeRequestResult(uint8_t nav_state) const;
+	uint8_t hybridModeCommandRejection(uint8_t nav_state) const;
 
 	unsigned handleCommandActuatorTest(const vehicle_command_s &cmd);
 
@@ -325,6 +327,7 @@ private:
 	perf_counter_t _preflight_check_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": preflight check")};
 
 	uint8_t _current_hybrid_state{hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN};
+	hrt_abstime _transition_complete_time{0};
 	hybrid_vehicle_status_s _hybrid_vehicle_status{};
 
 	// optional parameters
