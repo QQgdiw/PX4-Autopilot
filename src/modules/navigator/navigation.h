@@ -96,6 +96,7 @@ enum NAV_CMD {
 	NAV_CMD_RALLY_POINT = 5100,
 	NAV_CMD_CONDITION_GATE = 4501,
 	NAV_CMD_DO_WINCH = 42600,
+	NAV_CMD_DO_HYBRID_TRANSITION = 50000,
 	NAV_CMD_INVALID = UINT16_MAX /* ensure that casting a large number results in a specific error */
 };
 

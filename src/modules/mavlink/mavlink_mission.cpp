@@ -55,6 +55,8 @@
 #include <uORB/topics/mission_result.h>
 #include <crc32.h>
 
+#include <cmath>
+
 using matrix::wrap_2pi;
 
 dm_item_t MavlinkMissionManager::_mission_dataman_id = DM_KEY_WAYPOINTS_OFFBOARD_0;
@@ -1619,6 +1621,50 @@ MavlinkMissionManager::parse_mavlink_mission_item(const mavlink_mission_item_t *
 			mission_item->nav_cmd = (NAV_CMD)mavlink_mission_item->command;
 			break;
 
+		case NAV_CMD_DO_HYBRID_TRANSITION: {
+			const auto reserved_value_supported = [](double value) {
+				return fpclassify(value) == FP_ZERO || std::isnan(value);
+			};
+			const float target_value = mavlink_mission_item->param1;
+
+			if (!PX4_ISFINITE(target_value)) {
+				return MAV_MISSION_INVALID_PARAM1;
+			}
+
+			const int target = static_cast<int>(target_value);
+
+			if ((target != 1 && target != 2) || fpclassify(target_value - static_cast<float>(target)) != FP_ZERO) {
+				return MAV_MISSION_INVALID_PARAM1;
+			}
+
+			if (!reserved_value_supported(mission_item->params[1])) {
+				return MAV_MISSION_INVALID_PARAM2;
+			}
+
+			if (!reserved_value_supported(mission_item->params[2])) {
+				return MAV_MISSION_INVALID_PARAM3;
+			}
+
+			if (!reserved_value_supported(mission_item->params[3])) {
+				return MAV_MISSION_INVALID_PARAM4;
+			}
+
+			if (!reserved_value_supported(mission_item->params[4])) {
+				return MAV_MISSION_INVALID_PARAM5_X;
+			}
+
+			if (!reserved_value_supported(mission_item->params[5])) {
+				return MAV_MISSION_INVALID_PARAM6_Y;
+			}
+
+			if (!reserved_value_supported(mission_item->params[6])) {
+				return MAV_MISSION_INVALID_PARAM7;
+			}
+
+			mission_item->nav_cmd = NAV_CMD_DO_HYBRID_TRANSITION;
+			break;
+		}
+
 		default:
 			mission_item->nav_cmd = NAV_CMD_INVALID;
 
@@ -1708,6 +1754,7 @@ MavlinkMissionManager::format_mavlink_mission_item(const struct mission_item_s *
 		case NAV_CMD_SET_CAMERA_ZOOM:
 		case NAV_CMD_SET_CAMERA_FOCUS:
 		case NAV_CMD_DO_VTOL_TRANSITION:
+		case NAV_CMD_DO_HYBRID_TRANSITION:
 			break;
 
 		default:

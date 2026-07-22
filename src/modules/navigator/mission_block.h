@@ -47,6 +47,8 @@
 #include <drivers/drv_hrt.h>
 #include <systemlib/mavlink_log.h>
 #include <uORB/Publication.hpp>
+#include <uORB/Subscription.hpp>
+#include <uORB/topics/hybrid_vehicle_status.h>
 #include <uORB/topics/mission.h>
 #include <uORB/topics/position_setpoint_triplet.h>
 #include <uORB/topics/vehicle_command.h>
@@ -231,6 +233,10 @@ protected:
 	// Mission items that have a timeout to allow the payload e.g. gripper, winch, gimbal executing the command see item_has_timeout()
 	hrt_abstime _timestamp_command_timeout{0}; ///< Timestamp when the current item_has_timeout() command was started
 	float _command_timeout{0.f}; ///< Time in seconds any item_has_timeout() command should be waited for before continuing the mission
+
+	uORB::SubscriptionData<hybrid_vehicle_status_s> _hybrid_status_sub{ORB_ID(hybrid_vehicle_status)};
+	uint32_t _hybrid_transition_sequence{0};
+	bool _hybrid_transition_already_stable{false};
 
 private:
 	void updateMaxHaglFailsafe();
