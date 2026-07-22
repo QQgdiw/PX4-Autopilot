@@ -17,6 +17,8 @@ flight or differential-Rover controllers.
 - QGC and companion implementations must use MAVLink 2 and generate their
   bindings from this project's `hybrid_vehicle.xml`. `HYBRID_VEHICLE_STATUS`
   is not sent on a MAVLink 1 output link.
+- MAVLink Normal and Onboard modes configure `HYBRID_VEHICLE_STATUS` at 1 Hz
+  by default. Other MAVLink modes do not enable it by default.
 
 There is no on-wire contract-version field or capability negotiation. The
 numeric values above are therefore compatibility identifiers and must not be
@@ -143,9 +145,11 @@ not fields of message 60000 unless explicitly mapped above.
 
 ## Mission command behavior
 
-Mission items use command 50000 and the same `param1`/reserved-parameter
-contract. Mission feasibility accepts only exact `param1` values `1` or `2` and
-rejects invalid transition items before flight.
+Mission items use command 50000. Mission feasibility accepts only exact
+`param1` values `1` or `2` and requires every reserved `param2` through `param7`
+value to be finite zero; nonzero, NaN, infinity, and fractional target values
+are rejected before flight. This is stricter than the direct command transport,
+where NaN remains an accepted placeholder for a reserved parameter.
 
 Navigator issues a given hybrid item exactly once per `(mission_id,
 mission-sequence)` activation. It snapshots `transition_sequence`, records the

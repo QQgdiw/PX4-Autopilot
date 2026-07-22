@@ -94,3 +94,42 @@ TEST(RoverVelocityOffboardPolicy, RequiresFreshHealthyDrivingStatus)
 	EXPECT_FALSE(roverDrivingStatusUsable({100, 100, true, false}, 1100, 1000));
 	EXPECT_FALSE(roverDrivingStatusUsable({0, 100, true, true}, 1100, 1000));
 }
+
+TEST(RoverVelocityOffboardPolicy, QuadRoverRejectsLegacyOffboardSelections)
+{
+	RoverVelocityOffboardMode mode{100, false, true, false, false, false, false, false, false};
+	const RoverVelocityDrivingStatus healthy{100, 50, true, true};
+	const RoverVelocityDrivingStatus stale{1, 50, true, true};
+	const RoverVelocityDrivingStatus fault{100, 50, true, false};
+
+	EXPECT_FALSE(roverOffboardModeAvailable(true, mode, healthy, 150, 100, 100));
+	mode.velocity = false;
+	mode.body_rate = true;
+	EXPECT_FALSE(roverOffboardModeAvailable(true, mode, healthy, 150, 100, 100));
+	mode.body_rate = false;
+	mode.rover_velocity = true;
+	EXPECT_TRUE(roverOffboardModeAvailable(true, mode, healthy, 150, 100, 100));
+	EXPECT_FALSE(roverOffboardModeAvailable(true, mode, stale, 150, 100, 100));
+	EXPECT_FALSE(roverOffboardModeAvailable(true, mode, fault, 150, 100, 100));
+}
+
+TEST(RoverVelocityOffboardPolicy, LegacyRoverKeepsGenericOffboardSelections)
+{
+	const RoverVelocityDrivingStatus no_hybrid_status{};
+	RoverVelocityOffboardMode mode{100, false, true, false, false, false, false, false, false};
+	EXPECT_TRUE(roverOffboardModeAvailable(false, mode, no_hybrid_status, 150, 100, 100));
+
+	mode.velocity = false;
+	mode.body_rate = true;
+	EXPECT_TRUE(roverOffboardModeAvailable(false, mode, no_hybrid_status, 150, 100, 100));
+}
+
+TEST(RoverVelocityOffboardPolicy, QuadRoverControllersOwnEveryOffboardSelection)
+{
+	EXPECT_TRUE(roverVelocityDedicatedControlRequired(true, true, false, false));
+	EXPECT_TRUE(roverVelocityDedicatedControlRequired(true, true, true, true));
+	EXPECT_FALSE(roverVelocityDedicatedControlRequired(true, false, true, true));
+	EXPECT_FALSE(roverVelocityDedicatedControlRequired(false, true, false, true));
+	EXPECT_TRUE(roverVelocityDedicatedControlRequired(false, true, true, true));
+	EXPECT_FALSE(roverVelocityDedicatedControlRequired(false, true, true, false));
+}

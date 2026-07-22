@@ -8,6 +8,7 @@
 
 #include "commander_helper.h"
 #include "HybridStatusGuard.hpp"
+#include <lib/rover_control/RoverVelocityOffboardPolicy.hpp>
 
 using namespace time_literals;
 
@@ -62,6 +63,26 @@ TEST(CommanderHybridStatus, TransitionAndStaleStatusDisableControl)
 	stale.current_state = hybrid_vehicle_status_s::HYBRID_STATE_DRIVING;
 	EXPECT_EQ(commander::hybridStateForCommander(stale, 1_s), hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN);
 	EXPECT_FALSE(commander::hybridStateEnablesControl(hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN));
+}
+
+TEST(CommanderHybridStatus, RoverOffboardAvailabilityRequiresDedicatedModeAndHealthyShape)
+{
+	RoverVelocityOffboardMode mode{1_s, false, true, false, false, false, false, false, false};
+	RoverVelocityDrivingStatus status{1_s, 500_ms, true, true};
+	EXPECT_FALSE(roverOffboardModeAvailable(true, mode, status, 1_s, 1_s, 1_s));
+
+	mode.velocity = false;
+	mode.body_rate = true;
+	EXPECT_FALSE(roverOffboardModeAvailable(true, mode, status, 1_s, 1_s, 1_s));
+
+	mode.body_rate = false;
+	mode.rover_velocity = true;
+	EXPECT_TRUE(roverOffboardModeAvailable(true, mode, status, 1_s, 1_s, 1_s));
+
+	status.fault_free = false;
+	EXPECT_FALSE(roverOffboardModeAvailable(true, mode, status, 1_s, 1_s, 1_s));
+	status = {1, 500_ms, true, true};
+	EXPECT_FALSE(roverOffboardModeAvailable(true, mode, status, 2_s, 1_s, 1_s));
 }
 
 TEST(CommanderHybridStatus, SelectsRedPatternFromFaultAndOverload)

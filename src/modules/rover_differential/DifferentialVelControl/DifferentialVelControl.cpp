@@ -65,22 +65,23 @@ void DifferentialVelControl::updateVelControl()
 	updateSubscriptions();
 	const bool rover_velocity_control_active = roverVelocityControlActive();
 
-	if ((_vehicle_control_mode.flag_control_velocity_enabled) && _vehicle_control_mode.flag_armed) {
+	if (rover_velocity_control_active && _vehicle_control_mode.flag_armed) {
 		const bool sanity_checks_passed = runSanityChecks();
 
-		if (rover_velocity_control_active) {
-			if (sanity_checks_passed && roverVelocityInputValid()) {
-				generateThrottleSetpoint(_rover_velocity_setpoint.speed_body_x);
+		if (_vehicle_control_mode.flag_control_velocity_enabled && sanity_checks_passed && roverVelocityInputValid()) {
+			generateThrottleSetpoint(_rover_velocity_setpoint.speed_body_x);
 
-			} else {
-				stopRoverVelocityControl();
-			}
+		} else {
+			stopRoverVelocityControl();
+		}
 
-		} else if (sanity_checks_passed) {
+	} else if (_vehicle_control_mode.flag_control_velocity_enabled && _vehicle_control_mode.flag_armed) {
+		const bool sanity_checks_passed = runSanityChecks();
+
+		if (sanity_checks_passed) {
 			if (_vehicle_control_mode.flag_control_offboard_enabled) { // Offboard Velocity Control
 				generateVelocitySetpoint();
 			}
-
 			generateAttitudeAndThrottleSetpoint();
 
 		} else {
@@ -136,6 +137,10 @@ void DifferentialVelControl::updateSubscriptions()
 
 	if (_hybrid_vehicle_status_sub.updated()) {
 		_hybrid_vehicle_status_sub.copy(&_hybrid_vehicle_status);
+	}
+
+	if (_vehicle_status_sub.updated()) {
+		_vehicle_status_sub.copy(&_vehicle_status);
 	}
 
 }
@@ -233,8 +238,7 @@ void DifferentialVelControl::stopRoverVelocityControl()
 
 bool DifferentialVelControl::roverVelocityControlActive() const
 {
-	return _vehicle_control_mode.flag_control_offboard_enabled
-	       && _vehicle_control_mode.flag_control_velocity_enabled
+	const bool legacy_velocity_control_active = _vehicle_control_mode.flag_control_velocity_enabled
 	       && !_vehicle_control_mode.flag_control_position_enabled
 	       && !_vehicle_control_mode.flag_control_altitude_enabled
 	       && !_vehicle_control_mode.flag_control_climb_rate_enabled
@@ -242,6 +246,10 @@ bool DifferentialVelControl::roverVelocityControlActive() const
 	       && !_vehicle_control_mode.flag_control_attitude_enabled
 	       && _vehicle_control_mode.flag_control_rates_enabled
 	       && _vehicle_control_mode.flag_control_allocation_enabled;
+
+	return roverVelocityDedicatedControlRequired(_vehicle_status.is_quad_rover,
+			_vehicle_control_mode.flag_control_offboard_enabled, _offboard_control_mode.rover_velocity,
+			legacy_velocity_control_active);
 }
 
 bool DifferentialVelControl::roverVelocityInputValid() const

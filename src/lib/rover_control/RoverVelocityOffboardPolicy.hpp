@@ -68,6 +68,28 @@ inline bool roverDrivingStatusUsable(const RoverVelocityDrivingStatus &status, u
 	       && roverVelocityTimestampUsable(status.timestamp, now, maximum_age);
 }
 
+inline bool roverOffboardModeAvailable(bool is_quad_rover, const RoverVelocityOffboardMode &mode,
+		const RoverVelocityDrivingStatus &status, uint64_t now, uint64_t mode_maximum_age,
+		uint64_t status_maximum_age)
+{
+	const bool any_control_bit = mode.position || mode.velocity || mode.acceleration || mode.attitude || mode.body_rate
+				     || mode.thrust_and_torque || mode.direct_actuator || mode.rover_velocity;
+
+	if (!is_quad_rover && !mode.rover_velocity) {
+		return any_control_bit && roverVelocityTimestampUsable(mode.timestamp, now, mode_maximum_age);
+	}
+
+	return roverVelocityModeUsable(mode, now, mode_maximum_age)
+	       && roverDrivingStatusUsable(status, now, status_maximum_age);
+}
+
+inline bool roverVelocityDedicatedControlRequired(bool is_quad_rover, bool offboard_enabled,
+		bool rover_velocity_selected, bool legacy_velocity_control_active)
+{
+	return offboard_enabled
+	       && (is_quad_rover || (rover_velocity_selected && legacy_velocity_control_active));
+}
+
 inline bool roverVelocityInputUsable(const RoverVelocityOffboardInput &input, uint64_t transition_completed_timestamp,
 		uint64_t now, uint64_t maximum_age, bool driving_healthy)
 {

@@ -59,6 +59,7 @@
 #include <uORB/topics/actuator_motors.h>
 #include <uORB/topics/offboard_control_mode.h>
 #include <uORB/topics/trajectory_setpoint.h>
+#include <uORB/topics/vehicle_status.h>
 
 /**
  * @brief Class for differential rate control.
@@ -115,11 +116,13 @@ private:
 	uORB::Subscription _actuator_motors_sub{ORB_ID(actuator_motors)};
 	uORB::Subscription _rover_velocity_setpoint_sub{ORB_ID(rover_velocity_setpoint)};
 	uORB::Subscription _hybrid_vehicle_status_sub{ORB_ID(hybrid_vehicle_status)};
+	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
 	vehicle_control_mode_s _vehicle_control_mode{};
 	offboard_control_mode_s _offboard_control_mode{};
 	rover_rate_setpoint_s _rover_rate_setpoint{};
 	rover_velocity_setpoint_s _rover_velocity_setpoint{};
 	hybrid_vehicle_status_s _hybrid_vehicle_status{};
+	vehicle_status_s _vehicle_status{};
 
 	// uORB publications
 	uORB::Publication<rover_rate_setpoint_s> _rover_rate_setpoint_pub{ORB_ID(rover_rate_setpoint)};

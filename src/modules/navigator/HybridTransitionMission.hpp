@@ -98,6 +98,22 @@ inline uint8_t hybridTransitionMissionTarget(float value)
 	return hybrid_vehicle_status_s::TARGET_NONE;
 }
 
+inline bool hybridTransitionMissionReservedParameterValid(double value)
+{
+	return std::isfinite(value) && fabs(value) <= 0.;
+}
+
+inline bool hybridTransitionMissionParametersValid(const float (&params)[7])
+{
+	return hybridTransitionMissionTarget(params[0]) != hybrid_vehicle_status_s::TARGET_NONE
+	       && hybridTransitionMissionReservedParameterValid(params[1])
+	       && hybridTransitionMissionReservedParameterValid(params[2])
+	       && hybridTransitionMissionReservedParameterValid(params[3])
+	       && hybridTransitionMissionReservedParameterValid(params[4])
+	       && hybridTransitionMissionReservedParameterValid(params[5])
+	       && hybridTransitionMissionReservedParameterValid(params[6]);
+}
+
 inline HybridTransitionMissionOutcome hybridTransitionMissionOutcome(uint64_t issued_command_timestamp,
 		const hybrid_vehicle_status_s &status)
 {

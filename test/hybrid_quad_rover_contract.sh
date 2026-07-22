@@ -4,6 +4,10 @@ set -uo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 document="$root/docs/hybrid/quad-rover-mavlink-dds-contract.md"
 source_file="$root/src/modules/hybrid_vehicle_control/hybrid_vehicle_control.cpp"
+mavlink_source="$root/src/modules/mavlink/mavlink_main.cpp"
+offboard_check="$root/src/modules/commander/HealthAndArmingChecks/checks/offboardCheck.cpp"
+rate_controller="$root/src/modules/rover_differential/DifferentialRateControl/DifferentialRateControl.cpp"
+velocity_controller="$root/src/modules/rover_differential/DifferentialVelControl/DifferentialVelControl.cpp"
 dialect="$root/src/modules/mavlink/mavlink/message_definitions/v1.0/hybrid_vehicle.xml"
 status_msg="$root/msg/HybridVehicleStatus.msg"
 dds_topics="$root/src/modules/uxrce_dds_client/dds_topics.yaml"
@@ -46,6 +50,24 @@ check_pattern 'uint64 command_timestamp' "$status_msg" 'uORB status retains comm
 check_pattern 'uint32 transition_sequence' "$status_msg" 'uORB status retains transition sequence'
 check_pattern 'topic: /fmu/in/rover_velocity_setpoint' "$dds_topics" 'DDS rover input topic remains exported'
 check_pattern 'ack.result_param2 = _transition_sequence' "$source_file" 'hybrid ACK carries transition sequence'
+check_pattern 'roverOffboardModeAvailable\(context\.status\(\)\.is_quad_rover' "$offboard_check" \
+	'Commander applies the independent Rover Offboard policy to every selection'
+check_pattern 'roverVelocityDedicatedControlRequired\(_vehicle_status\.is_quad_rover' "$rate_controller" \
+	'differential rate control owns independent Rover Offboard stopping'
+check_pattern 'roverVelocityDedicatedControlRequired\(_vehicle_status\.is_quad_rover' "$velocity_controller" \
+	'differential velocity control owns independent Rover Offboard stopping'
+
+guarded_status_streams="$(awk '
+	/#if defined\(MAVLINK_MSG_ID_HYBRID_VEHICLE_STATUS\)/ { guarded = 1; next }
+	/#endif.*MAVLINK_MSG_ID_HYBRID_VEHICLE_STATUS/ { guarded = 0 }
+	guarded && /configure_stream_local\("HYBRID_VEHICLE_STATUS", 1\.0f\)/ { count++ }
+	END { print count + 0 }
+' "$mavlink_source")"
+if [[ "$guarded_status_streams" != "2" ]]; then
+	printf 'FAIL: normal and onboard MAVLink modes must each configure guarded hybrid status at 1 Hz (found %s)\n' \
+		"$guarded_status_streams" >&2
+	failures=$((failures + 1))
+fi
 
 ack_publishers="$(search_count '_vehicle_command_ack_pub\.publish\(ack\)' "$source_file" || true)"
 if [[ "$ack_publishers" != "1" ]]; then
@@ -60,6 +82,7 @@ check_pattern 'MAV_CMD_DO_HYBRID_TRANSITION.*50000' "$document" 'document states
 check_pattern 'param1.*1.*Quad.*2.*Rover' "$document" 'document defines transition param1 targets'
 check_pattern 'param2.*param7.*reserved' "$document" 'document defines reserved command parameters'
 check_pattern 'MAVLink 2' "$document" 'document requires MAVLink 2'
+check_pattern 'Normal.*Onboard.*1 Hz' "$document" 'document states the default status rate and affected MAVLink modes'
 check_pattern 'result_param2.*transition_sequence' "$document" 'document defines ACK sequence correlation'
 check_pattern 'command_timestamp.*vehicle_command\.timestamp' "$document" 'document defines status command correlation'
 check_pattern 'transition_elapsed_ms.*floor.*UINT32_MAX' "$document" 'document defines elapsed conversion and saturation'

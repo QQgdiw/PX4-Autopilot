@@ -47,18 +47,18 @@ void OffboardChecks::checkAndReport(const Context &context, Report &reporter)
 
 	if (_offboard_control_mode_sub.copy(&offboard_control_mode)) {
 
-		bool data_is_recent = hrt_absolute_time() < offboard_control_mode.timestamp
-				      + static_cast<hrt_abstime>(_param_com_of_loss_t.get() * 1_s);
+		const hrt_abstime now = hrt_absolute_time();
+		const hrt_abstime maximum_age = static_cast<hrt_abstime>(_param_com_of_loss_t.get() * 1_s);
+		const bool data_is_recent = now < offboard_control_mode.timestamp + maximum_age;
 
 		bool offboard_available = (offboard_control_mode.position || offboard_control_mode.velocity
 					   || offboard_control_mode.acceleration || offboard_control_mode.attitude || offboard_control_mode.body_rate
 					   || offboard_control_mode.thrust_and_torque || offboard_control_mode.direct_actuator
 					   || offboard_control_mode.rover_velocity) && data_is_recent;
 
-		if (offboard_control_mode.rover_velocity) {
+		if (context.status().is_quad_rover || offboard_control_mode.rover_velocity) {
 			hybrid_vehicle_status_s hybrid_vehicle_status{};
 			_hybrid_vehicle_status_sub.copy(&hybrid_vehicle_status);
-			const hrt_abstime now = hrt_absolute_time();
 			const RoverVelocityOffboardMode mode{offboard_control_mode.timestamp,
 				offboard_control_mode.position, offboard_control_mode.velocity, offboard_control_mode.acceleration,
 				offboard_control_mode.attitude, offboard_control_mode.body_rate,
@@ -69,9 +69,8 @@ void OffboardChecks::checkAndReport(const Context &context, Report &reporter)
 				hybrid_vehicle_status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING,
 				hybrid_vehicle_status.fault_reason == hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE};
 
-			offboard_available = roverVelocityModeUsable(mode, now,
-					static_cast<hrt_abstime>(_param_com_of_loss_t.get() * 1_s))
-				     && roverDrivingStatusUsable(status, now, commander::HybridStatusTimeoutUs)
+			offboard_available = roverOffboardModeAvailable(context.status().is_quad_rover, mode, status, now,
+					maximum_age, commander::HybridStatusTimeoutUs)
 				     && !reporter.failsafeFlags().local_velocity_invalid
 				     && !reporter.failsafeFlags().angular_velocity_invalid;
 

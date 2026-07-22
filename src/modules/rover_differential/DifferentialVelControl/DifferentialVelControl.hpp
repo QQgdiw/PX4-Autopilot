@@ -60,6 +60,7 @@
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/offboard_control_mode.h>
 #include <uORB/topics/vehicle_local_position.h>
+#include <uORB/topics/vehicle_status.h>
 
 using namespace matrix;
 
@@ -132,11 +133,13 @@ private:
 	uORB::Subscription _rover_steering_setpoint_sub{ORB_ID(rover_steering_setpoint)};
 	uORB::Subscription _rover_velocity_setpoint_sub{ORB_ID(rover_velocity_setpoint)};
 	uORB::Subscription _hybrid_vehicle_status_sub{ORB_ID(hybrid_vehicle_status)};
+	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
 	vehicle_control_mode_s _vehicle_control_mode{};
 	offboard_control_mode_s _offboard_control_mode{};
 	rover_steering_setpoint_s _rover_steering_setpoint{};
 	rover_velocity_setpoint_s _rover_velocity_setpoint{};
 	hybrid_vehicle_status_s _hybrid_vehicle_status{};
+	vehicle_status_s _vehicle_status{};
 
 	// uORB publications
 	uORB::Publication<rover_throttle_setpoint_s> _rover_throttle_setpoint_pub{ORB_ID(rover_throttle_setpoint)};

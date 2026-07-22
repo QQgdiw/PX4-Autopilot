@@ -1431,6 +1431,9 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		configure_stream_local("ESC_STATUS", 1.0f);
 		configure_stream_local("ESTIMATOR_STATUS", 0.5f);
 		configure_stream_local("EXTENDED_SYS_STATE", 1.0f);
+#if defined(MAVLINK_MSG_ID_HYBRID_VEHICLE_STATUS)
+		configure_stream_local("HYBRID_VEHICLE_STATUS", 1.0f);
+#endif // MAVLINK_MSG_ID_HYBRID_VEHICLE_STATUS
 		configure_stream_local("GIMBAL_DEVICE_ATTITUDE_STATUS", 1.0f);
 		configure_stream_local("GIMBAL_DEVICE_SET_ATTITUDE", 5.0f);
 		configure_stream_local("GIMBAL_MANAGER_STATUS", 0.5f);
@@ -1503,6 +1506,9 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		configure_stream_local("EFI_STATUS", 2.0f);
 		configure_stream_local("ESTIMATOR_STATUS", 1.0f);
 		configure_stream_local("EXTENDED_SYS_STATE", 5.0f);
+#if defined(MAVLINK_MSG_ID_HYBRID_VEHICLE_STATUS)
+		configure_stream_local("HYBRID_VEHICLE_STATUS", 1.0f);
+#endif // MAVLINK_MSG_ID_HYBRID_VEHICLE_STATUS
 		configure_stream_local("GIMBAL_DEVICE_ATTITUDE_STATUS", 1.0f);
 		configure_stream_local("GIMBAL_DEVICE_SET_ATTITUDE", 5.0f);
 		configure_stream_local("GIMBAL_MANAGER_STATUS", 0.5f);
