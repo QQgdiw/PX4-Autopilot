@@ -51,6 +51,7 @@
 #include <mathlib/mathlib.h>
 #include <matrix/math.hpp>
 #include <navigator/navigation.h>
+#include <navigator/HybridTransitionMission.hpp>
 #include <uORB/topics/mission.h>
 #include <uORB/topics/mission_result.h>
 #include <crc32.h>
@@ -1625,15 +1626,7 @@ MavlinkMissionManager::parse_mavlink_mission_item(const mavlink_mission_item_t *
 			const auto reserved_value_supported = [](double value) {
 				return fpclassify(value) == FP_ZERO || std::isnan(value);
 			};
-			const float target_value = mavlink_mission_item->param1;
-
-			if (!PX4_ISFINITE(target_value)) {
-				return MAV_MISSION_INVALID_PARAM1;
-			}
-
-			const int target = static_cast<int>(target_value);
-
-			if ((target != 1 && target != 2) || fpclassify(target_value - static_cast<float>(target)) != FP_ZERO) {
+			if (hybridTransitionMissionTarget(mavlink_mission_item->param1) == hybrid_vehicle_status_s::TARGET_NONE) {
 				return MAV_MISSION_INVALID_PARAM1;
 			}
 

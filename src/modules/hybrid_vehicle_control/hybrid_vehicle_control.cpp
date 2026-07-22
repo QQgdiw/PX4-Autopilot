@@ -427,6 +427,7 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 			_last_command_reject_reason = target == HybridTarget::None
 						      ? hybrid_vehicle_status_s::REJECT_INVALID_TARGET
 						      : hybrid_vehicle_status_s::REJECT_RESERVED_PARAMETER;
+			_last_command_timestamp = command.timestamp;
 
 			if (command.from_external) {
 				publish_transition_ack(command.command, command.source_system, command.source_component,
@@ -436,7 +437,7 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 			continue;
 		}
 
-		request_transition(target, input.now_us, command.from_external ? &command : nullptr);
+		request_transition(target, input.now_us, &command);
 	}
 
 	manual_control_setpoint_s manual{};
@@ -536,7 +537,7 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 }
 
 void HybridVehicleControl::request_transition(HybridTarget target, hrt_abstime now,
-		const vehicle_command_s *external_command)
+		const vehicle_command_s *command_context)
 {
 	const auto decision = hybrid_control::decideTransition({
 		timestamp_fresh(_vehicle_land_detected.timestamp, now, LAND_DETECTION_TIMEOUT),
@@ -548,11 +549,12 @@ void HybridVehicleControl::request_transition(HybridTarget target, hrt_abstime n
 	});
 	_last_command_result = static_cast<uint8_t>(decision.ack_result);
 	_last_command_reject_reason = static_cast<uint8_t>(decision.reject_reason);
+	_last_command_timestamp = command_context != nullptr ? command_context->timestamp : 0;
 
 	if (!decision.start) {
-		if (external_command != nullptr) {
-			publish_transition_ack(external_command->command, external_command->source_system,
-					       external_command->source_component, _last_command_result, now);
+		if (command_context != nullptr && command_context->from_external) {
+			publish_transition_ack(command_context->command, command_context->source_system,
+					       command_context->source_component, _last_command_result, now);
 		}
 
 		return;
@@ -568,9 +570,9 @@ void HybridVehicleControl::request_transition(HybridTarget target, hrt_abstime n
 		_last_command_result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_FAILED;
 		_last_command_reject_reason = hybrid_vehicle_status_s::REJECT_UNKNOWN_STATE;
 
-		if (external_command != nullptr) {
-			publish_transition_ack(external_command->command, external_command->source_system,
-					       external_command->source_component, _last_command_result, now);
+		if (command_context != nullptr && command_context->from_external) {
+			publish_transition_ack(command_context->command, command_context->source_system,
+					       command_context->source_component, _last_command_result, now);
 		}
 
 		return;
@@ -580,10 +582,11 @@ void HybridVehicleControl::request_transition(HybridTarget target, hrt_abstime n
 	_transition_start_time = now;
 	_transition_timing_active = true;
 	++_transition_sequence;
+	_transition_command_timestamp = _last_command_timestamp;
 
-	if (external_command != nullptr) {
-		_pending_transition_ack = {true, _transition_sequence, external_command->command,
-					   external_command->source_system, external_command->source_component};
+	if (command_context != nullptr && command_context->from_external) {
+		_pending_transition_ack = {true, _transition_sequence, command_context->command,
+					   command_context->source_system, command_context->source_component};
 		publish_transition_ack(_pending_transition_ack.command, _pending_transition_ack.target_system,
 				       _pending_transition_ack.target_component,
 				       vehicle_command_ack_s::VEHICLE_CMD_RESULT_IN_PROGRESS, now);
@@ -625,6 +628,7 @@ void HybridVehicleControl::update_transition_lifecycle(HybridState previous_stat
 			       : vehicle_command_ack_s::VEHICLE_CMD_RESULT_FAILED;
 	_last_command_reject_reason = completed ? hybrid_vehicle_status_s::REJECT_NONE
 				      : hybrid_vehicle_status_s::REJECT_TRANSFORMATION_FAULT;
+	_last_command_timestamp = _transition_command_timestamp;
 
 	if (completed) {
 		_transition_complete_time = now;
@@ -659,6 +663,7 @@ void HybridVehicleControl::publish_status(const TransformationInput &input, hrt_
 	status.transition_completed_timestamp = _transition_complete_time;
 	status.command_result = _last_command_result;
 	status.command_reject_reason = _last_command_reject_reason;
+	status.command_timestamp = _last_command_timestamp;
 	status.landed = _vehicle_land_detected.landed;
 	status.land_detection_fresh = timestamp_fresh(_vehicle_land_detected.timestamp, now, LAND_DETECTION_TIMEOUT);
 	const bool transformation_faulted = hybrid_control::isTransformationFaulted(_transformation_output);

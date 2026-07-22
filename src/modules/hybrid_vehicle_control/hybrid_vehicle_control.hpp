@@ -106,7 +106,7 @@ private:
 	bool selected_feedback_fresh(hrt_abstime now, const hybrid_control::TransformationConfig &config) const;
 	bool transformation_pwm_command_effective() const;
 	void request_transition(hybrid_control::HybridTarget target, hrt_abstime now,
-				const vehicle_command_s *external_command = nullptr);
+				const vehicle_command_s *command_context = nullptr);
 	void publish_transition_ack(uint32_t command, uint8_t target_system, uint16_t target_component,
 				    uint8_t result, hrt_abstime now);
 	void update_transition_lifecycle(hybrid_control::HybridState previous_state, hrt_abstime now);
@@ -160,6 +160,8 @@ private:
 	hrt_abstime _transition_complete_time{0};
 	uint8_t _last_command_result{hybrid_vehicle_status_s::COMMAND_RESULT_NONE};
 	uint8_t _last_command_reject_reason{hybrid_vehicle_status_s::REJECT_NONE};
+	uint64_t _last_command_timestamp{0};
+	uint64_t _transition_command_timestamp{0};
 	vehicle_land_detected_s _vehicle_land_detected{};
 	struct PendingTransitionAck {
 		bool active{false};

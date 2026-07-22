@@ -127,7 +127,7 @@ MissionBlock::is_mission_item_reached_or_completed()
 	case NAV_CMD_DO_HYBRID_TRANSITION: {
 		_hybrid_status_sub.update();
 		const hybrid_vehicle_status_s &status = _hybrid_status_sub.get();
-		const uint8_t target = static_cast<uint8_t>(_mission_item.params[0]);
+		const uint8_t target = hybridTransitionMissionTarget(_mission_item.params[0]);
 		const bool status_fresh = hybridTransitionMissionStatusFresh(status, now);
 
 		if (status_fresh && status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT) {
@@ -140,9 +140,26 @@ MissionBlock::is_mission_item_reached_or_completed()
 			return false;
 		}
 
-		const bool fresh_transition = status.transition_sequence > _hybrid_transition_sequence;
-		return status_fresh && (_hybrid_transition_already_stable || fresh_transition)
-		       && hybridTransitionMissionReached(_hybrid_transition_sequence, target, status);
+		const HybridTransitionMissionOutcome outcome = hybridTransitionMissionOutcome(
+				_hybrid_transition_activation.commandTimestamp(), status);
+
+		if (status_fresh && outcome == HybridTransitionMissionOutcome::Failed) {
+			if (!_navigator->get_mission_result()->failure) {
+				_navigator->get_mission_result()->failure = true;
+				_navigator->set_mission_result_updated();
+				mavlink_log_critical(_navigator->get_mavlink_log_pub(), "Hybrid transition command rejected\t");
+			}
+
+			return false;
+		}
+
+		if (!status_fresh || outcome != HybridTransitionMissionOutcome::AwaitStableState) {
+			return false;
+		}
+
+		const bool fresh_transition = status.transition_sequence > _hybrid_transition_activation.sequenceSnapshot();
+		return (_hybrid_transition_activation.alreadyStable() || fresh_transition)
+		       && hybridTransitionMissionReached(_hybrid_transition_activation.sequenceSnapshot(), target, status);
 	}
 
 	case NAV_CMD_VTOL_TAKEOFF:
@@ -537,8 +554,11 @@ MissionBlock::reset_mission_item_reached()
 }
 
 void
-MissionBlock::issue_command(const mission_item_s &item)
+MissionBlock::issue_command(const mission_item_s &item, HybridTransitionMissionItemKey key)
 {
+	uint32_t sequence_snapshot = 0;
+	bool already_stable = false;
+
 	if (item_contains_position(item)
 	    || item_contains_gate(item)
 	    || item_contains_marker(item)) {
@@ -551,12 +571,16 @@ MissionBlock::issue_command(const mission_item_s &item)
 	}
 
 	if (item.nav_cmd == NAV_CMD_DO_HYBRID_TRANSITION) {
+		if (!_hybrid_transition_activation.shouldIssue(key)) {
+			return;
+		}
+
 		_hybrid_status_sub.update();
 		const hybrid_vehicle_status_s &status = _hybrid_status_sub.get();
-		const uint8_t target = static_cast<uint8_t>(item.params[0]);
-		_hybrid_transition_sequence = status.transition_sequence;
-		_hybrid_transition_already_stable = hybridTransitionMissionStatusFresh(status, hrt_absolute_time())
-					    && hybridTransitionMissionReached(_hybrid_transition_sequence, target, status);
+		const uint8_t target = hybridTransitionMissionTarget(item.params[0]);
+		already_stable = hybridTransitionMissionStatusFresh(status, hrt_absolute_time())
+				 && hybridTransitionMissionReached(status.transition_sequence, target, status);
+		sequence_snapshot = status.transition_sequence;
 	}
 
 	// Mission item's NAV_CMD enums directly map to the according vehicle command
@@ -583,6 +607,10 @@ MissionBlock::issue_command(const mission_item_s &item)
 	}
 
 	_navigator->publish_vehicle_command(vehicle_command);
+
+	if (item.nav_cmd == NAV_CMD_DO_HYBRID_TRANSITION) {
+		_hybrid_transition_activation.recordIssued(sequence_snapshot, already_stable, vehicle_command.timestamp);
+	}
 
 	if (item_has_timeout(item)) {
 		_timestamp_command_timeout = hrt_absolute_time();

@@ -24,6 +24,8 @@
 
 #include <drivers/drv_hrt.h>
 #include <gtest/gtest.h>
+#include <uORB/topics/vehicle_command_ack.h>
+#include <cfloat>
 
 static hybrid_vehicle_status_s makeHybridStatus(uint32_t sequence, uint8_t state, uint8_t target)
 {
@@ -78,4 +80,63 @@ TEST(HybridTransitionMission, RequiresFreshStatusTimestamp)
 
 	status.timestamp = now - 1000000;
 	EXPECT_TRUE(hybridTransitionMissionStatusFresh(status, now));
+}
+
+TEST(HybridTransitionMission, SameItemReentryPreservesActivation)
+{
+	HybridTransitionMissionActivation activation;
+	const HybridTransitionMissionItemKey key{42, 7};
+
+	EXPECT_TRUE(activation.shouldIssue(key));
+	activation.recordIssued(9, true, 123456);
+	EXPECT_FALSE(activation.shouldIssue(key));
+	EXPECT_EQ(activation.sequenceSnapshot(), 9u);
+	EXPECT_TRUE(activation.alreadyStable());
+	EXPECT_EQ(activation.commandTimestamp(), 123456u);
+}
+
+TEST(HybridTransitionMission, NewItemResetsActivation)
+{
+	HybridTransitionMissionActivation activation;
+	activation.shouldIssue({42, 7});
+	activation.recordIssued(9, true, 123456);
+
+	EXPECT_TRUE(activation.shouldIssue({42, 8}));
+	EXPECT_EQ(activation.sequenceSnapshot(), 0u);
+	EXPECT_FALSE(activation.alreadyStable());
+	EXPECT_EQ(activation.commandTimestamp(), 0u);
+
+	activation.recordIssued(10, false, 234567);
+	EXPECT_TRUE(activation.shouldIssue({42, 7}));
+}
+
+TEST(HybridTransitionMission, ValidatesExactTargetWithoutUnsafeCast)
+{
+	EXPECT_EQ(int(hybridTransitionMissionTarget(1.f)), int(hybrid_vehicle_status_s::TARGET_FLYING));
+	EXPECT_EQ(int(hybridTransitionMissionTarget(2.f)), int(hybrid_vehicle_status_s::TARGET_DRIVING));
+	EXPECT_EQ(int(hybridTransitionMissionTarget(-1.f)), int(hybrid_vehicle_status_s::TARGET_NONE));
+	EXPECT_EQ(int(hybridTransitionMissionTarget(1.5f)), int(hybrid_vehicle_status_s::TARGET_NONE));
+	EXPECT_EQ(int(hybridTransitionMissionTarget(FLT_MAX)), int(hybrid_vehicle_status_s::TARGET_NONE));
+}
+
+TEST(HybridTransitionMission, CorrelatesOnlyIssuedCommandOutcome)
+{
+	hybrid_vehicle_status_s status{};
+	status.command_timestamp = 999;
+	status.command_result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_DENIED;
+	EXPECT_EQ(hybridTransitionMissionOutcome(123, status), HybridTransitionMissionOutcome::Unrelated);
+
+	status.command_timestamp = 123;
+	status.command_result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_IN_PROGRESS;
+	EXPECT_EQ(hybridTransitionMissionOutcome(123, status), HybridTransitionMissionOutcome::Waiting);
+
+	status.command_result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+	EXPECT_EQ(hybridTransitionMissionOutcome(123, status), HybridTransitionMissionOutcome::AwaitStableState);
+
+	for (const uint8_t result : {vehicle_command_ack_s::VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED,
+		     vehicle_command_ack_s::VEHICLE_CMD_RESULT_DENIED,
+		     vehicle_command_ack_s::VEHICLE_CMD_RESULT_FAILED}) {
+		status.command_result = result;
+		EXPECT_EQ(hybridTransitionMissionOutcome(123, status), HybridTransitionMissionOutcome::Failed);
+	}
 }

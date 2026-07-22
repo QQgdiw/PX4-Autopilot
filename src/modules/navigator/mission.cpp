@@ -151,6 +151,8 @@ Mission::do_need_move_to_takeoff()
 
 void Mission::setActiveMissionItems()
 {
+	set_active_mission_item_key({_mission.mission_id, _mission.current_seq});
+
 	/* Get mission item that comes after current if available */
 	static constexpr size_t max_num_next_items{2u};
 	int32_t next_mission_items_index[max_num_next_items];
@@ -278,7 +280,7 @@ void Mission::setActiveMissionItems()
 		pos_sp_triplet->previous = current_setpoint_copy;
 	}
 
-	issue_command(_mission_item);
+	issue_command(_mission_item, {_mission.mission_id, _mission.current_seq});
 
 	/* set current work item type */
 	_work_item_type = new_work_item_type;

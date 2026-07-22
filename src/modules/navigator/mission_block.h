@@ -43,6 +43,7 @@
 
 #include "navigator_mode.h"
 #include "navigation.h"
+#include "HybridTransitionMission.hpp"
 
 #include <drivers/drv_hrt.h>
 #include <systemlib/mavlink_log.h>
@@ -214,7 +215,9 @@ protected:
 	 *
 	 * @param item Mission item to execute
 	 */
-	void issue_command(const mission_item_s &item);
+	void issue_command(const mission_item_s &item, HybridTransitionMissionItemKey key = {});
+	void set_active_mission_item_key(HybridTransitionMissionItemKey key) { _hybrid_transition_activation.activate(key); }
+	void reset_hybrid_transition_mission_activation() { _hybrid_transition_activation.reset(); }
 
 	/**
 	 * [s] Get the time to stay that's specified in the mission item
@@ -235,8 +238,7 @@ protected:
 	float _command_timeout{0.f}; ///< Time in seconds any item_has_timeout() command should be waited for before continuing the mission
 
 	uORB::SubscriptionData<hybrid_vehicle_status_s> _hybrid_status_sub{ORB_ID(hybrid_vehicle_status)};
-	uint32_t _hybrid_transition_sequence{0};
-	bool _hybrid_transition_already_stable{false};
+	HybridTransitionMissionActivation _hybrid_transition_activation{};
 
 private:
 	void updateMaxHaglFailsafe();

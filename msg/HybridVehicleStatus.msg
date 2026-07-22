@@ -65,3 +65,4 @@ uint8 command_result
 uint8 command_reject_reason
 bool landed
 bool land_detection_fresh
+uint64 command_timestamp # timestamp of the vehicle_command whose result is reported

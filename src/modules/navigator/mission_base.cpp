@@ -1221,6 +1221,8 @@ int MissionBase::setMissionToClosestItem(double lat, double lon, float alt, floa
 
 void MissionBase::resetMission()
 {
+	reset_hybrid_transition_mission_activation();
+
 	/* we do not need to reset mission if is already.*/
 	if (_mission.count == 0u) {
 		return;
