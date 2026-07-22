@@ -931,6 +931,7 @@ git commit -m "feat[rover]: add body velocity offboard control"
 
 **Files:**
 - Create: `docs/hybrid/quad-rover-mavlink-dds-contract.md`
+- Modify: `src/modules/hybrid_vehicle_control/hybrid_vehicle_control.cpp`
 - Modify: `README.md` only if it has a hybrid protocol entry point
 - Test: source-contract script under `test/` if one is not already present
 
@@ -950,6 +951,8 @@ rg -q 'MAV_TYPE_QUAD_ROVER' docs/hybrid/quad-rover-mavlink-dds-contract.md
 rg -q 'MAV_CMD_DO_HYBRID_TRANSITION' docs/hybrid/quad-rover-mavlink-dds-contract.md
 rg -q '/fmu/in/rover_velocity_setpoint' docs/hybrid/quad-rover-mavlink-dds-contract.md
 rg -q 'yaw_rate.*-.*angular.z' docs/hybrid/quad-rover-mavlink-dds-contract.md
+rg -q 'result_param2.*transition_sequence' docs/hybrid/quad-rover-mavlink-dds-contract.md
+rg -q 'ack.result_param2 = _transition_sequence' src/modules/hybrid_vehicle_control/hybrid_vehicle_control.cpp
 ```
 
 Run it before writing the document. Expected: FAIL because the document is absent.
@@ -970,16 +973,33 @@ Include the command result table, status fields/flags, state-specific mode
 matrix, landed-only conversion gate, no queued mode request rule, and the fact
 that QGC/companion must use MAVLink 2 and the project dialect.
 
+Before documenting the ACK lifecycle, set
+`vehicle_command_ack.result_param2 = _transition_sequence` in the sole hybrid
+ACK publisher. A newly started request increments the sequence before its
+`IN_PROGRESS` ACK, so progress and terminal ACKs carry the same accepted
+sequence. Already-stable `ACCEPTED` and immediate rejection ACKs carry the
+current sequence without incrementing it. Do not add a second ACK owner.
+
+Also document the current Task 6/7 correlation and units: status
+`command_timestamp` identifies the originating `vehicle_command.timestamp`,
+and `transition_elapsed_ms` is floor-converted from uORB microseconds with
+`UINT32_MAX` saturation.
+
 - [ ] **Step 3: Run focused tests and full firmware build serially**
 
 Use a Linux-only PATH if WSL Anaconda protobuf is inherited:
 
 ```bash
 export PATH=/opt/gcc-arm-none-eabi-9-2020-q2-update/bin:/home/crocodile/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ctest --test-dir build/zeroone_x6_hybrid -R "HybridTransitionPolicy|CommanderHybridStatus|ModeManagement|HybridTransitionMission|RoverControl|RoverVelocityOffboardPolicy" --output-on-failure
+cmake --build build/px4_sitl_test --target unit-HybridTransitionPolicy \
+  unit-CommanderHybridStatus functional-ModeManagement \
+  unit-HybridTransitionMission functional-FeasibilityChecker \
+  unit-RoverControl unit-RoverVelocityOffboardPolicy
+ctest --test-dir build/px4_sitl_test -R "HybridTransitionPolicy|CommanderHybridStatus|ModeManagement|HybridTransitionMission|FeasibilityChecker|RoverControl|RoverVelocityOffboardPolicy" --output-on-failure
 bash test/hybrid_quad_rover_contract.sh
 make zeroone_x6_hybrid > build/zeroone_x6_hybrid/independent_quad_rover_build.log 2>&1
 tail -n 40 build/zeroone_x6_hybrid/independent_quad_rover_build.log
+git diff --check
 ```
 
 Expected: every selected CTest passes, documentation contract exits 0, and
@@ -989,7 +1009,10 @@ commands.
 - [ ] **Step 4: Commit documentation and verification contract**
 
 ```bash
-git add docs/hybrid/quad-rover-mavlink-dds-contract.md test/hybrid_quad_rover_contract.sh README.md
+git add docs/hybrid/quad-rover-mavlink-dds-contract.md \
+  test/hybrid_quad_rover_contract.sh \
+  src/modules/hybrid_vehicle_control/hybrid_vehicle_control.cpp
+git add README.md
 git commit -m "docs[hybrid]: document independent vehicle protocol"
 ```
 
