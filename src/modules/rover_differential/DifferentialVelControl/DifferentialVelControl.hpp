@@ -39,6 +39,7 @@
 
 // Libraries
 #include <lib/rover_control/RoverControl.hpp>
+#include <lib/rover_control/RoverVelocityOffboardPolicy.hpp>
 #include <lib/pid/PID.hpp>
 #include <matrix/matrix/math.hpp>
 #include <lib/slew_rate/SlewRate.hpp>
@@ -51,7 +52,9 @@
 #include <uORB/topics/rover_throttle_setpoint.h>
 #include <uORB/topics/rover_velocity_status.h>
 #include <uORB/topics/differential_velocity_setpoint.h>
+#include <uORB/topics/hybrid_vehicle_status.h>
 #include <uORB/topics/rover_attitude_setpoint.h>
+#include <uORB/topics/rover_velocity_setpoint.h>
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/trajectory_setpoint.h>
 #include <uORB/topics/vehicle_attitude.h>
@@ -108,6 +111,10 @@ private:
 	 *        from roverVelocitySetpoint.
 	 */
 	void generateAttitudeAndThrottleSetpoint();
+	void generateThrottleSetpoint(float speed_body_x_setpoint);
+	void stopRoverVelocityControl();
+	bool roverVelocityControlActive() const;
+	bool roverVelocityInputValid() const;
 
 	/**
 	 * @brief Check if the necessary parameters are set.
@@ -123,9 +130,13 @@ private:
 	uORB::Subscription _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
 	uORB::Subscription _differential_velocity_setpoint_sub{ORB_ID(differential_velocity_setpoint)};
 	uORB::Subscription _rover_steering_setpoint_sub{ORB_ID(rover_steering_setpoint)};
+	uORB::Subscription _rover_velocity_setpoint_sub{ORB_ID(rover_velocity_setpoint)};
+	uORB::Subscription _hybrid_vehicle_status_sub{ORB_ID(hybrid_vehicle_status)};
 	vehicle_control_mode_s _vehicle_control_mode{};
 	offboard_control_mode_s _offboard_control_mode{};
 	rover_steering_setpoint_s _rover_steering_setpoint{};
+	rover_velocity_setpoint_s _rover_velocity_setpoint{};
+	hybrid_vehicle_status_s _hybrid_vehicle_status{};
 
 	// uORB publications
 	uORB::Publication<rover_throttle_setpoint_s> _rover_throttle_setpoint_pub{ORB_ID(rover_throttle_setpoint)};
@@ -159,7 +170,8 @@ private:
 		(ParamFloat<px4::params::RO_DECEL_LIM>)     _param_ro_decel_limit,
 		(ParamFloat<px4::params::RO_JERK_LIM>)      _param_ro_jerk_limit,
 		(ParamFloat<px4::params::RO_SPEED_LIM>)     _param_ro_speed_limit,
-		(ParamFloat<px4::params::RO_SPEED_TH>)      _param_ro_speed_th
+		(ParamFloat<px4::params::RO_SPEED_TH>)      _param_ro_speed_th,
+		(ParamFloat<px4::params::COM_OF_LOSS_T>)    _param_com_of_loss_t
 
 	)
 };
