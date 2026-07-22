@@ -156,8 +156,9 @@ private:
 	 * @param cmd 		Vehicle command to handle
 	 */
 	bool handle_command(const vehicle_command_s &cmd);
-	commander::HybridModeRequestResult hybridModeRequestResult(uint8_t nav_state) const;
-	uint8_t hybridModeCommandRejection(uint8_t nav_state) const;
+	commander::HybridModeRequestResult hybridModeRequestResult(uint8_t nav_state,
+			bool supported_in_stable_shape = true) const;
+	uint8_t hybridModeCommandRejection(uint8_t nav_state, bool supported_in_stable_shape = true) const;
 
 	unsigned handleCommandActuatorTest(const vehicle_command_s &cmd);
 

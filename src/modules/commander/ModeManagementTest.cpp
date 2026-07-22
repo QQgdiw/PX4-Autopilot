@@ -53,6 +53,16 @@ TEST(ModeManagementTest, HybridModeGateDistinguishesUnsupportedFromUnavailable)
 		  vehicle_status_s::NAVIGATION_STATE_AUTO_RTL), HybridModeRequestResult::Allowed);
 }
 
+TEST(ModeManagementTest, FigureEightHybridGateClassifiesShapeSupportBeforeGenericVehicleSupport)
+{
+	EXPECT_EQ(commander::hybridModeRequestResult(hybrid_vehicle_status_s::HYBRID_STATE_DRIVING,
+		  vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER, false), HybridModeRequestResult::Denied);
+	EXPECT_EQ(commander::hybridModeRequestResult(hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING,
+		  vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER, false), HybridModeRequestResult::TemporarilyRejected);
+	EXPECT_EQ(commander::hybridModeRequestResult(hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN,
+		  vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER, false), HybridModeRequestResult::TemporarilyRejected);
+}
+
 static bool modeValid(uint8_t mode)
 {
 	return mode >= Modes::FIRST_EXTERNAL_NAV_STATE && mode <= Modes::LAST_EXTERNAL_NAV_STATE;

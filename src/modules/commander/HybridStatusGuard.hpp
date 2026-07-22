@@ -30,6 +30,12 @@ enum class HybridModeRequestResult : uint8_t {
 	TemporarilyRejected
 };
 
+inline bool hybridStateEnablesControl(uint8_t state)
+{
+	return state == hybrid_vehicle_status_s::HYBRID_STATE_FLYING
+	       || state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING;
+}
+
 inline hybrid_control::HybridState hybridPolicyState(uint8_t state)
 {
 	switch (state) {
@@ -56,15 +62,15 @@ inline bool hybridModeAllowed(uint8_t state, uint8_t nav_state)
 	return hybrid_control::modeAllowedForShape(hybridPolicyState(state), nav_state);
 }
 
-inline HybridModeRequestResult hybridModeRequestResult(uint8_t state, uint8_t nav_state)
+inline HybridModeRequestResult hybridModeRequestResult(uint8_t state, uint8_t nav_state,
+		bool supported_in_stable_shape = true)
 {
-	if (hybridModeAllowed(state, nav_state)) {
-		return HybridModeRequestResult::Allowed;
+	if (!hybridStateEnablesControl(state)) {
+		return HybridModeRequestResult::TemporarilyRejected;
 	}
 
-	return state == hybrid_vehicle_status_s::HYBRID_STATE_FLYING
-	       || state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING
-	       ? HybridModeRequestResult::Denied : HybridModeRequestResult::TemporarilyRejected;
+	return supported_in_stable_shape && hybridModeAllowed(state, nav_state)
+	       ? HybridModeRequestResult::Allowed : HybridModeRequestResult::Denied;
 }
 
 inline uint8_t hybridVehicleType(uint8_t state)
@@ -85,12 +91,6 @@ inline bool hybridStatusIsFresh(const hybrid_vehicle_status_s &status, hrt_absti
 	return status.timestamp != 0 && now >= status.timestamp && now - status.timestamp <= HybridStatusTimeoutUs;
 }
 
-inline bool hybridStateEnablesControl(uint8_t state)
-{
-	return state == hybrid_vehicle_status_s::HYBRID_STATE_FLYING
-	       || state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING;
-}
-
 inline uint8_t hybridStateForCommander(const hybrid_vehicle_status_s &status, hrt_abstime now)
 {
 	if (!hybridStatusIsFresh(status, now)) {
@@ -102,11 +102,6 @@ inline uint8_t hybridStateForCommander(const hybrid_vehicle_status_s &status, hr
 	}
 
 	return status.current_state;
-}
-
-inline bool shouldProcessHybridStatus(bool is_quad_rover, bool status_updated)
-{
-	return is_quad_rover && status_updated;
 }
 
 inline HybridRedPattern hybridRedPattern(const hybrid_vehicle_status_s &status, bool status_fresh, bool overload)

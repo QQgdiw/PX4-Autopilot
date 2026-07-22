@@ -64,13 +64,6 @@ TEST(CommanderHybridStatus, TransitionAndStaleStatusDisableControl)
 	EXPECT_FALSE(commander::hybridStateEnablesControl(hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN));
 }
 
-TEST(CommanderHybridStatus, FreshUpdateTriggersImmediateProcessing)
-{
-	EXPECT_TRUE(commander::shouldProcessHybridStatus(true, true));
-	EXPECT_FALSE(commander::shouldProcessHybridStatus(true, false));
-	EXPECT_FALSE(commander::shouldProcessHybridStatus(false, true));
-}
-
 TEST(CommanderHybridStatus, SelectsRedPatternFromFaultAndOverload)
 {
 	hybrid_vehicle_status_s status{};

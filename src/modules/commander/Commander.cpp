@@ -725,16 +725,17 @@ Commander::~Commander()
 	perf_free(_preflight_check_perf);
 }
 
-commander::HybridModeRequestResult Commander::hybridModeRequestResult(uint8_t nav_state) const
+commander::HybridModeRequestResult Commander::hybridModeRequestResult(uint8_t nav_state,
+		bool supported_in_stable_shape) const
 {
 	return _vehicle_status.is_quad_rover
-	       ? commander::hybridModeRequestResult(_current_hybrid_state, nav_state)
+	       ? commander::hybridModeRequestResult(_current_hybrid_state, nav_state, supported_in_stable_shape)
 	       : commander::HybridModeRequestResult::Allowed;
 }
 
-uint8_t Commander::hybridModeCommandRejection(uint8_t nav_state) const
+uint8_t Commander::hybridModeCommandRejection(uint8_t nav_state, bool supported_in_stable_shape) const
 {
-	return hybridModeRequestResult(nav_state) == commander::HybridModeRequestResult::Denied
+	return hybridModeRequestResult(nav_state, supported_in_stable_shape) == commander::HybridModeRequestResult::Denied
 	       ? vehicle_command_ack_s::VEHICLE_CMD_RESULT_DENIED
 	       : vehicle_command_ack_s::VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED;
 }
@@ -1245,6 +1246,13 @@ Commander::handle_command(const vehicle_command_s &cmd)
 
 	case vehicle_command_s::VEHICLE_CMD_DO_FIGUREEIGHT: {
 #ifdef CONFIG_FIGURE_OF_EIGHT
+			constexpr uint8_t desired_nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER;
+
+			if (hybridModeRequestResult(desired_nav_state, false)
+			    != commander::HybridModeRequestResult::Allowed) {
+				cmd_result = hybridModeCommandRejection(desired_nav_state, false);
+				break;
+			}
 
 			if (!((_vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING) || (_vehicle_status.is_vtol))) {
 				cmd_result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_UNSUPPORTED;
