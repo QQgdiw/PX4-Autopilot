@@ -600,6 +600,7 @@ void HybridVehicleControl::publish_transition_ack(uint32_t command, uint8_t targ
 	ack.timestamp = now;
 	ack.command = command;
 	ack.result = result;
+	ack.result_param2 = _transition_sequence;
 	ack.target_system = target_system;
 	ack.target_component = target_component;
 	_vehicle_command_ack_pub.publish(ack);
