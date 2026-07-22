@@ -571,6 +571,8 @@ git commit -m "feat[commander]: route independent quad-rover modes"
 ## Task 6: Add Custom Mission Transition Semantics
 
 **Files:**
+- Modify: `msg/HybridVehicleStatus.msg`
+- Modify: `src/modules/mavlink/mavlink/message_definitions/v1.0/hybrid_vehicle.xml` (MAVLink submodule)
 - Modify: `src/modules/navigator/navigation.h`
 - Modify: `src/modules/mavlink/mavlink_mission.cpp`
 - Modify: `src/modules/navigator/mission_block.h`
@@ -636,6 +638,25 @@ time. Put the pure sequence/target/state predicate in
 `HybridTransitionMission.hpp` so its unit test does not construct a fake
 Navigator work-queue/module instance.
 
+Append this correlation field to `HybridVehicleStatus.msg`:
+
+```text
+uint64 command_timestamp # timestamp of the vehicle_command whose result is reported
+```
+
+Append the matching MAVLink 2 extension field after the existing status fields
+without changing the existing base-field layout:
+
+```xml
+<extensions/>
+<field type="uint64_t" name="command_timestamp" units="us">Timestamp of the PX4 vehicle command whose result is reported.</field>
+```
+
+`hybrid_vehicle_control` must copy the consumed `vehicle_command.timestamp`
+whenever it updates `command_result`/`command_reject_reason`, and retain that
+timestamp through the matching terminal result. Do not infer correlation from
+the periodically refreshed status publication timestamp.
+
 - [ ] **Step 4: Publish once and wait for matching status**
 
 Add a `hybrid_vehicle_status` subscription and fields to MissionBlock:
@@ -646,6 +667,20 @@ uint32_t _hybrid_transition_sequence{0};
 ```
 
 When the item is activated, snapshot the most recently seen `hybrid_vehicle_status.transition_sequence`, publish `vehicle_command.command = NAV_CMD_DO_HYBRID_TRANSITION` once, and do not republish on every Navigator cycle. Mark the item reached only when fresh status has the requested stable target and either (a) its sequence is greater than the snapshot, or (b) the requested target was already stable at activation. On a fault keep the item active and report the Mission failure/status indication; never advance or substitute a VTOL command. Navigator does not depend on an external command-ack subscription.
+
+Persist a per-item activation key and the exact timestamp assigned to the
+published internal `vehicle_command`. Re-running mission feasibility or
+re-entering `set_mission_items()` for the same active item must not republish,
+resnapshot the sequence, or replace that timestamp. Reset the guard only when
+the active mission item changes or is explicitly reset.
+
+Only consume a command outcome when
+`status.command_timestamp == issued_vehicle_command.timestamp`. For that
+matching command, `IN_PROGRESS` continues waiting and `ACCEPTED` still requires
+the stable sequence predicate. `TEMPORARILY_REJECTED`, `DENIED`, or `FAILED`
+must keep the item active and set the existing Mission failure/status
+indication. Results belonging to any other command are ignored. This is the
+required correlation path; do not subscribe to `vehicle_command_ack`.
 
 - [ ] **Step 5: Remove hybrid references to standard VTOL mission behavior**
 
@@ -658,7 +693,9 @@ Run the host command from Step 2, the `functional-FeasibilityChecker` test,
 and the hybrid-only firmware build pass.
 
 ```bash
-git add src/modules/navigator src/modules/mavlink/mavlink_mission.cpp
+git add msg/HybridVehicleStatus.msg src/modules/mavlink/mavlink \
+  src/modules/hybrid_vehicle_control src/modules/navigator \
+  src/modules/mavlink/mavlink_mission.cpp
 git commit -m "feat[navigator]: support hybrid transition mission items"
 ```
 
