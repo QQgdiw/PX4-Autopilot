@@ -738,7 +738,18 @@ private:
 };
 ```
 
-`send()` copies one status sample, packs every wire field defined in Task 1 without unit changes, and sends on publication changes. It must never synthesize VTOL state. Register the stream in `mavlink_messages.cpp` under the generated message macro. Update `EXTENDED_SYS_STATE` so a `MAV_TYPE_QUAD_ROVER` system leaves `vtol_state` undefined rather than advertising FW/VTOL.
+`send()` returns without consuming an update while
+`MAVLINK_STATUS_FLAG_OUT_MAVLINK1` is set; message id 60000 and its extension
+are MAVLink 2 only. Otherwise it updates one status sample, packs every current
+wire field without unit changes (including the Task 6 `command_timestamp`
+extension), and sends only on uORB publication changes. It must never
+synthesize VTOL state. Register both the include and stream factory in
+`mavlink_messages.cpp` under
+`#if defined(MAVLINK_MSG_ID_HYBRID_VEHICLE_STATUS)` so shared/default dialect
+builds remain valid. Under the same generated-message guard, update
+`EXTENDED_SYS_STATE` so a `MAV_TYPE_QUAD_ROVER` system explicitly resets
+`vtol_state` to `MAV_VTOL_STATE_UNDEFINED` rather than retaining or advertising
+FW/VTOL state. Leave generic VTOL behavior unchanged.
 
 - [ ] **Step 3: Verify stream registration and generated symbols**
 
@@ -747,9 +758,11 @@ Run:
 ```bash
 rg "MavlinkStreamHybridVehicleStatus" src/modules/mavlink/mavlink_messages.cpp src/modules/mavlink/streams/HYBRID_VEHICLE_STATUS.hpp
 rg "MAVLINK_MSG_ID_HYBRID_VEHICLE_STATUS" build/zeroone_x6_hybrid/mavlink/hybrid_vehicle
+make zeroone_x6_hybrid
 ```
 
-Expected: both generated and registered symbols are present.
+Expected: both generated and registered symbols are present and the
+hybrid-only firmware build passes.
 
 - [ ] **Step 4: Commit the telemetry path**
 
