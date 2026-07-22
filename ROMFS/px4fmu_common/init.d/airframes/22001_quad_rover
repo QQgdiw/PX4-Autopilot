@@ -69,4 +69,3 @@ param set-default HYB_SV_ROV 0
 
 # Custom Parameters
 param set-default HYBRID_TRANS_T 2.0
-param set-default HYBRID_MAX_Z 0.5

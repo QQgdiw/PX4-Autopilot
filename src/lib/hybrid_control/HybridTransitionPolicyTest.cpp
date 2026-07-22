@@ -24,6 +24,15 @@ TEST(HybridTransitionPolicy, AcceptsOnlyValidStableTarget)
 		  CommandResult::Accepted);
 }
 
+TEST(HybridTransitionPolicy, OppositeTransitionIsTemporarilyRejected)
+{
+	const auto result = decideTransition({true, true, false, HybridState::TransitionToRover,
+					      HybridTarget::Flying, HybridTarget::Driving});
+	EXPECT_FALSE(result.start);
+	EXPECT_EQ(result.ack_result, CommandResult::TemporarilyRejected);
+	EXPECT_EQ(result.reject_reason, RejectReason::OppositeTransition);
+}
+
 TEST(HybridTransitionPolicy, RejectsModesOutsideStableShape)
 {
 	EXPECT_FALSE(modeAllowedForShape(HybridState::Driving, NAVIGATION_STATE_ALTCTL));

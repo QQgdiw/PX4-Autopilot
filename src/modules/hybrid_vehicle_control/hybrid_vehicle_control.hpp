@@ -48,6 +48,7 @@
 #include <lib/hybrid_control/TransformationStateMachine.hpp>
 #include <lib/hybrid_control/M2006DriveGate.hpp>
 #include <lib/hybrid_control/Hx8BackendPolicy.hpp>
+#include <lib/hybrid_control/HybridTransitionPolicy.hpp>
 #include <uORB/SubscriptionMultiArray.hpp>
 
 // uORB 发布与订阅
@@ -56,7 +57,7 @@
 #include <uORB/topics/actuator_servos.h>
 #include <uORB/topics/actuator_armed.h>
 #include <uORB/topics/manual_control_setpoint.h>
-#include <uORB/topics/vehicle_local_position.h>
+#include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/hybrid_vehicle_status.h>
 #include <uORB/topics/vehicle_control_mode.h>
@@ -104,19 +105,18 @@ private:
 	int clear_fault();
 	bool selected_feedback_fresh(hrt_abstime now, const hybrid_control::TransformationConfig &config) const;
 	bool transformation_pwm_command_effective() const;
-
-	/**
-	 * 检查变形条件是否安全 (例如: 必须贴地才能变形为车)
-	 * @return true 如果允许变形
-	 */
-	bool check_safe_to_transform(bool to_rover);
+	void request_transition(hybrid_control::HybridTarget target, hrt_abstime now,
+				const vehicle_command_s *external_command = nullptr);
+	void publish_transition_ack(uint32_t command, uint8_t target_system, uint16_t target_component,
+				    uint8_t result, hrt_abstime now);
+	void update_transition_lifecycle(hybrid_control::HybridState previous_state, hrt_abstime now);
 
 	void updateParams() override;
 
 	// === uORB 订阅 (获取系统状态与遥控器输入) ===
 	uORB::Subscription _actuator_armed_sub{ORB_ID(actuator_armed)};
 	uORB::Subscription _manual_control_setpoint_sub{ORB_ID(manual_control_setpoint)};
-	uORB::Subscription _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
+	uORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
 	uORB::Subscription _vehicle_control_mode_sub{ORB_ID(vehicle_control_mode)};
 	uORB::Subscription _encoder_sub{ORB_ID(sensor_encoder)};
 	uORB::SubscriptionMultiArray<magnetic_sensor_s, 2> _magnetic_subs{ORB_ID::magnetic_sensor};
@@ -156,6 +156,18 @@ private:
 	bool _transformation_initialized{false};
 	hrt_abstime _transition_start_time{0};
 	bool _transition_timing_active{false};
+	uint32_t _transition_sequence{0};
+	hrt_abstime _transition_complete_time{0};
+	uint8_t _last_command_result{hybrid_vehicle_status_s::COMMAND_RESULT_NONE};
+	uint8_t _last_command_reject_reason{hybrid_vehicle_status_s::REJECT_NONE};
+	vehicle_land_detected_s _vehicle_land_detected{};
+	struct PendingTransitionAck {
+		bool active{false};
+		uint32_t sequence{0};
+		uint32_t command{0};
+		uint8_t target_system{0};
+		uint16_t target_component{0};
+	} _pending_transition_ack{};
 	actuator_armed_s _actuator_armed{};
 	hx8_servo_status_s _hx8_status{};
 	uint32_t _hx8_sequence{0};
@@ -190,7 +202,6 @@ private:
 		(ParamFloat<px4::params::HYB_ANG_TOL>)		_param_hyb_ang_tol,
 		(ParamFloat<px4::params::HYB_SENS_TO>)		_param_hyb_sens_to,
 		(ParamFloat<px4::params::HYB_DBNC_T>)		_param_hyb_dbnc_t,
-		(ParamFloat<px4::params::HYBRID_MAX_Z>)   	_param_hybrid_max_z,   // 允许变形为车模式的最大高度(米)
 		(ParamInt<px4::params::HYBRID_MAN_CH>)    	_param_hybrid_man_ch,  // 手动接管机构的 AUX 通道 (1-6)
 		(ParamFloat<px4::params::HYBRID_ANG_ROV>) 	_param_hybrid_ang_rov, // 车模式的机构目标角度 (rad)
 		(ParamFloat<px4::params::HYBRID_ANG_QUD>)	_param_hybrid_ang_qud,  // 飞机模式的机构目标角度 (rad)

@@ -142,21 +142,6 @@ PARAM_DEFINE_FLOAT(HYB_SENS_TO, 0.30f);
 PARAM_DEFINE_FLOAT(HYB_DBNC_T, 0.10f);
 
 /**
- * Maximum Transformation Altitude
- *
- * The maximum allowable altitude (above ground/local frame) to permit a transition
- * from flying (multicopter) to driving (rover) mode.
- *
- * @group Hybrid Control
- * @unit m
- * @min 0.0
- * @max 5.0
- * @decimal 2
- * @increment 0.1
- */
-PARAM_DEFINE_FLOAT(HYBRID_MAX_Z, 0.5f);
-
-/**
  * Manual Override RC Switch Channel
  *
  * The auxiliary RC channel used to directly take over the transformation mechanism.
