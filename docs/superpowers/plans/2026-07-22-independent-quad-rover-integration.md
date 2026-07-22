@@ -473,6 +473,7 @@ git commit -m "feat[hybrid]: gate transformation by landed state"
 ## Task 5: Make Commander a True Quad-Rover Mode Authority
 
 **Files:**
+- Modify: `src/modules/commander/CMakeLists.txt`
 - Modify: `src/modules/commander/commander_helper.cpp`
 - Modify: `src/modules/commander/commander_helper.h`
 - Modify: `src/modules/commander/Commander.cpp`
@@ -493,16 +494,19 @@ Add tests that construct `vehicle_status_s` with system type 200 and fresh statu
 TEST(CommanderHybridStatus, IndependentIdentityIsNotVtol)
 {
     vehicle_status_s status{};
-    status.system_type = MAV_TYPE_QUAD_ROVER;
+    status.system_type = commander::VehicleTypeQuadRover;
     EXPECT_TRUE(commander::is_quad_rover(status));
     EXPECT_FALSE(commander::is_vtol(status));
 }
 
 TEST(CommanderHybridStatus, RoverRejectsAltitudeAndTransitionRejectsAllModes)
 {
-    EXPECT_FALSE(commander::hybridModeAllowed(HYBRID_STATE_DRIVING, NAVIGATION_STATE_ALTCTL));
-    EXPECT_TRUE(commander::hybridModeAllowed(HYBRID_STATE_DRIVING, NAVIGATION_STATE_AUTO_RTL));
-    EXPECT_FALSE(commander::hybridModeAllowed(HYBRID_STATE_TRANSITIONING, NAVIGATION_STATE_MANUAL));
+    EXPECT_FALSE(commander::hybridModeAllowed(hybrid_vehicle_status_s::HYBRID_STATE_DRIVING,
+                 vehicle_status_s::NAVIGATION_STATE_ALTCTL));
+    EXPECT_TRUE(commander::hybridModeAllowed(hybrid_vehicle_status_s::HYBRID_STATE_DRIVING,
+                vehicle_status_s::NAVIGATION_STATE_AUTO_RTL));
+    EXPECT_FALSE(commander::hybridModeAllowed(hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING,
+                 vehicle_status_s::NAVIGATION_STATE_MANUAL));
 }
 ```
 
@@ -511,14 +515,24 @@ TEST(CommanderHybridStatus, RoverRejectsAltitudeAndTransitionRejectsAllModes)
 Run:
 
 ```bash
-ctest --test-dir build/zeroone_x6_hybrid -R CommanderHybridStatus --output-on-failure
+cmake --build build/px4_sitl_test --target unit-CommanderHybridStatus functional-ModeManagement
+ctest --test-dir build/px4_sitl_test -R CommanderHybridStatus --output-on-failure
 ```
 
 Expected: FAIL because the independent type helper and mode guard do not exist.
 
 - [ ] **Step 3: Remove hybrid dependence on VTOL state**
 
-Define `is_quad_rover()` from `system_type == MAV_TYPE_QUAD_ROVER`. In `Commander::updateParameters()`, set `is_quad_rover` from that helper, retain the static system type, set `is_vtol=false`, and remove the custom `HYBR_QUAD_ROV && is_vtol()` condition. Do not alter generic `is_vtol()` behavior for standard vehicle types.
+Define the shared software constant `commander::VehicleTypeQuadRover = 200`
+and `is_quad_rover()` from `system_type == VehicleTypeQuadRover`. This value
+must remain identical to private `MAV_TYPE_QUAD_ROVER=200`, but shared
+Commander/host-test code must not include a board-selected generated MAVLink
+dialect header. Link Commander and its focused tests to the existing
+`hybrid_control` library and reuse Task 3's mode policy rather than copying its
+mode matrix. In `Commander::updateParameters()`, set `is_quad_rover` from that
+helper, retain the static system type, set `is_vtol=false`, and remove the
+custom `HYBR_QUAD_ROV && is_vtol()` condition. Do not alter generic `is_vtol()`
+behavior for standard vehicle types.
 
 For a hybrid vehicle, do not call the custom VTOL remapping path in `vtolStatusUpdate()`. Instead use fresh `hybrid_vehicle_status` to set `vehicle_type` only for stable Flying/Driving states. In transition, unknown, or fault, do not report fixed-wing and do not enable a physical controller chain.
 
@@ -544,7 +558,10 @@ Keep the requested navigation state through a valid transition, but expose `_tra
 
 - [ ] **Step 6: Run Commander tests and commit**
 
-Run the test from Step 2 and `ctest --test-dir build/zeroone_x6_hybrid -R ModeManagement --output-on-failure`; expected: all selected tests pass.
+Build the two focused host targets, run the test from Step 2 and
+`ctest --test-dir build/px4_sitl_test -R ModeManagement --output-on-failure`,
+then run `make zeroone_x6_hybrid`; expected: all selected tests and the
+hybrid-only firmware build pass.
 
 ```bash
 git add src/modules/commander
