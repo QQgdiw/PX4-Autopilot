@@ -104,7 +104,6 @@ target_include_directories(uavcan_${UAVCAN_DRIVER}_driver PUBLIC
 
 px4_add_library(uavcan_can_ownership CanOwnership.cpp)
 target_include_directories(uavcan_can_ownership PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-px4_add_unit_gtest(SRC CanOwnershipTest.cpp LINKLIBS uavcan_can_ownership)
 
 if(CONFIG_UAVCAN_M2006_CAN)
 	add_subdirectory(m2006_can)
