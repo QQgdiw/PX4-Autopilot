@@ -41,7 +41,7 @@ uint32_t encodedOwner(Owner owner, uint16_t physical_mask)
 
 bool claim(Owner owner, uint16_t physical_mask)
 {
-	if (owner == Owner::None || physical_mask == 0) {
+	if ((owner != Owner::DroneCan && owner != Owner::M2006) || physical_mask == 0) {
 		return false;
 	}
 
@@ -60,7 +60,7 @@ bool claim(Owner owner, uint16_t physical_mask)
 
 bool release(Owner owner, uint16_t physical_mask)
 {
-	if (owner == Owner::None || physical_mask == 0) {
+	if ((owner != Owner::DroneCan && owner != Owner::M2006) || physical_mask == 0) {
 		return false;
 	}
 
