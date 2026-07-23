@@ -44,6 +44,8 @@ private:
 	void setConfigurationForTesting(const HybridCheckConfiguration &configuration) { _test_configuration = configuration; }
 	FRIEND_TEST(HybridCheckTest, FlyingDoesNotRequireM2006);
 	FRIEND_TEST(HybridCheckTest, DrivingRequiresBothM2006Online);
+	FRIEND_TEST(HybridCheckTest, DrivingAllowsDroneCanOnCan1);
+	FRIEND_TEST(HybridCheckTest, DrivingRejectsCyphalConflict);
 	FRIEND_TEST(HybridCheckTest, UnknownTransitionAndFaultRejectArming);
 	FRIEND_TEST(HybridCheckTest, UnsafeM8MappingRejectsArming);
 	FRIEND_TEST(HybridCheckTest, AllZeroControllerRejectsDriving);

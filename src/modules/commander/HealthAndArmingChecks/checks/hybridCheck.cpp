@@ -184,7 +184,7 @@ bool HybridChecks::hasConfiguredSpeedController(const HybridCheckConfiguration &
 
 bool HybridChecks::hasM2006Conflict(const HybridCheckConfiguration &configuration) const
 {
-	return configuration.uavcan_enabled != 0 || configuration.cyphal_enabled != 0;
+	return configuration.cyphal_enabled != 0;
 }
 
 bool HybridChecks::isM2006Healthy(const m2006_motor_status_s &status) const

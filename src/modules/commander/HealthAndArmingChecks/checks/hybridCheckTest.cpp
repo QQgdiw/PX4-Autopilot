@@ -122,6 +122,26 @@ TEST_F(HybridCheckTest, DrivingRequiresBothM2006Online)
 	EXPECT_FALSE(canArm(checks, _vehicle_status));
 }
 
+TEST_F(HybridCheckTest, DrivingAllowsDroneCanOnCan1)
+{
+	publishHybridStatus(hybrid_vehicle_status_s::HYBRID_STATE_DRIVING);
+	publishM2006Status(true, true);
+	_configuration.uavcan_enabled = 1;
+	HybridChecks checks;
+	checks.setConfigurationForTesting(_configuration);
+	EXPECT_TRUE(canArm(checks, _vehicle_status));
+}
+
+TEST_F(HybridCheckTest, DrivingRejectsCyphalConflict)
+{
+	publishHybridStatus(hybrid_vehicle_status_s::HYBRID_STATE_DRIVING);
+	publishM2006Status(true, true);
+	_configuration.cyphal_enabled = 1;
+	HybridChecks checks;
+	checks.setConfigurationForTesting(_configuration);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
+}
+
 TEST_F(HybridCheckTest, UnknownTransitionAndFaultRejectArming)
 {
 	publishM2006Status(true, true);
