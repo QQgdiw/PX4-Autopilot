@@ -126,6 +126,17 @@ critical section. Only the short message-RAM/register write section disables
 interrupts. Failure to enter/leave the state returns an error to M2006 startup
 instead of spinning with USB interrupts disabled.
 
+On ZeroOne X6, FDCAN rejects the required second INIT transition after initial
+driver setup (`ErrCCCrINITNotSet`). `m2006_can` therefore does not call the
+generic runtime filter reconfiguration path. The driver already routes unmatched
+frames to FIFO0 at initial setup, and `decodeC610Feedback()` accepts only the
+configured C610 IDs in software. This is safe for the documented exclusive CAN1
+topology containing the two C610 nodes and no DroneCAN/Cyphal peer.
+
+If M2006 initialization fails after it has claimed CAN1, it releases only its
+own claim so the failure can be diagnosed by a subsequent manual start. A
+successfully initialized owner remains exclusive until reboot.
+
 ## Risks and Constraints
 
 The shared STM32H7 driver change affects other boards using this backend, so the
