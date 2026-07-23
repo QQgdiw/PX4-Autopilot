@@ -5,6 +5,7 @@
 #pragma once
 
 #include <uavcan_stm32h7/build_config.hpp>
+#include <uavcan_stm32h7/can_interface_map.hpp>
 #include <uavcan_stm32h7/thread.hpp>
 #include <uavcan/driver/can.hpp>
 #include <uavcan_stm32h7/fdcan.hpp>
@@ -243,8 +244,11 @@ class CanDriver : public uavcan::ICanDriver, uavcan::Noncopyable
 #if UAVCAN_STM32H7_NUM_IFACES > 1
 	CanIface if1_;
 #endif
+	CanIface *active_ifaces_[UAVCAN_STM32H7_NUM_IFACES];
 	uint8_t num_ifaces_;
 	uint32_t enabledInterfaces_;
+
+	CanIface *ifaceForPhysicalIndex(uint8_t physical_index);
 
 	virtual uavcan::int16_t select(uavcan::CanSelectMasks &inout_masks,
 				       const uavcan::CanFrame * (& pending_tx)[uavcan::MaxCanIfaces],
@@ -259,10 +263,9 @@ public:
 		, if0_(fdcan::Can[0], update_event_, 0, rx_queue_storage[0], RxQueueCapacity)
 #if UAVCAN_STM32H7_NUM_IFACES > 1
 		, if1_(fdcan::Can[1], update_event_, 1, rx_queue_storage[1], RxQueueCapacity)
-		, num_ifaces_(2)
-#else
-		, num_ifaces_(1)
 #endif
+		, active_ifaces_()
+		, num_ifaces_(0)
 		, enabledInterfaces_(0x3)
 	{
 		uavcan::StaticAssert < (RxQueueCapacity <= CanIface::MaxRxQueueCapacity) >::check();
@@ -286,7 +289,7 @@ public:
 
 	virtual CanIface *getIface(uavcan::uint8_t iface_index);
 
-	virtual uavcan::uint8_t getNumIfaces() const { return UAVCAN_STM32H7_NUM_IFACES; }
+	virtual uavcan::uint8_t getNumIfaces() const { return num_ifaces_; }
 
 	/**
 	 * Whether at least one iface had at least one successful IO since previous call of this method.
