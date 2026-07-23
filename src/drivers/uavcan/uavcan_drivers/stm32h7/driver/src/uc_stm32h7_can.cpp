@@ -49,6 +49,7 @@
 #include <uavcan_stm32h7/bus_off.hpp>
 #include <uavcan_stm32h7/can.hpp>
 #include <uavcan_stm32h7/can_iface_binding.hpp>
+#include <uavcan_stm32h7/can_init_once.hpp>
 #include <uavcan_stm32h7/clock.hpp>
 #include "internal.hpp"
 
@@ -152,9 +153,32 @@ bool bindPhysicalIfaces(const CanInterfaceMap &map,
 	return true;
 }
 
-void detachPhysicalIface(const uint8_t physical_index, CanIface *const iface)
+void shutdownAndDetachPhysicalIface(const uint8_t physical_index, CanIface *const iface)
 {
 	CriticalSectionLocker lock;
+
+	if (physical_iface_bindings[physical_index].iface() != iface) {
+		return;
+	}
+
+	fdcan::Can[physical_index]->IE = 0;
+	fdcan::Can[physical_index]->ILE = 0;
+	fdcan::Can[physical_index]->TXBTIE = 0;
+	fdcan::Can[physical_index]->IR = 0xFFFFFFFF;
+
+
+#if UAVCAN_STM32H7_NUTTX
+	if (physical_index == 0) {
+		up_disable_irq(STM32_IRQ_FDCAN1_0);
+		up_disable_irq(STM32_IRQ_FDCAN1_1);
+
+#if UAVCAN_STM32H7_NUM_IFACES > 1
+	} else if (physical_index == 1) {
+		up_disable_irq(STM32_IRQ_FDCAN2_0);
+		up_disable_irq(STM32_IRQ_FDCAN2_1);
+#endif
+	}
+#endif
 
 	(void)physical_iface_bindings[physical_index].detach(iface);
 }
@@ -166,7 +190,7 @@ inline void handleTxInterrupt(uavcan::uint8_t iface_index)
 	CanIface *const iface = static_cast<CanIface *>(physical_iface_bindings[iface_index].iface());
 
 	if (iface == UAVCAN_NULLPTR) {
-		fdcan::Can[iface_index]->IR = FDCAN_IR_TC;
+		fdcan::Can[iface_index]->IR = FDCAN_IR_TC | FDCAN_IR_BO;
 		UAVCAN_ASSERT(0);
 		return;
 	}
@@ -206,10 +230,8 @@ inline void handleRxInterrupt(uavcan::uint8_t iface_index)
 
 	if (iface == UAVCAN_NULLPTR) {
 		// Bad interface - reset flags and return
-		fdcan::Can[iface_index]->IR = FDCAN_IR_RF0N;
-		fdcan::Can[iface_index]->IR = FDCAN_IR_RF1N;
-		fdcan::Can[iface_index]->IR = FDCAN_IR_RF0F;
-		fdcan::Can[iface_index]->IR = FDCAN_IR_RF1F;
+		fdcan::Can[iface_index]->IR = FDCAN_IR_RF0N | FDCAN_IR_RF1N
+					     | FDCAN_IR_RF0F | FDCAN_IR_RF1F | FDCAN_IR_BO;
 		UAVCAN_ASSERT(0);
 		return;
 	}
@@ -1137,7 +1159,7 @@ CanIface *CanDriver::ifaceForPhysicalIndex(const uint8_t physical_index)
 CanDriver::~CanDriver()
 {
 	for (uint8_t logical = 0; logical < bound_ifaces_; ++logical) {
-		detachPhysicalIface(active_physical_indices_[logical], active_ifaces_[logical]);
+		shutdownAndDetachPhysicalIface(active_physical_indices_[logical], active_ifaces_[logical]);
 	}
 }
 
@@ -1255,9 +1277,9 @@ int CanDriver::init(const uavcan::uint32_t bitrate, const CanIface::OperatingMod
 
 	UAVCAN_STM32H7_LOG("Bitrate %lu mode %d", static_cast<unsigned long>(bitrate), static_cast<int>(mode));
 
-	static pthread_once_t init_once = PTHREAD_ONCE_INIT;
+	static CanInitOnce init_once = UAVCAN_STM32H7_CAN_INIT_ONCE_INITIALIZER;
 
-	if (pthread_once(&init_once, &CanDriver::initOnce) != 0) {
+	if (!runCanInitOnce(init_once, &CanDriver::initOnce)) {
 		return -ErrLogic;
 	}
 

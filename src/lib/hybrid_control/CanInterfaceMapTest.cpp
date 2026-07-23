@@ -1,6 +1,11 @@
 #include <gtest/gtest.h>
 
+#include <atomic>
+#include <chrono>
+#include <thread>
+
 #include <uavcan_stm32h7/can_iface_binding.hpp>
+#include <uavcan_stm32h7/can_init_once.hpp>
 #include <uavcan_stm32h7/can_interface_map.hpp>
 
 using uavcan_stm32h7::PhysicalCan1;
@@ -52,4 +57,69 @@ TEST(CanIfaceBinding, KeepsTouchedBusReservedAfterOwnerDetaches)
 	EXPECT_TRUE(binding.reserved());
 	EXPECT_FALSE(binding.bind(&first_owner));
 	EXPECT_FALSE(binding.bind(&second_owner));
+}
+
+namespace
+{
+std::atomic<bool> init_callback_entered{false};
+std::atomic<bool> release_init_callback{false};
+std::atomic<unsigned> init_callback_count{0};
+
+void blockingInitializer()
+{
+	++init_callback_count;
+	init_callback_entered = true;
+
+	while (!release_init_callback.load()) {
+		std::this_thread::yield();
+	}
+}
+
+template<typename Predicate>
+bool waitUntil(Predicate predicate)
+{
+	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+
+	while (!predicate() && std::chrono::steady_clock::now() < deadline) {
+		std::this_thread::yield();
+	}
+
+	return predicate();
+}
+} // namespace
+
+TEST(CanInitOnce, WaitsForInitializerCompletion)
+{
+	uavcan_stm32h7::CanInitOnce state = UAVCAN_STM32H7_CAN_INIT_ONCE_INITIALIZER;
+	std::atomic<bool> first_result{false};
+	std::atomic<bool> second_result{false};
+	std::atomic<bool> second_returned{false};
+	init_callback_entered = false;
+	release_init_callback = false;
+	init_callback_count = 0;
+
+	std::thread first([&state, &first_result]() {
+		first_result = uavcan_stm32h7::runCanInitOnce(state, blockingInitializer);
+	});
+	const bool first_entered = waitUntil([]() { return init_callback_entered.load(); });
+
+	std::thread second([&state, &second_result, &second_returned]() {
+		second_result = uavcan_stm32h7::runCanInitOnce(state, blockingInitializer);
+		second_returned = true;
+	});
+	const bool second_waited = waitUntil([&state]() { return uavcan_stm32h7::canInitOnceWaiterCount(state) == 1; });
+	const bool returned_before_release = second_returned.load();
+
+	release_init_callback = true;
+	first.join();
+	second.join();
+	EXPECT_TRUE(first_entered);
+	EXPECT_TRUE(second_waited);
+	EXPECT_FALSE(returned_before_release);
+	EXPECT_TRUE(first_result.load());
+	EXPECT_TRUE(second_result.load());
+	EXPECT_TRUE(second_returned.load());
+	EXPECT_EQ(init_callback_count.load(), 1U);
+	EXPECT_EQ(pthread_cond_destroy(&state.condition), 0);
+	EXPECT_EQ(pthread_mutex_destroy(&state.mutex), 0);
 }
