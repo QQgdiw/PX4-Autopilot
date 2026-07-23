@@ -245,7 +245,9 @@ class CanDriver : public uavcan::ICanDriver, uavcan::Noncopyable
 	CanIface if1_;
 #endif
 	CanIface *active_ifaces_[UAVCAN_STM32H7_NUM_IFACES];
+	uint8_t active_physical_indices_[UAVCAN_STM32H7_NUM_IFACES];
 	uint8_t num_ifaces_;
+	uint8_t bound_ifaces_;
 	uint32_t enabledInterfaces_;
 
 	CanIface *ifaceForPhysicalIndex(uint8_t physical_index);
@@ -265,11 +267,15 @@ public:
 		, if1_(fdcan::Can[1], update_event_, 1, rx_queue_storage[1], RxQueueCapacity)
 #endif
 		, active_ifaces_()
+		, active_physical_indices_()
 		, num_ifaces_(0)
+		, bound_ifaces_(0)
 		, enabledInterfaces_(0x3)
 	{
 		uavcan::StaticAssert < (RxQueueCapacity <= CanIface::MaxRxQueueCapacity) >::check();
 	}
+
+	~CanDriver();
 
 	/**
 	 * This function returns select masks indicating which interfaces are available for read/write.

@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <uavcan_stm32h7/can_iface_binding.hpp>
 #include <uavcan_stm32h7/can_interface_map.hpp>
 
 using uavcan_stm32h7::PhysicalCan1;
@@ -33,4 +34,22 @@ TEST(CanInterfaceMap, RejectsEmptyOrUnsupportedMasks)
 	EXPECT_FALSE(makeCanInterfaceMap(0, 2).valid);
 	EXPECT_FALSE(makeCanInterfaceMap(PhysicalCan2, 1).valid);
 	EXPECT_FALSE(makeCanInterfaceMap(1U << 2, 2).valid);
+}
+
+TEST(CanIfaceBinding, KeepsTouchedBusReservedAfterOwnerDetaches)
+{
+	uavcan_stm32h7::CanIfaceBinding binding;
+	int first_owner;
+	int second_owner;
+
+	EXPECT_TRUE(binding.bind(&first_owner));
+	EXPECT_TRUE(binding.bind(&first_owner));
+	EXPECT_FALSE(binding.bind(&second_owner));
+	EXPECT_FALSE(binding.detach(&second_owner));
+	EXPECT_EQ(binding.iface(), &first_owner);
+	EXPECT_TRUE(binding.detach(&first_owner));
+	EXPECT_EQ(binding.iface(), nullptr);
+	EXPECT_TRUE(binding.reserved());
+	EXPECT_FALSE(binding.bind(&first_owner));
+	EXPECT_FALSE(binding.bind(&second_owner));
 }

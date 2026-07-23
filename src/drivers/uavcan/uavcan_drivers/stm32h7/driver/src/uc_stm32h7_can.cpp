@@ -48,6 +48,7 @@
 #include <cstring>
 #include <uavcan_stm32h7/bus_off.hpp>
 #include <uavcan_stm32h7/can.hpp>
+#include <uavcan_stm32h7/can_iface_binding.hpp>
 #include <uavcan_stm32h7/clock.hpp>
 #include "internal.hpp"
 
@@ -122,24 +123,13 @@ namespace uavcan_stm32h7
 namespace
 {
 
-CanIface *physical_ifaces[UAVCAN_STM32H7_NUM_IFACES] = {
-	UAVCAN_NULLPTR
-#if UAVCAN_STM32H7_NUM_IFACES > 1
-	, UAVCAN_NULLPTR
-#endif
-};
+CanIfaceBinding physical_iface_bindings[UAVCAN_STM32H7_NUM_IFACES];
 
 bool bindPhysicalIface(const uint8_t physical_index, CanIface *const iface)
 {
 	CriticalSectionLocker lock;
 
-	if (physical_ifaces[physical_index] != UAVCAN_NULLPTR
-	    && physical_ifaces[physical_index] != iface) {
-		return false;
-	}
-
-	physical_ifaces[physical_index] = iface;
-	return true;
+	return physical_iface_bindings[physical_index].bind(iface);
 }
 
 bool bindPhysicalIfaces(const CanInterfaceMap &map,
@@ -150,33 +140,32 @@ bool bindPhysicalIfaces(const CanInterfaceMap &map,
 	for (uint8_t logical = 0; logical < map.count; ++logical) {
 		const uint8_t physical = map.physical_index[logical];
 
-		if (physical_ifaces[physical] != UAVCAN_NULLPTR
-		    && physical_ifaces[physical] != active_ifaces[logical]) {
+		if (!physical_iface_bindings[physical].canBind(active_ifaces[logical])) {
 			return false;
 		}
 	}
 
 	for (uint8_t logical = 0; logical < map.count; ++logical) {
-		physical_ifaces[map.physical_index[logical]] = active_ifaces[logical];
+		(void)physical_iface_bindings[map.physical_index[logical]].bind(active_ifaces[logical]);
 	}
 
 	return true;
 }
 
-void unbindPhysicalIface(const uint8_t physical_index, CanIface *const iface)
+void detachPhysicalIface(const uint8_t physical_index, CanIface *const iface)
 {
 	CriticalSectionLocker lock;
 
-	if (physical_ifaces[physical_index] == iface) {
-		physical_ifaces[physical_index] = UAVCAN_NULLPTR;
-	}
+	(void)physical_iface_bindings[physical_index].detach(iface);
 }
 
 inline void handleTxInterrupt(uavcan::uint8_t iface_index)
 {
 	UAVCAN_ASSERT(iface_index < UAVCAN_STM32H7_NUM_IFACES);
 
-	if (physical_ifaces[iface_index] == UAVCAN_NULLPTR) {
+	CanIface *const iface = static_cast<CanIface *>(physical_iface_bindings[iface_index].iface());
+
+	if (iface == UAVCAN_NULLPTR) {
 		fdcan::Can[iface_index]->IR = FDCAN_IR_TC;
 		UAVCAN_ASSERT(0);
 		return;
@@ -190,12 +179,12 @@ inline void handleTxInterrupt(uavcan::uint8_t iface_index)
 			utc_usec--;
 		}
 
-		physical_ifaces[iface_index]->handleTxInterrupt(utc_usec);
+		iface->handleTxInterrupt(utc_usec);
 
 	} else if ((fdcan::Can[iface_index]->IR & FDCAN_IR_BO) != 0) {
 
 		fdcan::Can[iface_index]->IR  = FDCAN_IR_BO;
-		physical_ifaces[iface_index]->handleBusOff();
+		iface->handleBusOff();
 
 	}
 }
@@ -213,7 +202,9 @@ inline void handleRxInterrupt(uavcan::uint8_t iface_index)
 	 * FDCAN_IR_RFxL - FIFOx Message Lost
 	 */
 
-	if (physical_ifaces[iface_index] == UAVCAN_NULLPTR) {
+	CanIface *const iface = static_cast<CanIface *>(physical_iface_bindings[iface_index].iface());
+
+	if (iface == UAVCAN_NULLPTR) {
 		// Bad interface - reset flags and return
 		fdcan::Can[iface_index]->IR = FDCAN_IR_RF0N;
 		fdcan::Can[iface_index]->IR = FDCAN_IR_RF1N;
@@ -228,16 +219,16 @@ inline void handleRxInterrupt(uavcan::uint8_t iface_index)
 	// Check for our enabled interrupts: FIFO 0
 	if ((IR & (FDCAN_IR_RF0N | FDCAN_IR_RF0F)) > 0) {
 		fdcan::Can[iface_index]->IR = (FDCAN_IR_RF0N | FDCAN_IR_RF0F);
-		physical_ifaces[iface_index]->handleRxInterrupt(0);
+		iface->handleRxInterrupt(0);
 
 	} else if ((IR & (FDCAN_IR_RF1N | FDCAN_IR_RF1F)) > 0) {
 		fdcan::Can[iface_index]->IR = (FDCAN_IR_RF1N | FDCAN_IR_RF1F);
-		physical_ifaces[iface_index]->handleRxInterrupt(1);
+		iface->handleRxInterrupt(1);
 
 	} else if ((IR & FDCAN_IR_BO) != 0) {
 
 		fdcan::Can[iface_index]->IR  = FDCAN_IR_BO;
-		physical_ifaces[iface_index]->handleBusOff();
+		iface->handleBusOff();
 
 	} else {
 		UAVCAN_ASSERT(0);
@@ -1143,6 +1134,13 @@ CanIface *CanDriver::ifaceForPhysicalIndex(const uint8_t physical_index)
 	return UAVCAN_NULLPTR;
 }
 
+CanDriver::~CanDriver()
+{
+	for (uint8_t logical = 0; logical < bound_ifaces_; ++logical) {
+		detachPhysicalIface(active_physical_indices_[logical], active_ifaces_[logical]);
+	}
+}
+
 uavcan::CanSelectMasks CanDriver::makeSelectMasks(const uavcan::CanFrame * (& pending_tx)[uavcan::MaxCanIfaces]) const
 {
 	uavcan::CanSelectMasks msk;
@@ -1248,58 +1246,22 @@ int CanDriver::init(const uavcan::uint32_t bitrate, const CanIface::OperatingMod
 		return -ErrLogic;
 	}
 
+	if (bound_ifaces_ != 0 && enabledInterfaces_ != enabledInterfaces) {
+		return -ErrLogic;
+	}
+
 	enabledInterfaces_ = enabledInterfaces;
+	num_ifaces_ = 0;
 
 	UAVCAN_STM32H7_LOG("Bitrate %lu mode %d", static_cast<unsigned long>(bitrate), static_cast<int>(mode));
 
-	enum InitOnceState {
-		InitOnceUninitialized,
-		InitOnceInitializing,
-		InitOnceInitialized
-	};
-	static InitOnceState init_once_state = InitOnceUninitialized;
-	bool initialize = false;
+	static pthread_once_t init_once = PTHREAD_ONCE_INIT;
 
-	for (unsigned attempt = 0; attempt < 100; attempt++) {
-		{
-			CriticalSectionLocker lock;
-
-			if (init_once_state == InitOnceInitialized) {
-				break;
-			}
-
-			if (init_once_state == InitOnceUninitialized) {
-				init_once_state = InitOnceInitializing;
-				initialize = true;
-			}
-		}
-
-		if (initialize) {
-			UAVCAN_STM32H7_LOG("First initialization");
-			initOnce();
-
-			{
-				CriticalSectionLocker lock;
-				init_once_state = InitOnceInitialized;
-			}
-
-			break;
-		}
-
-		usleep(1000);
+	if (pthread_once(&init_once, &CanDriver::initOnce) != 0) {
+		return -ErrLogic;
 	}
 
-	{
-		CriticalSectionLocker lock;
-
-		if (init_once_state != InitOnceInitialized) {
-			return -ErrLogic;
-		}
-	}
-
-	num_ifaces_ = map.count;
-
-	for (uint8_t logical = 0; logical < num_ifaces_; ++logical) {
+	for (uint8_t logical = 0; logical < map.count; ++logical) {
 		const uint8_t physical = map.physical_index[logical];
 		CanIface *const iface = ifaceForPhysicalIndex(physical);
 
@@ -1308,9 +1270,10 @@ int CanDriver::init(const uavcan::uint32_t bitrate, const CanIface::OperatingMod
 		}
 
 		active_ifaces_[logical] = iface;
+		active_physical_indices_[logical] = physical;
 	}
 
-	if (num_ifaces_ == 1) {
+	if (map.count == 1) {
 		if (!bindPhysicalIface(map.physical_index[0], active_ifaces_[0])) {
 			return -ErrLogic;
 		}
@@ -1319,17 +1282,19 @@ int CanDriver::init(const uavcan::uint32_t bitrate, const CanIface::OperatingMod
 		return -ErrLogic;
 	}
 
-	for (uint8_t logical = 0; logical < num_ifaces_; ++logical) {
+	bound_ifaces_ = map.count;
+
+	for (uint8_t logical = 0; logical < map.count; ++logical) {
 		UAVCAN_STM32H7_LOG("Initing logical iface %u...", unsigned(logical));
 		res = active_ifaces_[logical]->init(bitrate, mode);
 
 		if (res < 0) {
 			UAVCAN_STM32H7_LOG("Logical iface %u init failed %i", unsigned(logical), res);
-			unbindPhysicalIface(map.physical_index[logical], active_ifaces_[logical]);
 			goto fail;
 		}
 	}
 
+	num_ifaces_ = map.count;
 	UAVCAN_STM32H7_LOG("CAN drv init OK");
 	UAVCAN_ASSERT(res >= 0);
 	return res;
