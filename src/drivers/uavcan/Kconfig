@@ -10,8 +10,8 @@ if DRIVERS_UAVCAN
         bool "M2006/C610 standalone CAN wheel driver"
         default n
         ---help---
-            Enable the proprietary DJI M2006/C610 wheel driver on CAN1.
-            Runtime CAN ownership remains mutually exclusive with UAVCAN and Cyphal.
+            Enable the proprietary DJI M2006/C610 wheel driver on physical CAN2.
+            This leaves physical CAN1 available for DroneCAN devices.
 
     config UAVCAN_ARMING_CONTROLLER
         bool "Include arming status controller"
