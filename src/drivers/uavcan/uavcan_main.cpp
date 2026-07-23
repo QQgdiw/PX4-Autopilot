@@ -78,6 +78,17 @@ UavcanNode *UavcanNode::_instance;
 
 static UavcanNode::CanInitHelper *can = nullptr;
 
+static uint16_t configuredDroneCanInterfaces()
+{
+	uint16_t interfaces = board_get_can_interfaces();
+
+#if defined(CONFIG_UAVCAN_M2006_CAN)
+	interfaces &= uavcan_can::Can1Mask;
+#endif
+
+	return interfaces;
+}
+
 UavcanNode::UavcanNode(uavcan::ICanDriver &can_driver, uavcan::ISystemClock &system_clock) :
 	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::uavcan),
 	ModuleParams(nullptr),
@@ -429,14 +440,22 @@ UavcanNode::start(uavcan::NodeID node_id, uint32_t bitrate)
 	}
 
 	if (can == nullptr) {
-		if (!uavcan_can::claim(uavcan_can::Owner::DroneCan)) {
-			PX4_ERR("CAN already claimed by another driver; reboot required");
+		const uint16_t dronecan_interfaces = configuredDroneCanInterfaces();
+
+		if (dronecan_interfaces == 0) {
+			PX4_ERR("CAN1 is unavailable for DroneCAN");
 			return -1;
 		}
 
-		can = new CanInitHelper(board_get_can_interfaces());
+		if (!uavcan_can::claim(uavcan_can::Owner::DroneCan, dronecan_interfaces)) {
+			PX4_ERR("DroneCAN interface is already claimed; reboot required");
+			return -1;
+		}
+
+		can = new CanInitHelper(dronecan_interfaces);
 
 		if (can == nullptr) {  // We don't have exceptions so bad_alloc cannot be thrown
+			uavcan_can::release(uavcan_can::Owner::DroneCan, dronecan_interfaces);
 			PX4_ERR("Out of memory");
 			return -1;
 		}

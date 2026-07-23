@@ -18,6 +18,7 @@
 #include <uORB/topics/m2006_motor_status.h>
 #include <uORB/topics/parameter_update.h>
 
+#include "../CanOwnership.hpp"
 #include "../uavcan_driver.hpp"
 
 class M2006Can final : public ModuleBase<M2006Can>, public ModuleParams, public px4::ScheduledWorkItem
@@ -46,7 +47,7 @@ private:
 	void receiveFeedback();
 	void publishStatus(hrt_abstime now, const bool online[2]);
 
-	UAVCAN_DRIVER::CanInitHelper<16> _can{1u};
+	UAVCAN_DRIVER::CanInitHelper<16> _can{uavcan_can::Can2Mask};
 	uavcan::ICanIface *_iface{nullptr};
 	hybrid_control::M2006SpeedController _speed[2] {};
 	hybrid_control::M2006DriveGate _gate{};

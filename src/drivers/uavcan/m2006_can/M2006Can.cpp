@@ -3,6 +3,7 @@
 
 #include <cstring>
 
+#include <px4_platform_common/board_common.h>
 #include <px4_platform_common/events.h>
 
 using hybrid_control::MotorIndex;
@@ -47,22 +48,17 @@ bool M2006Can::init()
 	_left_id = static_cast<uint8_t>(left_id);
 	_right_id = static_cast<uint8_t>(right_id);
 
-	int32_t uavcan_enable = 0;
-	int32_t cyphal_enable = 0;
-	(void)param_get(param_find("UAVCAN_ENABLE"), &uavcan_enable);
-	(void)param_get(param_find("CYPHAL_ENABLE"), &cyphal_enable);
-
-	if (uavcan_enable != 0 || cyphal_enable != 0) {
-		PX4_ERR("CAN1 conflict: disable UAVCAN and Cyphal, then reboot");
-		events::send(events::ID("m2006_can_ownership_conflict"), events::Log::Error,
-			     "M2006 CAN conflict: disable UAVCAN and Cyphal, then reboot");
+	if ((board_get_can_interfaces() & uavcan_can::Can2Mask) == 0) {
+		PX4_ERR("CAN2 is unavailable");
+		events::send(events::ID("m2006_can2_unavailable"), events::Log::Error,
+			     "M2006 CAN2 is unavailable");
 		return false;
 	}
 
-	if (!uavcan_can::claim(uavcan_can::Owner::M2006)) {
-		PX4_ERR("CAN1 is already initialized; reboot required");
+	if (!uavcan_can::claim(uavcan_can::Owner::M2006, uavcan_can::Can2Mask)) {
+		PX4_ERR("CAN2 is already initialized; reboot required");
 		events::send(events::ID("m2006_can_runtime_ownership_conflict"), events::Log::Error,
-			     "M2006 CAN1 is already owned; reboot required");
+			     "M2006 CAN2 is already owned; reboot required");
 		return false;
 	}
 
@@ -70,16 +66,14 @@ bool M2006Can::init()
 	const int can_result = _can.init(1000000);
 
 	if (can_result < 0) {
-		PX4_ERR("CAN1 initialization failed: %d", can_result);
-		uavcan_can::release(uavcan_can::Owner::M2006);
+		PX4_ERR("CAN2 initialization failed: %d", can_result);
 		return false;
 	}
 
 	_iface = _can.driver.getIface(0);
 
 	if (_iface == nullptr) {
-		PX4_ERR("CAN1 interface unavailable");
-		uavcan_can::release(uavcan_can::Owner::M2006);
+		PX4_ERR("CAN2 interface unavailable");
 		return false;
 	}
 
@@ -309,7 +303,7 @@ void M2006Can::Run()
 
 int M2006Can::print_status()
 {
-	PX4_INFO("CAN1 1Mbps: rx=%" PRIu32 "/%" PRIu32 " tx=%" PRIu32,
+	PX4_INFO("CAN2 1Mbps: rx=%" PRIu32 "/%" PRIu32 " tx=%" PRIu32,
 		 _rx_count[0], _rx_count[1], _tx_count);
 	PX4_INFO("tx full=%" PRIu32 " error=%" PRIu32 " consecutive=%u hw errors=%" PRIu64,
 		 _tx_full_count, _tx_error_count, _consecutive_tx_failures,
@@ -354,7 +348,7 @@ int M2006Can::print_usage(const char *reason)
 		PX4_WARN("%s", reason);
 	}
 
-	PRINT_MODULE_DESCRIPTION("Standalone DJI M2006/C610 CAN1 wheel driver");
+	PRINT_MODULE_DESCRIPTION("Standalone DJI M2006/C610 CAN2 wheel driver");
 	PRINT_MODULE_USAGE_NAME("m2006_can", "driver");
 	PRINT_MODULE_USAGE_COMMAND("start");
 	PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
