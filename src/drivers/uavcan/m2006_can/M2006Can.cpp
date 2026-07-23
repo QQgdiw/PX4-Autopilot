@@ -71,6 +71,7 @@ bool M2006Can::init()
 
 	if (can_result < 0) {
 		PX4_ERR("CAN1 initialization failed: %d", can_result);
+		uavcan_can::release(uavcan_can::Owner::M2006);
 		return false;
 	}
 
@@ -78,22 +79,13 @@ bool M2006Can::init()
 
 	if (_iface == nullptr) {
 		PX4_ERR("CAN1 interface unavailable");
+		uavcan_can::release(uavcan_can::Owner::M2006);
 		return false;
 	}
 
-	uavcan::CanFilterConfig filters[2] {};
-	filters[0].id = 0x200U + _left_id;
-	filters[0].mask = uavcan::CanFrame::MaskStdID | uavcan::CanFrame::FlagEFF | uavcan::CanFrame::FlagRTR;
-	filters[1].id = 0x200U + _right_id;
-	filters[1].mask = uavcan::CanFrame::MaskStdID | uavcan::CanFrame::FlagEFF | uavcan::CanFrame::FlagRTR;
-
-	const int filter_result = _iface->configureFilters(filters, 2);
-
-	if (filter_result < 0) {
-		PX4_ERR("CAN1 filter configuration failed: %d", filter_result);
-		_iface = nullptr;
-		return false;
-	}
+	// CanIface::init() configures the FDCAN global filter to route unmatched
+	// frames to FIFO0. Re-entering INIT after that initial setup is unsupported
+	// on this board, so software C610-ID decoding performs the acceptance filter.
 
 	updateControllerConfiguration();
 	_last_can_error_count = _iface->getErrorCount();
