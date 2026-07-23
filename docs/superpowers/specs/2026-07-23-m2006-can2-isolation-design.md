@@ -95,9 +95,12 @@ mapping makes CAN2 its logical interface 0. Startup reports and event text use
 CAN2. The board availability mask is checked before either protocol reserves
 its required physical bus.
 
-Commander/hybrid validation changes from a global UAVCAN/M2006 conflict to a
-physical-mask overlap test, so enabled DroneCAN/CAN1 plus M2006/CAN2 is valid,
-while a same-bus configuration remains an explicit safety failure.
+Runtime ownership changes from a global UAVCAN/M2006 conflict to a
+physical-mask overlap check, so enabled DroneCAN/CAN1 plus M2006/CAN2 is valid
+while any second user of an occupied bus is rejected before initialization.
+Commander removes its false global DroneCAN conflict for this fixed topology;
+it retains all wheel-health safety gates and treats an enabled Cyphal backend
+as a conflict if one is ever added to this target.
 
 ## Error Handling
 
