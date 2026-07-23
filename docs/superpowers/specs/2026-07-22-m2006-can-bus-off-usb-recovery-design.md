@@ -110,6 +110,22 @@ link UAVCAN, enable UAVCAN in SITL, or change any board configuration. This keep
 the pure bit-mask policy host-testable while the later ISR adapter remains verified
 by the policy test, target compilation, and hardware acceptance.
 
+### STM32H7 filter configuration safety
+
+Hardware retesting isolated a second startup fault in
+`CanIface::configureFilters()`: Stage C (FDCAN initialization) enumerated USB,
+while Stage D (the post-init filter call) did not. The filter registers store
+word offsets into FDCAN message RAM, whereas `message_ram_` stores CPU addresses;
+filter writes must use the latter. Standard and extended filter words must follow
+the STM32H7 classic-filter layout and mask out UAVCAN flag bits. The configured
+list counts replace, rather than OR into, the preallocated list-size fields.
+
+Because this method is called after `CanIface::init()` has left INIT mode, its
+INIT/CCE transitions use the existing bounded wait helper outside the global
+critical section. Only the short message-RAM/register write section disables
+interrupts. Failure to enter/leave the state returns an error to M2006 startup
+instead of spinning with USB interrupts disabled.
+
 ## Risks and Constraints
 
 The shared STM32H7 driver change affects other boards using this backend, so the
