@@ -23,3 +23,8 @@ px4_add_unit_gtest(
 	INCLUDES
 		${PX4_SOURCE_DIR}/src/drivers/uavcan/uavcan_drivers/stm32h7/driver/include
 )
+px4_add_unit_gtest(
+	SRC CanInterfaceMapTest.cpp
+	INCLUDES
+		${PX4_SOURCE_DIR}/src/drivers/uavcan/uavcan_drivers/stm32h7/driver/include
+)
