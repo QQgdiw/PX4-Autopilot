@@ -5,6 +5,7 @@
 #include <thread>
 
 #include <uavcan_stm32h7/can_iface_binding.hpp>
+#include <uavcan_stm32h7/can_driver_topology.hpp>
 #include <uavcan_stm32h7/can_init_once.hpp>
 #include <uavcan_stm32h7/can_interface_map.hpp>
 
@@ -39,6 +40,32 @@ TEST(CanInterfaceMap, RejectsEmptyOrUnsupportedMasks)
 	EXPECT_FALSE(makeCanInterfaceMap(0, 2).valid);
 	EXPECT_FALSE(makeCanInterfaceMap(PhysicalCan2, 1).valid);
 	EXPECT_FALSE(makeCanInterfaceMap(1U << 2, 2).valid);
+}
+
+TEST(CanDriverTopology, ExposesConfiguredInterfacesBeforeHardwareInit)
+{
+	const uavcan_stm32h7::CanDriverTopology can1(PhysicalCan1, 2);
+	ASSERT_TRUE(can1.valid());
+	ASSERT_EQ(can1.count(), 1);
+	EXPECT_EQ(can1.physicalIndex(0), 0);
+
+	const uavcan_stm32h7::CanDriverTopology can2(PhysicalCan2, 2);
+	ASSERT_TRUE(can2.valid());
+	ASSERT_EQ(can2.count(), 1);
+	EXPECT_EQ(can2.physicalIndex(0), 1);
+
+	const uavcan_stm32h7::CanDriverTopology both(PhysicalCan1 | PhysicalCan2, 2);
+	ASSERT_TRUE(both.valid());
+	ASSERT_EQ(both.count(), 2);
+	EXPECT_EQ(both.physicalIndex(0), 0);
+	EXPECT_EQ(both.physicalIndex(1), 1);
+}
+
+TEST(CanDriverTopology, RejectsInvalidConfiguredMasks)
+{
+	EXPECT_FALSE(uavcan_stm32h7::CanDriverTopology(0, 2).valid());
+	EXPECT_EQ(uavcan_stm32h7::CanDriverTopology(0, 2).count(), 0);
+	EXPECT_FALSE(uavcan_stm32h7::CanDriverTopology(1U << 2, 2).valid());
 }
 
 TEST(CanIfaceBinding, KeepsTouchedBusReservedAfterOwnerDetaches)

@@ -5,6 +5,7 @@
 #pragma once
 
 #include <uavcan_stm32h7/build_config.hpp>
+#include <uavcan_stm32h7/can_driver_topology.hpp>
 #include <uavcan_stm32h7/can_interface_map.hpp>
 #include <uavcan_stm32h7/thread.hpp>
 #include <uavcan/driver/can.hpp>
@@ -246,6 +247,7 @@ class CanDriver : public uavcan::ICanDriver, uavcan::Noncopyable
 #endif
 	CanIface *active_ifaces_[UAVCAN_STM32H7_NUM_IFACES];
 	uint8_t active_physical_indices_[UAVCAN_STM32H7_NUM_IFACES];
+	CanDriverTopology topology_;
 	uint8_t num_ifaces_;
 	uint8_t bound_ifaces_;
 	uint32_t enabledInterfaces_;
@@ -260,7 +262,8 @@ class CanDriver : public uavcan::ICanDriver, uavcan::Noncopyable
 
 public:
 	template <unsigned RxQueueCapacity>
-	CanDriver(CanRxItem(&rx_queue_storage)[UAVCAN_STM32H7_NUM_IFACES][RxQueueCapacity])
+	CanDriver(CanRxItem (&rx_queue_storage)[UAVCAN_STM32H7_NUM_IFACES][RxQueueCapacity],
+		  uint32_t enabled_interfaces)
 		: update_event_(*this)
 		, if0_(fdcan::Can[0], update_event_, 0, rx_queue_storage[0], RxQueueCapacity)
 #if UAVCAN_STM32H7_NUM_IFACES > 1
@@ -268,11 +271,16 @@ public:
 #endif
 		, active_ifaces_()
 		, active_physical_indices_()
-		, num_ifaces_(0)
+		, topology_(enabled_interfaces, UAVCAN_STM32H7_NUM_IFACES)
+		, num_ifaces_(topology_.count())
 		, bound_ifaces_(0)
-		, enabledInterfaces_(0x3)
+		, enabledInterfaces_(enabled_interfaces)
 	{
 		uavcan::StaticAssert < (RxQueueCapacity <= CanIface::MaxRxQueueCapacity) >::check();
+		for (uint8_t logical = 0; logical < num_ifaces_; ++logical) {
+			active_physical_indices_[logical] = topology_.physicalIndex(logical);
+			active_ifaces_[logical] = ifaceForPhysicalIndex(active_physical_indices_[logical]);
+		}
 	}
 
 	~CanDriver();
@@ -322,9 +330,10 @@ public:
 	CanDriver driver;
 	uint32_t enabledInterfaces_;
 
-	CanInitHelper(const uavcan::uint32_t EnabledInterfaces = 0x7) :
-		driver(queue_storage_),
-		enabledInterfaces_(EnabledInterfaces)
+	CanInitHelper(const uavcan::uint32_t enabled_interfaces =
+		      (1U << UAVCAN_STM32H7_NUM_IFACES) - 1U) :
+		driver(queue_storage_, enabled_interfaces),
+		enabledInterfaces_(enabled_interfaces)
 	{ }
 
 	/**
