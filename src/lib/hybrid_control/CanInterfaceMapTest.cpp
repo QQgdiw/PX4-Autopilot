@@ -42,30 +42,60 @@ TEST(CanInterfaceMap, RejectsEmptyOrUnsupportedMasks)
 	EXPECT_FALSE(makeCanInterfaceMap(1U << 2, 2).valid);
 }
 
-TEST(CanDriverTopology, ExposesConfiguredInterfacesBeforeHardwareInit)
+TEST(CanDriverView, ExposesConfiguredInterfacesBeforeHardwareInit)
 {
-	const uavcan_stm32h7::CanDriverTopology can1(PhysicalCan1, 2);
+	int physical_can1;
+	int physical_can2;
+
+	const uavcan_stm32h7::CanDriverView<int> can1(PhysicalCan1, physical_can1, physical_can2);
 	ASSERT_TRUE(can1.valid());
 	ASSERT_EQ(can1.count(), 1);
 	EXPECT_EQ(can1.physicalIndex(0), 0);
+	EXPECT_EQ(can1.getIface(0), &physical_can1);
 
-	const uavcan_stm32h7::CanDriverTopology can2(PhysicalCan2, 2);
+	const uavcan_stm32h7::CanDriverView<int> can2(PhysicalCan2, physical_can1, physical_can2);
 	ASSERT_TRUE(can2.valid());
 	ASSERT_EQ(can2.count(), 1);
 	EXPECT_EQ(can2.physicalIndex(0), 1);
+	EXPECT_EQ(can2.getIface(0), &physical_can2);
 
-	const uavcan_stm32h7::CanDriverTopology both(PhysicalCan1 | PhysicalCan2, 2);
+	const uavcan_stm32h7::CanDriverView<int> both(PhysicalCan1 | PhysicalCan2, physical_can1, physical_can2);
 	ASSERT_TRUE(both.valid());
 	ASSERT_EQ(both.count(), 2);
 	EXPECT_EQ(both.physicalIndex(0), 0);
 	EXPECT_EQ(both.physicalIndex(1), 1);
+	EXPECT_EQ(both.getIface(0), &physical_can1);
+	EXPECT_EQ(both.getIface(1), &physical_can2);
 }
 
-TEST(CanDriverTopology, RejectsInvalidConfiguredMasks)
+TEST(CanDriverView, RejectsInvalidConfiguredMasks)
 {
-	EXPECT_FALSE(uavcan_stm32h7::CanDriverTopology(0, 2).valid());
-	EXPECT_EQ(uavcan_stm32h7::CanDriverTopology(0, 2).count(), 0);
-	EXPECT_FALSE(uavcan_stm32h7::CanDriverTopology(1U << 2, 2).valid());
+	int physical_can1;
+	int physical_can2;
+
+	const uavcan_stm32h7::CanDriverView<int> empty(0, physical_can1, physical_can2);
+	EXPECT_FALSE(empty.valid());
+	EXPECT_EQ(empty.count(), 0);
+	EXPECT_EQ(empty.getIface(0), nullptr);
+
+	const uavcan_stm32h7::CanDriverView<int> unavailable_can2(PhysicalCan2, physical_can1);
+	EXPECT_FALSE(unavailable_can2.valid());
+	EXPECT_EQ(unavailable_can2.count(), 0);
+	EXPECT_EQ(unavailable_can2.getIface(0), nullptr);
+
+	const uavcan_stm32h7::CanDriverView<int> unsupported(1U << 2, physical_can1, physical_can2);
+	EXPECT_FALSE(unsupported.valid());
+	EXPECT_EQ(unsupported.count(), 0);
+	EXPECT_EQ(unsupported.getIface(0), nullptr);
+
+	for (uint32_t mask = 0; mask <= UINT16_MAX; ++mask) {
+		if (mask != PhysicalCan1 && mask != PhysicalCan2 && mask != (PhysicalCan1 | PhysicalCan2)) {
+			const uavcan_stm32h7::CanDriverView<int> invalid(mask, physical_can1, physical_can2);
+			EXPECT_FALSE(invalid.valid()) << "mask " << mask;
+			EXPECT_EQ(invalid.count(), 0) << "mask " << mask;
+			EXPECT_EQ(invalid.getIface(0), nullptr) << "mask " << mask;
+		}
+	}
 }
 
 TEST(CanIfaceBinding, KeepsTouchedBusReservedAfterOwnerDetaches)

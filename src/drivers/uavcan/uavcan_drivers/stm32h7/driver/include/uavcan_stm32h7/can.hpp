@@ -245,14 +245,8 @@ class CanDriver : public uavcan::ICanDriver, uavcan::Noncopyable
 #if UAVCAN_STM32H7_NUM_IFACES > 1
 	CanIface if1_;
 #endif
-	CanIface *active_ifaces_[UAVCAN_STM32H7_NUM_IFACES];
-	uint8_t active_physical_indices_[UAVCAN_STM32H7_NUM_IFACES];
-	CanDriverTopology topology_;
-	uint8_t num_ifaces_;
+	CanDriverView<CanIface> view_;
 	uint8_t bound_ifaces_;
-	uint32_t enabledInterfaces_;
-
-	CanIface *ifaceForPhysicalIndex(uint8_t physical_index);
 
 	virtual uavcan::int16_t select(uavcan::CanSelectMasks &inout_masks,
 				       const uavcan::CanFrame * (& pending_tx)[uavcan::MaxCanIfaces],
@@ -269,18 +263,14 @@ public:
 #if UAVCAN_STM32H7_NUM_IFACES > 1
 		, if1_(fdcan::Can[1], update_event_, 1, rx_queue_storage[1], RxQueueCapacity)
 #endif
-		, active_ifaces_()
-		, active_physical_indices_()
-		, topology_(enabled_interfaces, UAVCAN_STM32H7_NUM_IFACES)
-		, num_ifaces_(topology_.count())
+#if UAVCAN_STM32H7_NUM_IFACES > 1
+		, view_(enabled_interfaces, if0_, if1_)
+#else
+		, view_(enabled_interfaces, if0_)
+#endif
 		, bound_ifaces_(0)
-		, enabledInterfaces_(enabled_interfaces)
 	{
 		uavcan::StaticAssert < (RxQueueCapacity <= CanIface::MaxRxQueueCapacity) >::check();
-		for (uint8_t logical = 0; logical < num_ifaces_; ++logical) {
-			active_physical_indices_[logical] = topology_.physicalIndex(logical);
-			active_ifaces_[logical] = ifaceForPhysicalIndex(active_physical_indices_[logical]);
-		}
 	}
 
 	~CanDriver();
@@ -303,7 +293,7 @@ public:
 
 	virtual CanIface *getIface(uavcan::uint8_t iface_index);
 
-	virtual uavcan::uint8_t getNumIfaces() const { return num_ifaces_; }
+	virtual uavcan::uint8_t getNumIfaces() const { return view_.count(); }
 
 	/**
 	 * Whether at least one iface had at least one successful IO since previous call of this method.

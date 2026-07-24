@@ -133,21 +133,20 @@ bool bindPhysicalIface(const uint8_t physical_index, CanIface *const iface)
 	return physical_iface_bindings[physical_index].bind(iface);
 }
 
-bool bindPhysicalIfaces(const CanDriverTopology &topology,
-			CanIface *const (&active_ifaces)[UAVCAN_STM32H7_NUM_IFACES])
+bool bindPhysicalIfaces(const CanDriverView<CanIface> &view)
 {
 	CriticalSectionLocker lock;
 
-	for (uint8_t logical = 0; logical < topology.count(); ++logical) {
-		const uint8_t physical = topology.physicalIndex(logical);
+	for (uint8_t logical = 0; logical < view.count(); ++logical) {
+		const uint8_t physical = view.physicalIndex(logical);
 
-		if (!physical_iface_bindings[physical].canBind(active_ifaces[logical])) {
+		if (!physical_iface_bindings[physical].canBind(view.getIface(logical))) {
 			return false;
 		}
 	}
 
-	for (uint8_t logical = 0; logical < topology.count(); ++logical) {
-		(void)physical_iface_bindings[topology.physicalIndex(logical)].bind(active_ifaces[logical]);
+	for (uint8_t logical = 0; logical < view.count(); ++logical) {
+		(void)physical_iface_bindings[view.physicalIndex(logical)].bind(view.getIface(logical));
 	}
 
 	return true;
@@ -1139,27 +1138,10 @@ bool CanIface::hadActivity()
 /*
  * CanDriver
  */
-CanIface *CanDriver::ifaceForPhysicalIndex(const uint8_t physical_index)
-{
-	if (physical_index == 0) {
-		return &if0_;
-	}
-
-#if UAVCAN_STM32H7_NUM_IFACES > 1
-
-	if (physical_index == 1) {
-		return &if1_;
-	}
-
-#endif
-
-	return UAVCAN_NULLPTR;
-}
-
 CanDriver::~CanDriver()
 {
 	for (uint8_t logical = 0; logical < bound_ifaces_; ++logical) {
-		shutdownAndDetachPhysicalIface(active_physical_indices_[logical], active_ifaces_[logical]);
+		shutdownAndDetachPhysicalIface(view_.physicalIndex(logical), view_.getIface(logical));
 	}
 }
 
@@ -1167,11 +1149,11 @@ uavcan::CanSelectMasks CanDriver::makeSelectMasks(const uavcan::CanFrame * (& pe
 {
 	uavcan::CanSelectMasks msk;
 
-	for (uint8_t i = 0; i < num_ifaces_; i++) {
-		msk.read |= (active_ifaces_[i]->isRxBufferEmpty() ? 0 : 1) << i;
+	for (uint8_t i = 0; i < view_.count(); i++) {
+		msk.read |= (view_.getIface(i)->isRxBufferEmpty() ? 0 : 1) << i;
 
 		if (pending_tx[i] != UAVCAN_NULLPTR) {
-			msk.write |= (active_ifaces_[i]->canAcceptNewTxFrame(*pending_tx[i]) ? 1 : 0) << i;
+			msk.write |= (view_.getIface(i)->canAcceptNewTxFrame(*pending_tx[i]) ? 1 : 0) << i;
 		}
 	}
 
@@ -1180,8 +1162,8 @@ uavcan::CanSelectMasks CanDriver::makeSelectMasks(const uavcan::CanFrame * (& pe
 
 bool CanDriver::hasReadableInterfaces() const
 {
-	for (uint8_t i = 0; i < num_ifaces_; i++) {
-		if (!active_ifaces_[i]->isRxBufferEmpty()) {
+	for (uint8_t i = 0; i < view_.count(); i++) {
+		if (!view_.getIface(i)->isRxBufferEmpty()) {
 			return true;
 		}
 	}
@@ -1196,12 +1178,12 @@ uavcan::int16_t CanDriver::select(uavcan::CanSelectMasks &inout_masks,
 	const uavcan::CanSelectMasks in_masks = inout_masks;
 	const uavcan::MonotonicTime time = clock::getMonotonic();
 
-	for (uint8_t i = 0; i < num_ifaces_; i++) {
-		active_ifaces_[i]->discardTimedOutTxMailboxes(time); // Check TX timeouts - this may release some TX slots
+	for (uint8_t i = 0; i < view_.count(); i++) {
+		view_.getIface(i)->discardTimedOutTxMailboxes(time); // Check TX timeouts - this may release some TX slots
 
 		{
 			CriticalSectionLocker cs_locker;
-			active_ifaces_[i]->pollErrorFlagsFromISR();
+			view_.getIface(i)->pollErrorFlagsFromISR();
 		}
 	}
 
@@ -1261,14 +1243,14 @@ int CanDriver::init(const uavcan::uint32_t bitrate, const CanIface::OperatingMod
 		    const uavcan::uint32_t enabledInterfaces)
 {
 	int res = 0;
-	const CanDriverTopology requested(enabledInterfaces, UAVCAN_STM32H7_NUM_IFACES);
+	const CanInterfaceMap requested = makeCanInterfaceMap(enabledInterfaces, UAVCAN_STM32H7_NUM_IFACES);
 
-	if (!requested.valid() || requested.count() != topology_.count()) {
+	if (!requested.valid || requested.count != view_.count()) {
 		return -ErrLogic;
 	}
 
-	for (uint8_t logical = 0; logical < requested.count(); ++logical) {
-		if (requested.physicalIndex(logical) != topology_.physicalIndex(logical)) {
+	for (uint8_t logical = 0; logical < requested.count; ++logical) {
+		if (requested.physical_index[logical] != view_.physicalIndex(logical)) {
 			return -ErrLogic;
 		}
 	}
@@ -1281,20 +1263,20 @@ int CanDriver::init(const uavcan::uint32_t bitrate, const CanIface::OperatingMod
 		return -ErrLogic;
 	}
 
-	if (topology_.count() == 1) {
-		if (!bindPhysicalIface(topology_.physicalIndex(0), active_ifaces_[0])) {
+	if (view_.count() == 1) {
+		if (!bindPhysicalIface(view_.physicalIndex(0), view_.getIface(0))) {
 			return -ErrLogic;
 		}
 
-	} else if (!bindPhysicalIfaces(topology_, active_ifaces_)) {
+	} else if (!bindPhysicalIfaces(view_)) {
 		return -ErrLogic;
 	}
 
-	bound_ifaces_ = topology_.count();
+	bound_ifaces_ = view_.count();
 
-	for (uint8_t logical = 0; logical < topology_.count(); ++logical) {
+	for (uint8_t logical = 0; logical < view_.count(); ++logical) {
 		UAVCAN_STM32H7_LOG("Initing logical iface %u...", unsigned(logical));
-		res = active_ifaces_[logical]->init(bitrate, mode);
+		res = view_.getIface(logical)->init(bitrate, mode);
 
 		if (res < 0) {
 			UAVCAN_STM32H7_LOG("Logical iface %u init failed %i", unsigned(logical), res);
@@ -1314,19 +1296,15 @@ fail:
 
 CanIface *CanDriver::getIface(uavcan::uint8_t iface_index)
 {
-	if (iface_index < num_ifaces_) {
-		return active_ifaces_[iface_index];
-	}
-
-	return UAVCAN_NULLPTR;
+	return view_.getIface(iface_index);
 }
 
 bool CanDriver::hadActivity()
 {
 	bool ret = false;
 
-	for (uint8_t i = 0; i < num_ifaces_; i++) {
-		ret |= active_ifaces_[i]->hadActivity();
+	for (uint8_t i = 0; i < view_.count(); i++) {
+		ret |= view_.getIface(i)->hadActivity();
 	}
 
 	return ret;
