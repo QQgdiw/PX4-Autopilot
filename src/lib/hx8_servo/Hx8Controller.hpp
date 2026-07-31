@@ -13,7 +13,7 @@ struct ProtectionConfig {
 	uint16_t stall_power_mw{0};
 	uint16_t voltage_min_mv{9000};
 	uint16_t voltage_max_mv{12600};
-	uint16_t temperature_adc{0};
+	uint16_t temperature_limit_c{0};
 	uint16_t power_limit_mw{0};
 	uint16_t current_limit_ma{0};
 	uint8_t power_on_lock{0};

@@ -58,7 +58,7 @@ Use these parameter units exactly:
 - `HX8_PWR_LIM`, `HX8_CFG_SPWR`, and `HX8_CFG_PWR`: mW;
 - `HX8_CFG_CUR`: mA;
 - `HX8_CFG_VMIN` and `HX8_CFG_VMAX`: mV;
-- `HX8_CFG_TADC`: raw ADC value, not degrees Celsius.
+- `HX8_CFG_TEMP`: temperature protection threshold in degrees Celsius.
 
 1. Verify the responding device ID and set `HX8_ID`. Confirm that only the
    intended servo responds.
@@ -75,7 +75,7 @@ Use these parameter units exactly:
    and measured load. Do not guess a value merely to make preflight pass.
 5. Calibrate and record nonzero internal stall/current/power/temperature
    protection values: `HX8_CFG_STL=1`, nonzero `HX8_CFG_SPWR`, nonzero
-   `HX8_CFG_CUR`, nonzero `HX8_CFG_PWR`, and nonzero `HX8_CFG_TADC`. Set
+   `HX8_CFG_CUR`, nonzero `HX8_CFG_PWR`, and nonzero `HX8_CFG_TEMP`. Set
    `HX8_CFG_RSP=1`, and deliberately choose `HX8_CFG_BOOT` from the required
    power-on behavior. Verify `HX8_CFG_VMIN` and `HX8_CFG_VMAX` against the
    9.0--12.6 V supply range. These expected values are safety-calibration
@@ -84,6 +84,22 @@ Use these parameter units exactly:
 
 Zero placeholders for run power, stall power, current, power, or temperature
 protection are uncommissioned and must not be accepted for operation.
+
+For the current ZeroOne X6 installation, the reviewed initial bench profile is:
+
+```text
+HX8_CFG_RSP=1     HX8_CFG_STL=1
+HX8_CFG_SPWR=6000 HX8_CFG_TEMP=70
+HX8_CFG_PWR=20000 HX8_CFG_CUR=4000
+HX8_CFG_VMIN=9000 HX8_CFG_VMAX=12600
+HX8_CFG_BOOT=0    HX8_PWR_LIM=20000
+```
+
+This profile deliberately enables response and stall release and raises the
+manufacturer's 4 V undervoltage default to the installation's 9 V safety
+floor. The 20 W runtime command limit must not exceed the retained 20 W
+internal power limit. Register 41 stores the configured Celsius threshold;
+only live status telemetry uses the thermistor ADC conversion.
 
 ## Check and write persistent HX8 configuration
 

@@ -1,4 +1,5 @@
 #include "Hx8UartServo.hpp"
+#include "Hx8CliPolicy.hpp"
 
 #include <cerrno>
 #include <cstring>
@@ -38,8 +39,16 @@ int Hx8UartServo::custom_command(int argc, char *argv[])
 {
 	Hx8UartServo *instance = _object.load();
 
-	if (instance == nullptr || argc < 1) {
-		return print_usage("driver is not running");
+	if (argc < 1) {
+		print_usage("missing command");
+		return -EINVAL;
+	}
+
+	const int instance_status = hx8_cli::driverInstanceStatus(instance != nullptr);
+
+	if (instance_status != 0) {
+		print_usage("driver is not running");
+		return instance_status;
 	}
 
 	if (!strcmp(argv[0], "status")) {

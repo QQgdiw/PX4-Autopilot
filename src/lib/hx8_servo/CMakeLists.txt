@@ -7,3 +7,4 @@ target_link_libraries(hx8_controller PUBLIC hx8_protocol)
 
 px4_add_unit_gtest(SRC Hx8ProtocolTest.cpp LINKLIBS hx8_protocol)
 px4_add_unit_gtest(SRC Hx8ControllerTest.cpp LINKLIBS hx8_controller)
+px4_add_unit_gtest(SRC Hx8CliPolicyTest.cpp)

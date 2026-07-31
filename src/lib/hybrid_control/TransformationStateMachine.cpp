@@ -62,10 +62,11 @@ float angularDistance(float lhs, float rhs)
 
 TransformFault validateTransformationConfig(const TransformationConfig &config)
 {
-	if (!std::isfinite(config.quad_servo) || !std::isfinite(config.rover_servo)
-	    || config.quad_servo < -1.f || config.quad_servo > 1.f
-	    || config.rover_servo < -1.f || config.rover_servo > 1.f
-	    || std::fabs(config.quad_servo - config.rover_servo) < 0.1f) {
+	if (config.backend == ActuatorBackend::Pwm
+	    && (!std::isfinite(config.quad_servo) || !std::isfinite(config.rover_servo)
+		|| config.quad_servo < -1.f || config.quad_servo > 1.f
+		|| config.rover_servo < -1.f || config.rover_servo > 1.f
+		|| std::fabs(config.quad_servo - config.rover_servo) < 0.1f)) {
 		return TransformFault::InvalidServoConfig;
 	}
 

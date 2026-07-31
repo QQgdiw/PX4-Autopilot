@@ -427,6 +427,15 @@ TEST(TransformationStateMachine, InvalidServoConfigFaults)
 	EXPECT_EQ(machine.initialize(invalid, input()).fault, TransformFault::InvalidServoConfig);
 }
 
+TEST(TransformationStateMachine, Hx8BackendDoesNotRequirePwmEndpoints)
+{
+	auto hx8 = config(false);
+	hx8.backend = ActuatorBackend::Hx8;
+	hx8.quad_servo = 0.f;
+	hx8.rover_servo = 0.f;
+	EXPECT_EQ(validateTransformationConfig(hx8), TransformFault::None);
+}
+
 TEST(TransformationStateMachine, OutOfRangeServoConfigCannotClearFault)
 {
 	TransformationStateMachine machine;

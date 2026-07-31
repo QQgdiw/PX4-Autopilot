@@ -16,7 +16,7 @@ ProtectionConfig validConfig()
 {
 	ProtectionConfig config {};
 	config.stall_power_mw = 3000;
-	config.temperature_adc = 741;
+	config.temperature_limit_c = 70;
 	config.power_limit_mw = 4500;
 	config.current_limit_ma = 2200;
 	return config;
@@ -68,7 +68,7 @@ uint16_t expectedValue(uint8_t parameter, const ProtectionConfig &config)
 
 	case 40: return config.voltage_max_mv;
 
-	case 41: return config.temperature_adc;
+	case 41: return config.temperature_limit_c;
 
 	case 42: return config.power_limit_mw;
 
@@ -78,6 +78,11 @@ uint16_t expectedValue(uint8_t parameter, const ProtectionConfig &config)
 
 	default: return 0;
 	}
+}
+
+uint8_t parameterLength(uint8_t parameter)
+{
+	return parameter == 33 || parameter == 34 || parameter == 36 || parameter == 37 || parameter == 46 ? 1 : 2;
 }
 
 Frame response(CommandId command, uint8_t servo_id, uint16_t value = 0, uint8_t length = 0)
@@ -91,7 +96,7 @@ Frame response(CommandId command, uint8_t servo_id, uint16_t value = 0, uint8_t 
 	return frame;
 }
 
-uint64_t finishBoot(Controller &controller, const ProtectionConfig &config = validConfig())
+uint64_t finishBoot(Controller &controller, const ProtectionConfig &config = validConfig(), bool expect_verified = true)
 {
 	controller.setExpectedConfig(config);
 	controller.setServoId(ServoId);
@@ -117,11 +122,11 @@ uint64_t finishBoot(Controller &controller, const ProtectionConfig &config = val
 
 		const uint8_t parameter = request.payload[0];
 		const uint16_t value = expectedValue(parameter, config);
-		controller.acceptResponse(response(CommandId::ParamRead, ServoId, value, value > UINT8_MAX ? 2 : 1), now);
+		controller.acceptResponse(response(CommandId::ParamRead, ServoId, value, parameterLength(parameter)), now);
 	}
 
 	EXPECT_TRUE(controller.status().online);
-	EXPECT_TRUE(controller.status().config_verified);
+	EXPECT_EQ(controller.status().config_verified, expect_verified);
 	return now;
 }
 
@@ -304,24 +309,43 @@ TEST(Hx8Controller, GatesMotionOnArmingSafetyAndVerifiedCalibration)
 	EXPECT_NE(controller.update(input(now += Controller::MinimumCommandSpacingUs, true)).priority, RequestPriority::Target);
 }
 
-TEST(Hx8Controller, EveryZeroCalibrationSentinelProhibitsMotion)
+TEST(Hx8Controller, RejectsMotionPowerAbovePersistentLimit)
 {
-	for (unsigned field = 0; field < 4; ++field) {
+	Controller controller;
+	const ProtectionConfig config = validConfig();
+	const uint64_t boot_complete = finishBoot(controller, config);
+	MotionCommand command = motion(2, boot_complete);
+	command.power_mw = config.power_limit_mw + 1;
+	controller.setTarget(command);
+	EXPECT_EQ(controller.status().command_result, static_cast<uint8_t>(OperationResult::Rejected));
+	EXPECT_NE(controller.update(input(boot_complete + Controller::MinimumCommandSpacingUs, true)).priority,
+		  RequestPriority::Target);
+}
+
+TEST(Hx8Controller, EveryUnsafeProtectionSettingProhibitsMotion)
+{
+	for (unsigned field = 0; field < 7; ++field) {
 		Controller controller;
 		ProtectionConfig config = validConfig();
 
 		if (field == 0) { config.stall_power_mw = 0; }
 
-		if (field == 1) { config.temperature_adc = 0; }
+		if (field == 1) { config.temperature_limit_c = 0; }
 
 		if (field == 2) { config.power_limit_mw = 0; }
 
 		if (field == 3) { config.current_limit_ma = 0; }
 
-		controller.setExpectedConfig(config);
-		controller.setTarget(motion(1));
+		if (field == 4) { config.response_enabled = 0; }
+
+		if (field == 5) { config.stall_release_enabled = 0; }
+
+		if (field == 6) { config.voltage_min_mv = 4000; }
+
+		const uint64_t boot_complete = finishBoot(controller, config, false);
 		EXPECT_FALSE(controller.status().config_verified);
-		PendingRequest request = controller.update(input(0, true));
+		controller.setTarget(motion(2, boot_complete));
+		PendingRequest request = controller.update(input(boot_complete + Controller::MinimumCommandSpacingUs, true));
 		EXPECT_NE(request.priority, RequestPriority::Target);
 	}
 }
@@ -347,7 +371,7 @@ TEST(Hx8Controller, BootPingsAndReadsCompleteConfigurationWithoutWriting)
 		ASSERT_EQ(request.command, CommandId::ParamRead);
 		seen[request.payload[0]] = true;
 		const uint16_t value = expectedValue(request.payload[0], config);
-		controller.acceptResponse(response(CommandId::ParamRead, ServoId, value, value > UINT8_MAX ? 2 : 1), now);
+		controller.acceptResponse(response(CommandId::ParamRead, ServoId, value, parameterLength(request.payload[0])), now);
 	}
 
 	for (uint8_t parameter : {33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 46}) {
@@ -375,7 +399,7 @@ TEST(Hx8Controller, ConfigurationMismatchPreventsVerification)
 
 		if (parameter == 42) { ++value; }
 
-		controller.acceptResponse(response(CommandId::ParamRead, ServoId, value, value > UINT8_MAX ? 2 : 1), now);
+		controller.acceptResponse(response(CommandId::ParamRead, ServoId, value, parameterLength(request.payload[0])), now);
 	}
 
 	EXPECT_FALSE(controller.status().config_verified);
@@ -432,7 +456,7 @@ TEST(Hx8Controller, PersistentWriteUsesPerItemReadbackAndCompletes)
 		ASSERT_EQ(request.command, CommandId::ParamRead);
 		EXPECT_EQ(request.payload[0], parameter);
 		const uint16_t value = expectedValue(parameter, config);
-		controller.acceptResponse(response(CommandId::ParamRead, ServoId, value, value > UINT8_MAX ? 2 : 1), now);
+		controller.acceptResponse(response(CommandId::ParamRead, ServoId, value, parameterLength(request.payload[0])), now);
 		++reads;
 	}
 

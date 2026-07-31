@@ -17,7 +17,7 @@ parameters:
       HX8_DEC_T: {description: {short: Deceleration duration ms}, type: int32, min: 0, reboot_required: true, default: 100}
       HX8_PWR_LIM: {description: {short: Run power limit mW}, type: int32, min: 0, reboot_required: true, default: 0}
       HX8_CFG_SPWR: {description: {short: Expected stall power mW}, type: int32, min: 0, reboot_required: true, default: 0}
-      HX8_CFG_TADC: {description: {short: Expected temperature ADC}, type: int32, min: 0, reboot_required: true, default: 0}
+      HX8_CFG_TEMP: {description: {short: Expected temperature limit deg C}, type: int32, min: 0, reboot_required: true, default: 0}
       HX8_CFG_PWR: {description: {short: Expected power limit mW}, type: int32, min: 0, reboot_required: true, default: 0}
       HX8_CFG_CUR: {description: {short: Expected current limit mA}, type: int32, min: 0, reboot_required: true, default: 0}
       HX8_CFG_VMIN: {description: {short: Expected minimum voltage mV}, type: int32, min: 0, reboot_required: true, default: 9000}

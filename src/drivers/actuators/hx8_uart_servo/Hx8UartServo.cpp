@@ -17,6 +17,8 @@ namespace
 
 constexpr uint64_t WorkQueueCommissioningTimeoutUs = 5_s;
 constexpr uint64_t CliCommissioningTimeoutUs = 6_s;
+constexpr int32_t MinimumSupplyMv = 9000;
+constexpr int32_t MaximumSupplyMv = 12600;
 
 template<typename T>
 bool get_parameter(const char *name, T &value)
@@ -58,7 +60,7 @@ bool Hx8UartServo::load_parameters()
 	int32_t response{};
 	int32_t stall_release{};
 	int32_t stall_power{};
-	int32_t temperature_adc{};
+	int32_t temperature_limit_c{};
 	int32_t power_limit{};
 	int32_t current_limit{};
 	int32_t voltage_min{};
@@ -72,7 +74,7 @@ bool Hx8UartServo::load_parameters()
 	    || !get_parameter("HX8_MOVE_T", move) || !get_parameter("HX8_ACC_T", acceleration)
 	    || !get_parameter("HX8_DEC_T", deceleration) || !get_parameter("HX8_PWR_LIM", run_power)
 	    || !get_parameter("HX8_CFG_RSP", response) || !get_parameter("HX8_CFG_STL", stall_release)
-	    || !get_parameter("HX8_CFG_SPWR", stall_power) || !get_parameter("HX8_CFG_TADC", temperature_adc)
+	    || !get_parameter("HX8_CFG_SPWR", stall_power) || !get_parameter("HX8_CFG_TEMP", temperature_limit_c)
 	    || !get_parameter("HX8_CFG_PWR", power_limit) || !get_parameter("HX8_CFG_CUR", current_limit)
 	    || !get_parameter("HX8_CFG_VMIN", voltage_min) || !get_parameter("HX8_CFG_VMAX", voltage_max)
 	    || !get_parameter("HX8_CFG_BOOT", power_on_lock) || !get_parameter("HX8_ANG_QUD", quad_angle)
@@ -89,23 +91,23 @@ bool Hx8UartServo::load_parameters()
 				  && valid_u16(move) && move > acceleration + deceleration
 				  && std::isfinite(transition_time) && transition_time > 0.f
 				  && static_cast<float>(move) < transition_time * 1000.f;
-	const bool valid_protection = (response == 0 || response == 1)
-				      && (stall_release == 0 || stall_release == 1)
+	const bool valid_protection = response == 1
+				      && stall_release == 1
 				      && (power_on_lock == 0 || power_on_lock == 1)
-				      && valid_u16(stall_power) && valid_u16(temperature_adc)
+				      && valid_u16(stall_power) && valid_u16(temperature_limit_c)
 				      && valid_u16(power_limit) && valid_u16(current_limit)
-				      && valid_u16(voltage_min) && valid_u16(voltage_max)
+				      && voltage_min >= MinimumSupplyMv && voltage_max <= MaximumSupplyMv
 				      && voltage_min < voltage_max;
 
 	if (baud != 115200 || id < 0 || id > 254 || !valid_u16(run_power)
-	    || !valid_angles || !valid_timing || !valid_protection) {
+	    || run_power > power_limit || !valid_angles || !valid_timing || !valid_protection) {
 		return false;
 	}
 
 	_protection.response_enabled = static_cast<uint8_t>(response);
 	_protection.stall_release_enabled = static_cast<uint8_t>(stall_release);
 	_protection.stall_power_mw = static_cast<uint16_t>(stall_power);
-	_protection.temperature_adc = static_cast<uint16_t>(temperature_adc);
+	_protection.temperature_limit_c = static_cast<uint16_t>(temperature_limit_c);
 	_protection.power_limit_mw = static_cast<uint16_t>(power_limit);
 	_protection.current_limit_ma = static_cast<uint16_t>(current_limit);
 	_protection.voltage_min_mv = static_cast<uint16_t>(voltage_min);

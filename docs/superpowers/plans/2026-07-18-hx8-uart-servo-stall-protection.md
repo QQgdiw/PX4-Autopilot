@@ -482,7 +482,7 @@ git commit -m "feat[hx8]: add UART protocol codec"
 - Create: `src/lib/hx8_servo/Hx8ControllerTest.cpp`
 - Modify: `src/lib/hx8_servo/CMakeLists.txt`
 
-**Interfaces:** vendor parameter IDs are response 33, ID 34, baud 36, stall release 37, stall-power 38 mW, voltage low/high 39/40 mV, temperature 41 ADC, power 42 mW, current 43 mA, power-on lock 46.
+**Interfaces:** vendor parameter IDs are response 33, ID 34, baud 36, stall release 37, stall-power 38 mW, voltage low/high 39/40 mV, temperature limit 41 degrees C, power 42 mW, current 43 mA, power-on lock 46.
 
 ```cpp
 struct ProtectionConfig {
@@ -491,7 +491,7 @@ struct ProtectionConfig {
 	uint16_t stall_power_mw{0};
 	uint16_t voltage_min_mv{9000};
 	uint16_t voltage_max_mv{12600};
-	uint16_t temperature_adc{0};
+	uint16_t temperature_limit_c{0};
 	uint16_t power_limit_mw{0};
 	uint16_t current_limit_ma{0};
 	uint8_t power_on_lock{0};
@@ -524,7 +524,7 @@ public:
 };
 ```
 
-Zero stall power, temperature ADC, power, or current is an uncalibrated sentinel: `config_verified=false`, motion prohibited. Boot only reads. Persistent writes require fully disarmed, not prearmed, explicit commissioning, and per-item readback.
+Zero stall power, temperature limit, power, or current is an uncalibrated sentinel: `config_verified=false`, motion prohibited. Boot only reads. Persistent writes require fully disarmed, not prearmed, explicit commissioning, and per-item readback.
 
 The documented protocol exposes no model or firmware-version field. The boot sequence therefore pings the configured ID and reads every required protection parameter; software verification is limited to ID, protocol behavior, and complete configuration match. The physical HX8-U45H-M model is a commissioning-record requirement.
 
@@ -562,7 +562,7 @@ git commit -m "feat[hx8]: add protected request scheduler"
 - Create: `src/drivers/actuators/hx8_uart_servo/hx8_uart_servo_main.cpp`
 - Modify: `boards/zeroone/x6/hybrid.px4board`
 
-**Interfaces:** consume `hx8_servo_command`, `actuator_armed`, `vehicle_control_mode`; publish `hx8_servo_status` and critical events. Parameters: `HX8_SER_CFG` EXT2; `HX8_BAUD=115200`; `HX8_ID=0`; `HX8_ANG_QUD=0` and `HX8_ANG_ROV=0` (equal angles are invalid until calibrated); `HX8_MOVE_T=1000`, `HX8_ACC_T=100`, `HX8_DEC_T=100` ms; `HX8_PWR_LIM=0` (uncalibrated/invalid); expected config `HX8_CFG_SPWR/TADC/PWR/CUR` default 0, `HX8_CFG_VMIN=9000`, `HX8_CFG_VMAX=12600`, `HX8_CFG_STL=1`, `HX8_CFG_RSP=1`, `HX8_CFG_BOOT=0`.
+**Interfaces:** consume `hx8_servo_command`, `actuator_armed`, `vehicle_control_mode`; publish `hx8_servo_status` and critical events. Parameters: `HX8_SER_CFG` EXT2; `HX8_BAUD=115200`; `HX8_ID=0`; `HX8_ANG_QUD=0` and `HX8_ANG_ROV=0` (equal angles are invalid until calibrated); `HX8_MOVE_T=1000`, `HX8_ACC_T=100`, `HX8_DEC_T=100` ms; `HX8_PWR_LIM=0` (uncalibrated/invalid); expected config `HX8_CFG_SPWR/TEMP/PWR/CUR` default 0, `HX8_CFG_VMIN=9000`, `HX8_CFG_VMAX=12600`, `HX8_CFG_STL=1`, `HX8_CFG_RSP=1`, `HX8_CFG_BOOT=0`.
 
 - [ ] **Step 1: Add build metadata and schema**
 

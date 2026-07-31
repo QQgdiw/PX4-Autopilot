@@ -20,6 +20,8 @@ constexpr uint8_t BootParameters[] {33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 46};
 constexpr uint8_t WritableParameters[] {33, 37, 38, 39, 40, 41, 42, 43, 46};
 constexpr uint8_t MovingFlag = 1u << 0;
 constexpr uint8_t ErrorAndProtectionFlags = 0xfc;
+constexpr uint16_t MinimumSupplyMv = 9000;
+constexpr uint16_t MaximumSupplyMv = 12600;
 
 uint16_t read16(const uint8_t *bytes)
 {
@@ -53,8 +55,11 @@ float adcToTemperature(uint16_t adc)
 
 bool Controller::calibrated(const ProtectionConfig &config)
 {
-	return config.stall_power_mw != 0 && config.temperature_adc != 0 && config.power_limit_mw != 0
-	       && config.current_limit_ma != 0;
+	return config.response_enabled == 1 && config.stall_release_enabled == 1
+	       && config.stall_power_mw != 0 && config.temperature_limit_c != 0
+	       && config.power_limit_mw != 0 && config.current_limit_ma != 0
+	       && config.voltage_min_mv >= MinimumSupplyMv && config.voltage_max_mv <= MaximumSupplyMv
+	       && config.voltage_min_mv < config.voltage_max_mv;
 }
 
 bool Controller::isByteParameter(uint8_t parameter)
@@ -93,7 +98,8 @@ void Controller::setTarget(const MotionCommand &command)
 {
 	if (command.sequence <= _last_target_sequence || command.type != 0 || !std::isfinite(command.target_angle_deg)
 	    || command.target_angle_deg < -180.f || command.target_angle_deg > 180.f
-	    || command.servo_id > 254 || command.servo_id != _servo_id || command.power_mw == 0
+	    || command.servo_id > 254 || command.servo_id != _servo_id
+	    || command.power_mw == 0 || command.power_mw > _expected.power_limit_mw
 	    || command.move_time_ms <= static_cast<uint32_t>(command.acceleration_time_ms)
 			+ static_cast<uint32_t>(command.deceleration_time_ms)) {
 		_status.command_accepted = false;
@@ -433,7 +439,7 @@ uint16_t Controller::expectedParameterValue(uint8_t parameter) const
 
 	case 40: return _expected.voltage_max_mv;
 
-	case 41: return _expected.temperature_adc;
+	case 41: return _expected.temperature_limit_c;
 
 	case 42: return _expected.power_limit_mw;
 
