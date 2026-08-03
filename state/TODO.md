@@ -24,10 +24,17 @@
 - [x] 完成消息生成测试、PX4 tests 与 `make hkust_nxt-dual_mini` 构建验证。
 - [x] 完成 mini 形态 epoch reset、Rate/Attitude/Velocity 缓存清理、Position source/nav-state
   epoch 和 vehicle/hybrid 双重形态门控复审。
-- [x] 确定机载车辆控制采用 MAVLink2 归一化 `MANUAL_CONTROL`，并编写 MAVLink 通信文档。
+- [x] 按原生PX4流程重写机载通信：外部定位、RC Position、Offboard、Mission/RTL与
+  可选`MANUAL_CONTROL`分离，并限定mini Rover正式Offboard为二维位置Go-to。
 - [x] 编写当前 uXRCE-DDS topics、QoS、时间/坐标和兼容性边界文档。
 - [ ] 由 QGC Agent 按 GUIDE 固定 `qgc_mini_rover` commit，完成四页实时曲线和参数编辑。
-- [ ] 机载程序按 MAVLink 文档实现单 writer、持续发送、命令 ACK/状态确认和断线恢复。
+- [ ] 机载程序按 MAVLink 文档实现VIO `ODOMETRY`、RC Position协同、Offboard Go-to、
+  命令ACK/最终状态确认和断线恢复。
+- [ ] 无SD卡时设置`SYS_DM_BACKEND=1`，验证RAM dataman、Mission每次启动重传及任务完成后
+  Rover显式退出Auto/停车/disarm流程。
+- [ ] 修复并实车验证Rover Direct RTL在持续landed时直接IDLE的问题；完成前禁止把
+  Rover RTL或Mission内RTL item配置成安全动作。
+- [ ] 实测VIO的NED/FRD坐标、延迟、covariance、reset、quality门控及停止发布故障场景。
 - [ ] 分别在 Quad/Rover 形态实测 `COM_RC_LOSS_T`、`COM_FAIL_ACT_T` 与所选
   `NAV_RCL_ACT`，确定产品失联时间线和动作。
 - [ ] 若启用正式 DDS/ROS 2 集成，从最终固件消息定义发布并锁定配套 `px4_msgs` commit。

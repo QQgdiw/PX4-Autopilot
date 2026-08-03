@@ -1,26 +1,29 @@
 # Mini Quad/Rover DDS 通信接口
 
-## 1. 文档范围和当前决策
+## 1. 文档范围与结论
 
-目标固件 `change_mini_v1.16.1` / `hkust_nxt-dual_mini` 已编译 PX4
-`uxrce_dds_client`。本文记录该固件当前实际暴露的 uXRCE-DDS/ROS 2 接口，供机载电脑
-团队评估和联调。固件源码锚点为
+本文记录 `change_mini_v1.16.1` / `hkust_nxt-dual_mini` 当前实际编译的
+uXRCE-DDS/ROS 2 接口。固件源码锚点为
 `2f5d1f003b3106060e70df012de59bfc3404837c`。
 
-当前项目的正式车辆控制链路已经选定为 MAVLink2 `MANUAL_CONTROL`，不是 DDS。DDS
-可用于标准状态、传感器和后续 ROS 2 集成，但目前不能替代全部 mini 功能，原因包括：
+DDS 和 MAVLink 可以完成相似的数据流，但它们不是同一套 wire protocol：
 
-- 没有独立 `HybridVehicleStatus` DDS topic；
-- 没有 `RoverVelocitySetpoint` 或 mini 专用 Rover 控制 topic；
-- 没有四个 Rover tuning status DDS topic；
-- 没有高频 gimbal manager DDS input；
-- `/fmu/in/manual_control_input` 缺少语义正确的 DDS input source 枚举；
-- mini 自定义 `VehicleStatus` 需要精确匹配的 `px4_msgs`，当前尚未发布该配套仓库。
+| 需求 | DDS topic | 控制权 |
+| --- | --- | --- |
+| VIO/SLAM 提供 local NED 位姿/速度 | `/fmu/in/vehicle_visual_odometry` | 不改变；进入 EKF2 |
+| 物理 RC 在 Position 模式操控 | VIO 输入 + 物理 RC | 物理 RC/PX4 |
+| Quad/Rover local position Offboard | `offboard_control_mode` + `trajectory_setpoint` | ROS 2 节点 |
+| 模式、arm、RTL、形态命令 | `/fmu/vehicle_command` service 或 command topic | 按目标模式转交 PX4 |
+| 完整 Mission 上传 | 当前 DDS topic 集合不提供 | 使用 MAVLink Mission Protocol |
 
-因此本文描述“已有能力和边界”，不授权机载程序同时用 DDS 与 MAVLink 向同一控制功能
-写入数据。
+本项目不把 `/fmu/in/manual_control_input` 当作正式 DDS 控制入口。它是手动输入数据，不是
+外部定位或 Offboard setpoint，而且当前消息没有语义正确的 DDS source 枚举。
 
-## 2. 架构和版本
+本文对 Rover 的正式 Offboard 范围只描述 local NED 二维位置 Go-to。当前原生控制器内部
+仍有其他 `TrajectorySetpoint` 分支，但 mini 没有专用、经过本项目验收的
+`RoverVelocitySetpoint` 或“前向速度 + yaw-rate”接口，本文不把它们列为产品契约。
+
+## 2. 架构、传输与版本
 
 ```text
 PX4 uORB
@@ -30,46 +33,30 @@ PX4 uORB
    <-> DDS / ROS 2 nodes
 ```
 
-PX4 本分支内置的 Micro XRCE-DDS Client project version 为 2.4.0，与最新 v3.x Agent
-不兼容。部署基线应固定 `eProsima/Micro-XRCE-DDS-Agent` tag `v2.4.2`，不能只写
-“安装最新版”。
+当前硬件目标已编译 `uxrce_dds_client`，但默认 `UXRCE_DDS_CFG=0`，真机不会自动启动。
+该目标未编译 NuttX network stack，UDP transport 被条件编译排除；CLI 即使显示
+`-t udp` 也不能让当前固件获得网络 DDS。真机 DDS 只支持串口。
 
-硬件目标默认 `UXRCE_DDS_CFG=0`，所以模块虽然已编译，但不会在真机自动启动。配置一个
-串口并重启后，由自动生成的 `rc.serial` 唯一启动 client；不要再从 airframe 脚本重复
-启动第二个实例。
+PX4 内置 Micro XRCE-DDS Client project version 为 2.4.0，部署固定使用
+`eProsima/Micro-XRCE-DDS-Agent` tag `v2.4.2`，不要直接替换为不兼容的 v3.x Agent。
 
-## 3. px4_msgs 兼容性前置条件
+### 2.1 `px4_msgs` 前置条件
 
-DDS 类型必须与固件构建时的 `.msg` 定义匹配。当前固件的
-`msg/versioned/VehicleStatus.msg` 为 `MESSAGE_VERSION=1`，并包含自定义字段
-`is_quad_rover`。它在 DDS 中的实际 topic 名为：
+DDS 类型必须与固件构建时的 `.msg` wire schema 一致。当前
+`msg/versioned/VehicleStatus.msg` 是 `MESSAGE_VERSION=1`，但含项目自定义字段
+`is_quad_rover`，运行时 topic 为：
 
 ```text
 /fmu/out/vehicle_status_v1
 ```
 
-官方包的可复现基线是 `PX4/px4_msgs` 的 `release/1.16`，提交
-`392e831c1f659429ca83902e66820d7094591410`。静态对比当前 DDS 使用的 44 种消息类型，
-其中 42 种与该提交逐字相同；`ActuatorMotors` 只多了不影响 wire schema 的 `# TOPICS`
-注释，而 `VehicleStatus` 实际多了 `is_quad_rover` 字段。因此官方 release/1.16 只能作为
-package 骨架，不能直接作为本固件的最终 `px4_msgs`。
+官方骨架固定为 `PX4/px4_msgs release/1.16 @
+392e831c1f659429ca83902e66820d7094591410`。它的 `VehicleStatus` 没有该字段，不能直接
+作为本固件最终接口包。短期联调必须从本分支最终消息定义生成并锁定项目
+`px4_msgs` commit；正式发布前还必须递增 `MESSAGE_VERSION` 并提供 v1 translation，
+避免同一个 `_v1` topic 名承载不同 schema。
 
-更重要的是，自定义字段加入后 `VehicleStatus.MESSAGE_VERSION` 仍保持 1。这违反 versioned
-message 的演进约定：当前 ROS 2 端既无法通过 topic 后缀识别这份自定义 schema，也不能
-依赖官方 v1 translation。短期必须精确同步本固件的消息定义；长期应把自定义 schema
-升级为新版本并提供 v1 到新版本的显式 translation。
-
-DDS 正式集成前必须完成以下交付之一：
-
-1. 从最终 `change_mini_v1.16.1` 固件提交导出完整消息定义，生成并发布一个固定 commit
-   的配套 `px4_msgs`；或
-2. 提供显式支持该自定义版本的 message translation package，并完成双向类型测试。
-
-机载工程必须把该 `px4_msgs` commit 写入依赖锁定文件。不能按“同为 PX4 v1.16”推断
-兼容，也不能混用 upstream `VehicleStatus` 和本项目的其他消息定义。在配套 artifact
-交付前，DDS 可以做传输层检查，但不能宣称完整 ROS 2 接口已验收。
-
-生成候选配套包时，先固定官方 package 骨架，再用固件源码覆盖消息定义：
+候选包生成流程：
 
 ```bash
 mkdir -p ~/ros2_ws/src
@@ -80,11 +67,9 @@ cd ~/ros2_ws
 colcon build --packages-select px4_msgs
 ```
 
-随后必须把覆盖结果提交到项目 fork 并锁定该 commit，不能把未提交的工作区当作发布物。
-生成后应逐项检查本固件实际使用的 44 种消息类型；已注释的
-`VehicleAngularVelocity` 不在有效 DDS 类型集合中。
+覆盖结果必须提交到项目 fork 并锁定 commit，不能把未提交工作区当成发布物。
 
-## 4. 物理接口和参数
+## 3. 串口配置与 Agent
 
 HKUST NXT-Dual 串口映射：
 
@@ -98,7 +83,7 @@ HKUST NXT-Dual 串口映射：
 | GPS2 | `/dev/ttyS2` | 202 |
 | Radio Controller | `/dev/ttyS4` | 300 |
 
-推荐将 TELEM2 专用于 DDS，示例配置：
+TELEM2 默认空闲且默认 baud 为 921600，是当前首选：
 
 ```text
 param set MAV_1_CONFIG 0
@@ -115,46 +100,17 @@ param save
 reboot
 ```
 
-`MAV_1_CONFIG=0` 只是释放示例中的 TELEM2。实际安装时要检查全部 `MAV_n_CONFIG` 和其他
-串口驱动，确保没有任何模块占用同一设备。MAVLink USB 可以与 DDS TELEM2 并行使用。
+`MAV_1_CONFIG=0` 只是释放示例中的 TELEM2；还要检查全部串口驱动没有占用同一设备。
+MAVLink USB 可与 DDS TELEM2 并行。一个物理串口不能同时运行 MAVLink 和 DDS。
 
-参数定义和默认值：
-
-| 参数 | 默认 | 语义 |
-| --- | ---: | --- |
-| `UXRCE_DDS_CFG` | 0 | 0=禁用；选择串口后重启生效 |
-| `UXRCE_DDS_DOM_ID` | 0 | 必须与机载端 `ROS_DOMAIN_ID` 一致 |
-| `UXRCE_DDS_KEY` | 1 | 非零；同一 Agent 下每个 client 唯一 |
-| `UXRCE_DDS_PTCFG` | 0 | 0 默认、1 localhost-only、2 自定义 participant |
-| `UXRCE_DDS_SYNCT` | 1 | DDS/PX4 消息时间戳同步 |
-| `UXRCE_DDS_SYNCC` | 0 | 不修改飞控系统时钟 |
-| `UXRCE_DDS_TX_TO` | 3 s | 无发送数据后重建连接；小于 1 禁用 |
-| `UXRCE_DDS_RX_TO` | -1 | 无接收数据重建连接；小于 1 禁用 |
-
-通用源码为 Ethernet 目标定义了 `UXRCE_DDS_PRT=8888` 和
-`UXRCE_DDS_AG_IP=2130706433`（127.0.0.1），但二者带 `requires_ethernet` 条件，未进入
-`hkust_nxt-dual_mini` 的生成参数。该目标的 NuttX 配置明确为 `CONFIG_NET is not set`，
-因此 `UXRCE_DDS_CLIENT_UDP` 未定义，UDP transport 初始化代码被条件编译排除；CLI
-帮助仍可能显示 `-t udp`，但该目标会初始化失败。`UXRCE_DDS_CFG` 也不提供 Ethernet
-选项。当前真机 DDS 只支持串口，若未来需要 UDP，必须新增并重新构建带网络栈和实际
-Ethernet 硬件支持的独立目标。
-
-默认端口占用为 GPS1=`GPS_1_CONFIG=201`、TELEM1=`MAV_0_CONFIG=101`、RC=
-`RC_PORT_CONFIG=300`。TELEM2 默认空闲且 `SER_TEL2_BAUD=921600`，因此是当前首选。
-GPS1/GPS2/RC 的默认 baud 为 0，未经显式配置不能用于 client；TELEM3/4 默认仅 57600，
-不适合作为高吞吐 DDS 的默认选择。
-
-## 5. Agent 启动
-
-机载 Linux 上先启动 Agent，再给飞控上电或重启 client：
+机载 Linux 启动 Agent：
 
 ```bash
 export ROS_DOMAIN_ID=0
 MicroXRCEAgent serial --dev /dev/ttyUSB0 -b 921600
 ```
 
-`/dev/ttyUSB0` 应替换为连接飞控 TELEM2 的稳定 udev symlink。Agent 日志应出现 client
-session 和 DDS entities 创建成功。飞控 NSH 验证：
+实际部署使用稳定 udev symlink。飞控用以下命令确认连接：
 
 ```text
 uxrce_dds_client status
@@ -162,36 +118,260 @@ param show UXRCE_DDS_CFG
 param show SER_TEL2_BAUD
 ```
 
-手工 `uxrce_dds_client start -t serial ...` 仅用于诊断；持久部署以参数和 `rc.serial`
-为准，避免重启行为与手工命令不一致。
+持久启动由参数和 `rc.serial` 负责。手工 `uxrce_dds_client start` 只用于诊断，不能与
+自动实例并行。
 
-## 6. Topic 名称、QoS 和队列
+## 4. Topic 方向、QoS 与时间
 
-`dds_topics.yaml` 中的 `/fmu/out` 表示 PX4 发布到 DDS，`/fmu/in` 表示 PX4 从 DDS 接收。
-XRCE wire entity 名以 `rt/` 为前缀；ROS 2 CLI 中显示为普通 `/fmu/...` 名称。
-当前有效配置包含 24 个 `/fmu/out`、27 个 `/fmu/in`，`subscriptions_multi` 为 0。
+`/fmu/out` 表示 PX4 发布到 DDS，`/fmu/in` 表示 PX4 从 DDS 接收。当前配置包含 24 个
+`/fmu/out`、27 个 `/fmu/in`。
 
-当前实现的 QoS 是固定代码行为：
+`dds_topics.yaml` 中的配置名是 `/fmu/out/vehicle_status`；代码生成器根据
+`MESSAGE_VERSION=1` 把运行时 ROS 2 topic 改为 `/fmu/out/vehicle_status_v1`。应用只能使用
+运行时带版本后缀的名称。
 
-| 方向 | PX4 entity QoS | 应用端建议 |
+| 方向 | PX4 QoS | ROS 2 端建议 |
 | --- | --- | --- |
-| `/fmu/out` | Best Effort、Transient Local、Keep Last、depth=0 | subscriber 使用 Best Effort；Volatile 可兼容，不假定连接后立即收到历史样本 |
-| `/fmu/in` | Best Effort、Volatile、Keep Last、depth=2倍对应 uORB queue | publisher 使用 Best Effort/Volatile，队列保持很小并持续刷新控制 setpoint |
+| `/fmu/out` | Best Effort、Transient Local、Keep Last、depth=0 | Best Effort；不依赖历史样本 |
+| `/fmu/in` | Best Effort、Volatile、Keep Last | Best Effort/Volatile，小队列、持续刷新 |
 
-XRCE 创建 entity 使用可靠 control stream，不代表 topic payload 是 Reliable。ROS 2 默认
-Reliable subscription 可能与 Best Effort publisher 不兼容；推荐显式使用
-`rclcpp::SensorDataQoS()` 或等价的 Best Effort 配置，并按 topic 需要选择 durability。
+推荐使用 `rclcpp::SensorDataQoS()` 或等价 Best Effort 配置。XRCE control stream 可靠不
+代表 topic payload 是 Reliable。PX4 `/fmu/out` 单 topic 的 client poll 上限约 100 Hz，
+实际还受源 topic、串口带宽和 Best Effort 丢包影响。
 
-所有 `/fmu/out` uORB subscription 的最小 poll interval 固定为 10 ms，所以单 topic 的
-client 侧发送上限约为 100 Hz，实际频率还受源 topic 更新率、串口带宽和 Best Effort
-丢包影响。
-即使 PX4 writer 声明 Transient Local，当前 depth 为 0，业务启动仍必须等待一帧新的
-有效状态并执行 freshness 检查，不能把“能发现 topic”当成已经获得初始状态。
+`UXRCE_DDS_SYNCT=1` 时，client 在 ROS/Agent 时钟与 PX4 HRT 之间转换
+`timestamp`、`timestamp_sample`。外部输入应使用 ROS 时钟域的采样微秒时间，并监视
+`/fmu/out/timesync_status`。输入 timestamp 为 0 会被替换成接收时刻，虽可工作但会丢失
+源采样延迟信息，不用于正式 VIO 或控制验收。
 
-除 `VehicleStatus` 外，当前列表内消息的 `MESSAGE_VERSION` 为 0，所以 topic 没有版本
-后缀；`VehicleStatus` 的运行时名称必须使用 `/fmu/out/vehicle_status_v1`。
+坐标约定：
 
-## 7. PX4 发布的 topics
+- world：NED，x=North、y=East、z=Down；
+- body：FRD，x=Forward、y=Right、z=Down；
+- quaternion：Hamilton `[w,x,y,z]`，body FRD 到 world frame；
+- ROS ENU/FLU 必须完整转换位置、速度、姿态、角速度和 covariance。
+
+## 5. VIO/SLAM 提供 local NED 定位
+
+### 5.1 输入 topic
+
+ROS 2 节点以传感器实际频率发布：
+
+```text
+/fmu/in/vehicle_visual_odometry
+px4_msgs/msg/VehicleOdometry
+```
+
+建议 30--50 Hz，并正确填写：
+
+| 字段 | local NED VIO 约定 |
+| --- | --- |
+| `timestamp_sample` | VIO 采样时刻；不得使用未来时间 |
+| `timestamp` | ROS 节点发布时刻 |
+| `pose_frame` | `POSE_FRAME_NED` |
+| `position[3]` | North/East/Down，m |
+| `q[4]` | body FRD 到 NED |
+| `velocity_frame` | NED 速度用 `VELOCITY_FRAME_NED` |
+| `velocity[3]` | North/East/Down，m/s |
+| `angular_velocity[3]` | body FRD，rad/s |
+| variance 数组 | 真实方差；未知量用 NaN，不伪造高精度 |
+| `reset_counter` | 地图重置/重定位时递增 |
+| `quality` | `-1` 失败，`0` 未知/未设置，`1..100` 为质量 |
+
+只有真正与 North/East 对齐的 VIO world frame 才使用 `POSE_FRAME_NED`。任意初始航向
+的 SLAM world frame 应使用 `POSE_FRAME_FRD`，并与 EKF yaw 配置一致。
+
+虽然 YAML 中存在 `/fmu/in/vehicle_mocap_odometry`，但当前 mini 目标的 EKF2 只订阅
+`vehicle_visual_odometry`；会消费 mocap topic 的 LPE 和 `attitude_estimator_q` 在该目标
+均被禁用。因此 VIO、SLAM 或 motion-capture 只要目的是给当前 EKF2 提供外部里程计，
+都必须发布到 `/fmu/in/vehicle_visual_odometry`。
+
+### 5.2 EKF2 与状态确认
+
+`EKF2_EV_CTRL` bits 与 MAVLink 文档一致：水平位置=1、垂直位置=2、三维速度=4、yaw=8。
+例如水平位置 + 速度为 `5`，再融合视觉 yaw 为 `13`。是否融合高度/yaw、
+`EKF2_EV_DELAY`、noise 和 `EKF2_HGT_REF` 必须按传感器质量和实测延迟确定。
+
+默认 `EKF2_EV_QMIN=0` 不执行 quality 门控。即使消息为 `quality=-1`，有限测量仍可能
+被融合。VIO 能提供可靠质量时建议设置 `EKF2_EV_QMIN>=1` 并实测阈值；VIO 故障时节点
+必须停止发布有限测量，不能只修改 quality 后继续发送。
+
+外部定位只提供测量，不转移控制权。确认以下输出后再允许 Position/Offboard：
+
+- `/fmu/out/vehicle_local_position`
+- `/fmu/out/vehicle_odometry`
+- `/fmu/out/estimator_status_flags`
+- `/fmu/out/failsafe_flags`
+
+VIO-only local NED 不天然提供纬经度或 global Home。标准 PX4 RTL 仍要求有效 global
+position 和 Home。
+
+`/fmu/in/aux_global_position` 是当前 DDS 的辅助 global position 输入，需配合
+`EKF2_AGP_CTRL` 和真实 WGS84/uncertainty 使用。当前实现只持续融合水平经纬度；参数元数据
+中的 vertical bit 尚未形成持续高度融合。该输入也没有完整 GNSS fix、卫星、速度或航向
+语义，代码不会替发送端拒绝所有 invalid/stale 组合。发布端必须先校验有效性和新鲜度，
+不能把它当成完整外置 GPS，也不能靠固定 global origin 伪造持续有效定位。
+
+## 6. 物理 RC + Position 模式
+
+“机载电脑定位、遥控器操控”不需要 DDS 控制 setpoint：
+
+1. 设置 `COM_RC_IN_MODE=0`，只使用物理 RC。
+2. ROS 2 节点持续发布 `vehicle_visual_odometry`。
+3. 确认 EKF2 local position/velocity 有效。
+4. 用 RC 模式开关进入 Position，或经 `vehicle_command` 请求 Position。
+5. 不发布 `/fmu/in/manual_control_input`、`offboard_control_mode` 或
+   `trajectory_setpoint`。
+
+经 DDS 请求 Position 时，发送 `VEHICLE_CMD_DO_SET_MODE`：`param1=1`、`param2=3`、
+`param3=0`。一次性命令优先使用第 8 节的 `/fmu/vehicle_command` service；也可发布
+`/fmu/in/vehicle_command` 并订阅 `/fmu/out/vehicle_command_ack`。最终模式以新的
+`/fmu/out/vehicle_status_v1.nav_state` 为准。
+
+## 7. Offboard local position
+
+### 7.1 公共流程
+
+ROS 2 节点必须同时以 10--20 Hz 发布：
+
+```text
+/fmu/in/offboard_control_mode
+/fmu/in/trajectory_setpoint
+```
+
+先连续发布至少 1 s，再通过 `/fmu/vehicle_command` service 或
+`/fmu/in/vehicle_command` topic 请求 Offboard：
+
+- command：`VEHICLE_CMD_DO_SET_MODE`
+- `param1=1`、`param2=6`、`param3=0`
+- `target_system=1`、`target_component=1`
+- 独立 `source_system/source_component`
+- `from_external=true`
+
+`OffboardControlMode` 只设置 `position=true`，其余控制位为 false。每帧 timestamp 必须
+更新；`TrajectorySetpoint` 未使用的所有字段填 NaN。模式切换会清除旧目标，因此进入
+Offboard 后必须收到一帧新的 `TrajectorySetpoint` 才能产生有效 Rover 输出。ACK 后还要
+确认 `vehicle_status_v1.nav_state` 已进入 Offboard。
+
+当前默认 `COM_OF_LOSS_T=1 s`，丢失动作由 `COM_OBL_RC_ACT` 决定。停止节点、暂停 Agent、
+拔串口和 VIO 失效必须分别测试，不能只验证正常轨迹。
+
+### 7.2 Quad 与 Rover 字段
+
+| 字段 | Quad position | Rover position Go-to |
+| --- | --- | --- |
+| `position[0]` | North 目标 | North 目标 |
+| `position[1]` | East 目标 | East 目标 |
+| `position[2]` | Down 目标 | NaN |
+| `velocity[]` | 全 NaN | 全 NaN |
+| `acceleration[]` | 全 NaN | 全 NaN |
+| `yaw` | 有限目标或 NaN | NaN |
+| `yawspeed` | NaN | NaN |
+
+Rover 的 `DifferentialPosControl` 消费 `OffboardControlMode.position` 和
+`TrajectorySetpoint.position[0:1]`，再进入原生二维 Go-to/path 控制；巡航速度上限来自
+`RO_SPEED_LIM`。
+
+`/fmu/in/goto_setpoint` 只被 Multicopter `GotoControl` 消费，Rover 不订阅它。不要因为
+topic 名为 Go-to 就把它用于 Rover。Rover 的正确 DDS Go-to 入口是本节的
+`OffboardControlMode + TrajectorySetpoint`。
+
+本项目不把 velocity/attitude/body-rate 分支列为 mini Rover 产品接口。不得用低层
+`actuator_motors`、thrust 或 torque topic 绕过原生控制器和 mini 输出安全门控。
+
+## 8. Mission、RTL 与命令
+
+当前 client 编译了可靠请求/响应的 ROS 2 service：
+
+```text
+/fmu/vehicle_command
+px4_msgs/srv/VehicleCommand
+```
+
+Arm、模式和 RTL 等一次性命令优先用该 service，response 为 `VehicleCommandAck`。当前
+实现只保存一个 pending command，并仅以 command ID 和 ACK 时间匹配；调用端必须严格
+串行、同一时间只保留一个请求并设置超时。另有一个尚未通过本项目实机验收的源码风险：
+service pending flag 没有显式初始化。因此正式部署前必须做首次调用、拒绝、超时和重连
+测试；若 service 未通过验收，使用 `/fmu/in/vehicle_command` topic，并从
+`/fmu/out/vehicle_command_ack` 按 command、source/target 和 timestamp 关联结果。
+
+常用 `VehicleCommand` payload：
+
+| 操作 | command | 关键参数 |
+| --- | --- | --- |
+| Arm/disarm | `VEHICLE_CMD_COMPONENT_ARM_DISARM` (400) | `param1=1/0`, `param2=0` |
+| Position | `VEHICLE_CMD_DO_SET_MODE` (176) | `param1=1`, `param2=3`, `param3=0` |
+| Offboard | `VEHICLE_CMD_DO_SET_MODE` (176) | `param1=1`, `param2=6`, `param3=0` |
+| Auto Mission | `VEHICLE_CMD_DO_SET_MODE` (176) | `param1=1`, `param2=4`, `param3=4` |
+| Quad RTL | `VEHICLE_CMD_NAV_RETURN_TO_LAUNCH` (20) | 其余参数为 0 |
+| Quad/Rover | `VEHICLE_CMD_DO_VTOL_TRANSITION` (3000) | `param1=3/4` |
+
+正常 disarm 不使用强制 magic value。ACK 后分别用 `vehicle_status_v1.arming_state`、
+`nav_state` 和 `vehicle_type` 确认最终状态，不能只依赖 service 返回成功。
+
+当前 `dds_topics.yaml` 没有 Mission item 上传/下载 topics，因此 DDS 节点不能实现完整
+MAVLink Mission Protocol。推荐流程：
+
+1. 用 QGC 或 MAVLink 程序上传并确认 mission；
+2. DDS 节点可用 `VehicleCommand` 请求 Auto Mission；
+3. 由 PX4 Navigator 生成目标并执行；
+4. 从 `vehicle_status_v1`、`position_setpoint_triplet` 和 ACK 监视状态。
+
+本机没有 SD 卡时，默认 dataman 文件后端无法可靠保存任务。设置
+`SYS_DM_BACKEND=1`、保存并重启，再用 `dataman status` 确认 RAM backend；Mission、
+Fence 和 Rally 会在重启后丢失，因此每次启动都要重新上传并确认。
+
+Auto Mission 模式命令为 `VEHICLE_CMD_DO_SET_MODE`，`param1=1`、`param2=4`、
+`param3=4`。Quad 主动 RTL 可发送 `VEHICLE_CMD_NAV_RETURN_TO_LAUNCH`（20）。两者都必须
+先确认所需定位有效，并在 ACK 后确认实际 nav state。Mission 执行期间禁止切换
+Quad/Rover；Rover 到达最后一项后可能继续 AUTO_MISSION 且 armed，业务端必须显式退出
+Auto、停车并按安全条件 disarm。
+
+当前 mini Rover 的 Direct RTL 会因 Rover 持续 `landed=true` 而直接进入 IDLE，不生成
+返航轨迹，即使 ACK Accepted 且 nav state 显示 AUTO_RTL。Mission 中的 RTL item 同样
+受影响。修复并实车验证前，Rover RTL 不得作为命令或 failsafe 安全功能。
+
+标准 RTL 要求 local/global position、local altitude 和 Home。只有 local VIO 时，不应
+请求标准 RTL；如需回到本地起点，应由 Offboard 节点发布 local position Go-to，并明确
+它不是 PX4 RTL。
+
+Quad/Rover 切换使用 `VEHICLE_CMD_DO_VTOL_TRANSITION`（3000），`param1=3` 为 Quad、
+`param1=4` 为 Rover。Quad -> Rover 仍受新鲜 landed 状态门控。任何命令都应填写
+timestamp、target/source、`from_external=true`，并关联
+`/fmu/out/vehicle_command_ack`。
+
+## 9. 当前状态与目标状态
+
+| 信息 | DDS output | 说明 |
+| --- | --- | --- |
+| armed、nav state、机型 | `/fmu/out/vehicle_status_v1` | 含 mini 自定义字段 |
+| current local position/velocity | `/fmu/out/vehicle_local_position` | EKF2 NED |
+| current odometry | `/fmu/out/vehicle_odometry` | 位姿、速度、frame |
+| current global position | `/fmu/out/vehicle_global_position` | RTL 前检查 |
+| Home | `/fmu/out/home_position` | RTL 前检查 |
+| attitude | `/fmu/out/vehicle_attitude` | body FRD 到 NED |
+| landing state | `/fmu/out/vehicle_land_detected` | Quad -> Rover 门控来源 |
+| control mode bits | `/fmu/out/vehicle_control_mode` | 当前控制层 |
+| Mission/RTL global target | `/fmu/out/position_setpoint_triplet` | Navigator triplet |
+| command result | `/fmu/out/vehicle_command_ack` | 还需状态确认 |
+
+当前 DDS 输出没有 `trajectory_setpoint`、`vehicle_local_position_setpoint`、
+`rover_position_setpoint` 或四个 Rover controller status。发送 Offboard 的节点必须保留
+自己最后一次有效 local 目标；DDS 不能回读一个权威 Rover local target。若需要实时
+Rover response/setpoint 调参，当前接口仍是 USB MAVLink 私有 tuning streams。
+
+DDS 中没有 `HybridVehicleStatus`。匹配本项目 `px4_msgs` 后，用
+`vehicle_status_v1` 判断形态：
+
+| 条件 | mini 形态 |
+| --- | --- |
+| `is_quad_rover=true`, `vehicle_type=VEHICLE_TYPE_ROTARY_WING` | Quad |
+| `is_quad_rover=true`, `vehicle_type=VEHICLE_TYPE_ROVER` | Rover |
+
+`/fmu/out/vtol_vehicle_status` 是原生 VTOL topic，mini 不把自己的形态真值写入该 topic，
+不能依赖它判断 Quad/Rover。
+
+## 10. 当前全部 `/fmu/out` topics
 
 | ROS 2 topic | 类型 `px4_msgs/msg/...` | 用途 |
 | --- | --- | --- |
@@ -204,7 +384,7 @@ client 侧发送上限约为 100 Hz，实际频率还受源 topic 更新率、�
 | `/fmu/out/failsafe_flags` | `FailsafeFlags` | failsafe 原因位 |
 | `/fmu/out/manual_control_setpoint` | `ManualControlSetpoint` | PX4 选中的手动输入，仅监视 |
 | `/fmu/out/message_format_response` | `MessageFormatResponse` | 消息格式查询回复 |
-| `/fmu/out/position_setpoint_triplet` | `PositionSetpointTriplet` | 导航位置目标 |
+| `/fmu/out/position_setpoint_triplet` | `PositionSetpointTriplet` | Navigator global 目标 |
 | `/fmu/out/sensor_combined` | `SensorCombined` | IMU 组合数据 |
 | `/fmu/out/timesync_status` | `TimesyncStatus` | 时间同步质量 |
 | `/fmu/out/vehicle_land_detected` | `VehicleLandDetected` | PX4 原生着陆检测 |
@@ -212,17 +392,17 @@ client 侧发送上限约为 100 Hz，实际频率还受源 topic 更新率、�
 | `/fmu/out/vehicle_control_mode` | `VehicleControlMode` | 当前控制层使能位 |
 | `/fmu/out/vehicle_command_ack` | `VehicleCommandAck` | `VehicleCommand` 结果 |
 | `/fmu/out/vehicle_global_position` | `VehicleGlobalPosition` | WGS84/global 状态 |
-| `/fmu/out/vehicle_gps_position` | `SensorGps` | GPS 原始/融合输入状态 |
+| `/fmu/out/vehicle_gps_position` | `SensorGps` | GPS 状态 |
 | `/fmu/out/vehicle_local_position` | `VehicleLocalPosition` | local NED 状态 |
-| `/fmu/out/vehicle_odometry` | `VehicleOdometry` | 里程计状态 |
-| `/fmu/out/vehicle_status_v1` | `VehicleStatus` v1 | armed、nav state、vehicle type、mini 标识 |
+| `/fmu/out/vehicle_odometry` | `VehicleOdometry` | 融合里程计状态 |
+| `/fmu/out/vehicle_status_v1` | `VehicleStatus` v1 | armed、nav state、mini 标识 |
 | `/fmu/out/airspeed_validated` | `AirspeedValidated` | 空速状态 |
-| `/fmu/out/vtol_vehicle_status` | `VtolVehicleStatus` | 原生 VTOL 状态；mini 形态不可依赖 |
+| `/fmu/out/vtol_vehicle_status` | `VtolVehicleStatus` | 原生 VTOL 状态；mini 不依赖 |
 | `/fmu/out/home_position` | `HomePosition` | Home |
 
-`/fmu/out/vehicle_angular_velocity` 在 YAML 中被注释，当前固件不会创建该 DDS topic。
+`/fmu/out/vehicle_angular_velocity` 在 YAML 中被注释，当前不会创建。
 
-## 8. PX4 接收的 topics
+## 11. 当前全部 `/fmu/in` topics
 
 | ROS 2 topic | 类型 `px4_msgs/msg/...` | 用途/限制 |
 | --- | --- | --- |
@@ -234,71 +414,32 @@ client 侧发送上限约为 100 Hz，实际频率还受源 topic 更新率、�
 | `/fmu/in/mode_completed` | `ModeCompleted` | 外部模式完成通知 |
 | `/fmu/in/config_control_setpoints` | `VehicleControlMode` | 外部 mode executor 配置 |
 | `/fmu/in/distance_sensor` | `DistanceSensor` | 外部距离传感器 |
-| `/fmu/in/manual_control_input` | `ManualControlSetpoint` | 原始手动输入；本项目不作为正式控制入口 |
+| `/fmu/in/manual_control_input` | `ManualControlSetpoint` | 非本项目正式控制入口 |
 | `/fmu/in/offboard_control_mode` | `OffboardControlMode` | Offboard heartbeat/控制位 |
 | `/fmu/in/onboard_computer_status` | `OnboardComputerStatus` | 机载电脑健康状态 |
 | `/fmu/in/obstacle_distance` | `ObstacleDistance` | 障碍距离 |
 | `/fmu/in/sensor_optical_flow` | `SensorOpticalFlow` | 光流输入 |
-| `/fmu/in/goto_setpoint` | `GotoSetpoint` | Go-to 目标 |
+| `/fmu/in/goto_setpoint` | `GotoSetpoint` | 仅 Quad/MC GotoControl |
 | `/fmu/in/telemetry_status` | `TelemetryStatus` | 外部遥测状态 |
-| `/fmu/in/trajectory_setpoint` | `TrajectorySetpoint` | PX4 Offboard 轨迹目标 |
-| `/fmu/in/vehicle_attitude_setpoint` | `VehicleAttitudeSetpoint` | 姿态目标 |
-| `/fmu/in/vehicle_mocap_odometry` | `VehicleOdometry` | mocap 里程计 |
-| `/fmu/in/vehicle_rates_setpoint` | `VehicleRatesSetpoint` | 角速度目标 |
+| `/fmu/in/trajectory_setpoint` | `TrajectorySetpoint` | Offboard 轨迹目标 |
+| `/fmu/in/vehicle_attitude_setpoint` | `VehicleAttitudeSetpoint` | 姿态目标；非 Rover 正式契约 |
+| `/fmu/in/vehicle_mocap_odometry` | `VehicleOdometry` | 当前 mini EKF2 不消费 |
+| `/fmu/in/vehicle_rates_setpoint` | `VehicleRatesSetpoint` | 角速度目标；非 Rover 正式契约 |
 | `/fmu/in/vehicle_visual_odometry` | `VehicleOdometry` | VIO 里程计 |
 | `/fmu/in/vehicle_command` | `VehicleCommand` | 标准 PX4 命令 |
-| `/fmu/in/vehicle_command_mode_executor` | `VehicleCommand` | mode executor 专用命令入口 |
-| `/fmu/in/vehicle_thrust_setpoint` | `VehicleThrustSetpoint` | 低层推力目标 |
-| `/fmu/in/vehicle_torque_setpoint` | `VehicleTorqueSetpoint` | 低层力矩目标 |
-| `/fmu/in/actuator_motors` | `ActuatorMotors` | 直接电机目标；不属于本项目控制接口 |
-| `/fmu/in/actuator_servos` | `ActuatorServos` | 直接舵机目标；不属于本项目控制接口 |
+| `/fmu/in/vehicle_command_mode_executor` | `VehicleCommand` | mode executor 专用入口 |
+| `/fmu/in/vehicle_thrust_setpoint` | `VehicleThrustSetpoint` | 低层推力；业务端禁用 |
+| `/fmu/in/vehicle_torque_setpoint` | `VehicleTorqueSetpoint` | 低层力矩；业务端禁用 |
+| `/fmu/in/actuator_motors` | `ActuatorMotors` | 直接电机；业务端禁用 |
+| `/fmu/in/actuator_servos` | `ActuatorServos` | 直接舵机；业务端禁用 |
 | `/fmu/in/aux_global_position` | `VehicleGlobalPosition` | 辅助 global position |
 
-`actuator_motors/servos`、thrust、torque 等低层 topic 的存在不等于业务程序有权直接使用。
-它们可能绕过本项目期望的 Rover/MC 控制层所有权、模式检查或 setpoint freshness 语义，
-当前机载程序不得向这些 topic 发布。
+低层 actuator、thrust、torque topics 的存在不代表机载业务程序有权使用。它们可能绕过
+Quad/Rover 原生控制器、模式检查、freshness 和 mini 形态输出门控。
 
-## 9. Mini 特有状态与命令边界
+## 12. 当前不存在的接口
 
-### 9.1 形态状态
-
-DDS 中没有 `HybridVehicleStatus`。匹配本项目 `px4_msgs` 后，可用
-`/fmu/out/vehicle_status_v1` 判断：
-
-| 条件 | 语义 |
-| --- | --- |
-| `is_quad_rover=true`, `vehicle_type=VEHICLE_TYPE_ROTARY_WING(1)` | Quad |
-| `is_quad_rover=true`, `vehicle_type=VEHICLE_TYPE_ROVER(3)` | Rover |
-
-必须检查消息 timestamp 新鲜度。`/fmu/out/vtol_vehicle_status` 是原生 VTOL topic；mini
-控制器不负责把自己的 Quad/Rover 状态写入该 topic，所以不能把它作为当前形态真值。
-MAVLink 正式链路使用 `EXTENDED_SYS_STATE`，详见 MAVLink 文档。
-
-### 9.2 VehicleCommand
-
-`/fmu/in/vehicle_command` 能传标准命令，并从 `/fmu/out/vehicle_command_ack` 得到结果。
-若只做实验，消息至少正确填写：
-
-- `timestamp`：当前同步时钟 us；
-- `command`：如 `VEHICLE_CMD_DO_VTOL_TRANSITION=3000`；
-- `param1`：Quad=3，Rover=4；
-- `target_system=1`、`target_component=1`；
-- 唯一的 `source_system/source_component`；
-- `from_external=true`。
-
-但当前产品命令也统一走 MAVLink，DDS 节点不得重复发布同一命令，否则 ACK 关联和控制
-所有权会变得不确定。
-
-### 9.3 ManualControlSetpoint
-
-`/fmu/in/manual_control_input` 直接映射到 uORB。消息只定义
-`SOURCE_RC` 和 `SOURCE_MAVLINK_0..5`，没有 `SOURCE_DDS`。填 `SOURCE_UNKNOWN` 会被
-manual selector 拒绝；伪装成 MAVLink source 虽可能通过当前实现，但会制造错误的
-来源语义和后续兼容风险。因此本项目不把它作为正式 DDS 车辆控制入口。
-
-### 9.4 当前不存在的接口
-
-下列名称不在 `dds_topics.yaml`，ROS 2 程序不能订阅/发布后假定其存在：
+以下名称不在 `dds_topics.yaml`，不能假定存在：
 
 - `/fmu/out/hybrid_vehicle_status`
 - `/fmu/in/rover_velocity_setpoint`
@@ -306,104 +447,29 @@ manual selector 拒绝；伪装成 MAVLink source 虽可能通过当前实现，
 - `/fmu/in/rover_rate_setpoint`
 - `/fmu/in/rover_attitude_setpoint`
 - `/fmu/in/rover_position_setpoint`
-- `/fmu/out/rover_rate_tuning_status`
-- `/fmu/out/rover_attitude_tuning_status`
-- `/fmu/out/rover_velocity_tuning_status`
-- `/fmu/out/rover_position_tuning_status`
+- `/fmu/out/rover_rate_status`
+- `/fmu/out/rover_attitude_status`
+- `/fmu/out/rover_velocity_status`
+- `/fmu/out/rover_position_status`
+- `/fmu/out/trajectory_setpoint`
 - `/fmu/in/gimbal_manager_set_manual_control`
 - `/fmu/in/gimbal_manager_set_attitude`
 
-若未来要正式使用 DDS 控制，应先新增有独立 source/epoch/freshness 语义的 mini 输入消息，
-并同时交付匹配的 `px4_msgs`、failsafe 设计和硬件测试；不能通过复用低层 actuator topic
-绕开该工作。
+上述四个 `rover_*_status` 是控制器实际 uORB 名称；私有
+`ROVER_*_TUNING_STATUS` 是 MAVLink 消息名，不是 DDS/uORB topic。云台连续控制和 Rover
+实时 tuning 仍使用 MAVLink。完整 Mission 上传同样使用 MAVLink；DDS `VehicleCommand`
+只能请求执行已存在的任务或模式。
 
-## 10. 时间戳和坐标系
+## 13. 联调顺序
 
-`UXRCE_DDS_SYNCT=1` 时，client 测量 Agent OS 与 PX4 HRT 的偏移。PX4 发往 DDS 时，
-只对名为 `timestamp`、`timestamp_sample` 的字段加上该偏移；DDS 发往 PX4 时，对非零
-值减去偏移并钳制到当前 HRT。输入时间戳为 0 时，代码会直接替换成接收时的当前 HRT，
-因此 0 是允许值，但会丢失源采样时刻和链路延迟信息。连续控制和严谨时效检查应填写
-Agent/ROS 时钟域的当前微秒值，不能靠恒填 0 掩盖陈旧数据。使用仿真时间时要确保
-Agent 和 node 的时间源设计一致。
+1. 固定 Agent 和项目 `px4_msgs` 版本，确认串口 session、entities、QoS 和 timesync。
+2. 只发布 VIO，核对 NED/FRD、尺度、variance、reset 和 EKF2 输出。
+3. `COM_RC_IN_MODE=0`，验证物理 RC Position；确认 VIO topic 不改变手动输入源。
+4. 以 exact-one-bit `position` 验证 Quad 三维、Rover 二维 Offboard，并注入 topic/Agent 断流。
+5. 无 SD 时确认 RAM dataman，再通过 MAVLink 上传 mission；有 global/Home 后只验收 Quad
+   RTL，当前 Rover RTL 记录为已知不可用。
+6. 验证 `VehicleCommandAck`、最终 nav state、形态状态和所有消息 freshness。
+7. 记录 DDS 当前缺失的 target/tuning/gimbal 接口，不用低层 topic 临时绕过。
 
-上述转换不会改变 PX4 的 HRT。`UXRCE_DDS_SYNCC=0` 时也不会设置 PX4 系统 realtime
-clock；即使显式启用 SYNCC，修改的也是 system clock，不是 HRT。
-
-监视以下状态：
-
-- 飞控 `uxrce_dds_client status` 中 session、同步和 payload 计数；
-- `/fmu/out/timesync_status` 的 offset 和 round-trip 质量；
-- 每个控制/命令消息的 timestamp 单调性和接收端新鲜度。
-
-PX4 不自动把 ROS 常用坐标系转换成自己的坐标系：
-
-- local world：NED，x=North、y=East、z=Down；
-- body：FRD，x=Forward、y=Right、z=Down；
-- `VehicleAttitude.q`：Hamilton 顺序 `[w,x,y,z]`，从 body FRD 旋转到 earth NED；
-- `VehicleOdometry`：必须读取 `pose_frame` 和 `velocity_frame`；pose 可为 NED 或
-  world-fixed FRD，velocity 还可为 body-fixed FRD，不能无条件按 NED 解读；
-- `TrajectorySetpoint`：NED，yaw/yawspeed 按 NED z 轴约定；
-- ROS ENU/FLU 数据必须在发布前显式转换，禁止只交换 x/y 或只对 z 取反。
-
-## 11. 验证步骤
-
-先从文档锚点源码构建目标；大段输出写入文件，只查看末尾结果：
-
-```bash
-cd /home/crocodile/PX4-Autopilot-change-mini
-make hkust_nxt-dual_mini >/tmp/hkust_nxt-dual_mini.log 2>&1
-tail -20 /tmp/hkust_nxt-dual_mini.log
-```
-
-飞控启动后检查自动配置和连接状态：
-
-```text
-param show -q UXRCE_DDS_CFG
-param show -q SER_TEL2_BAUD
-uxrce_dds_client status
-```
-
-在匹配的 `px4_msgs` 已交付并启动 Agent 后执行：
-
-```bash
-export ROS_DOMAIN_ID=0
-ros2 topic list | sort
-ros2 topic info -v /fmu/out/vehicle_status_v1
-ros2 topic echo --qos-reliability best_effort /fmu/out/vehicle_status_v1
-ros2 topic hz /fmu/out/vehicle_local_position --qos-reliability best_effort
-```
-
-保持飞控未解锁，可用全 false 的 `OffboardControlMode` 验证 `/fmu/in` 和零时间戳转换；
-随后在 NSH 执行 `listener offboard_control_mode 1`，不得用 actuator topic 做连通性测试：
-
-```bash
-ros2 topic pub --once --qos-reliability best_effort --qos-durability volatile \
-  /fmu/in/offboard_control_mode px4_msgs/msg/OffboardControlMode \
-  '{timestamp: 0, position: false, velocity: false, acceleration: false, attitude: false, body_rate: false, thrust_and_torque: false, direct_actuator: false}'
-```
-
-最低验收项：
-
-- 飞控 client 和 Agent 断开/重连后能够自动恢复，key/domain 不冲突；
-- topic list 与第 7、8 节一致，且出现 `vehicle_status_v1` 而非未版本化名称；
-- 已知 armed/nav/landed 状态在 ROS 2 侧字段和值一致；
-- Quad/Rover 切换时 `vehicle_status_v1` 的 `vehicle_type` 正确变化；
-- 坐标和时间戳通过静止、前进、右移/右转等已知动作核对；
-- 停止 Agent、拔串口、重启飞控后均不会产生陈旧控制输出；
-- 与 MAVLink 并行监视时只读状态一致，没有两个车辆控制 writer。
-
-## 12. 常见故障
-
-| 现象 | 优先检查 |
-| --- | --- |
-| `uxrce_dds_client not running` | `UXRCE_DDS_CFG` 是否为 0；是否保存并重启 |
-| Agent 无 client | 串口设备/交叉接线/地线/波特率；端口是否被 MAVLink 占用 |
-| Agent 有 session，ROS 无 topic | `ROS_DOMAIN_ID`、`UXRCE_DDS_DOM_ID`、participant 配置 |
-| 找不到 `vehicle_status` | 正确名称是 `/fmu/out/vehicle_status_v1` |
-| topic 存在但 echo 无数据 | subscription 是否错误使用 Reliable-only QoS |
-| 字段乱码或反序列化失败 | `px4_msgs` 与最终固件消息定义不匹配 |
-| 命令有发布无 ACK | target/source/from_external/timestamp、QoS 和 topic 名 |
-| 连接周期性重建 | 带宽、TX timeout、供电/地线、Agent v2/v3 不兼容 |
-
-所有“通过”声明都应记录固件 commit、`px4_msgs` commit、Agent 版本、ROS 2 版本、串口
-波特率和实际执行的测试项，不能只记录“能看到 topic”。
+本文只证明当前源码中的 topic 和数据流。尚未完成 ROS 2 Agent、VIO、串口、模式、实车
+运动或 failsafe 硬件验收时，不能宣称 DDS 控制链路已经通过整机测试。

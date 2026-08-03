@@ -39,9 +39,21 @@
 - 四个 MAVLink2 消息为 60100 Rate（LEN 27/CRC 147）、60101 Attitude
   （23/85）、60102 Velocity（43/217）、60103 Position（44/90）；MAVLink1
   不支持这些大于 255 的消息 ID。
-- 机载电脑正式车辆控制选用 MAVLink2 `MANUAL_CONTROL`；专用链路使用
-  `COM_RC_IN_MODE=1`，需要物理RC失效接管时才使用整源切换模式2，不能把车辆轴与
-  RC AUX1拆分到两个并行输入源。
+- `MANUAL_CONTROL` 只是 MAVLink 虚拟摇杆，不是机载控制的唯一入口。物理 RC 在
+  Position 模式操控时使用 `COM_RC_IN_MODE=0`，机载 VIO 只向 EKF2 提供测量；Offboard
+  使用标准 setpoint 链路，Mission/RTL 由 PX4 Navigator 执行。
+- mini 的正式 Rover Offboard 文档接口为 local NED 二维位置 Go-to：MAVLink 使用
+  `SET_POSITION_TARGET_LOCAL_NED`，DDS 使用 exact-one-bit position 的
+  `OffboardControlMode + TrajectorySetpoint.position[0:1]`。不把其他 worktree 的专用
+  前向速度+yaw-rate接口或当前内部未验收分支声明为产品契约。
+- 机载 VIO/SLAM 通过 MAVLink `ODOMETRY` 或 DDS
+  `/fmu/in/vehicle_visual_odometry` 输入 EKF2；外部定位不转移控制权。VIO-only local NED
+  不满足标准 RTL 对 global position 和 Home 的要求。
+- 当前mini Rover持续`landed=true`会让Direct RTL激活后直接进入IDLE；即使ACK Accepted且
+  显示AUTO_RTL也不产生返航轨迹。修复并实车验证前，Rover RTL及Mission内RTL item均不
+  得作为安全功能。
+- 无SD卡时dataman默认文件后端不能可靠保存Mission；必须设置`SYS_DM_BACKEND=1`并重启
+  使用RAM backend，Mission/Fence/Rally随重启丢失。
 - 当前DDS实际形态状态topic为`/fmu/out/vehicle_status_v1`；消息含自定义
   `is_quad_rover`字段，正式ROS 2集成必须锁定由本分支最终消息定义生成的
   `px4_msgs`，不得假定任意upstream v1.16定义兼容。
@@ -90,3 +102,11 @@
   MAVLink stream 配置；严谨验收只使用 MAVLink2 USB 链路。
 - 修改任何versioned DDS消息的字段或wire布局时必须同步递增`MESSAGE_VERSION`、提供旧版
   translation并发布匹配的`px4_msgs` commit；禁止在相同版本topic后缀下静默改变schema。
+- 通信文档必须把定位测量、手动输入、Offboard setpoint、Mission和failsafe分开描述；
+  禁止用`MANUAL_CONTROL`替代这些不同所有权链路，或声称外部定位输入会自动取得控制权。
+- DDS `/fmu/in/goto_setpoint`仅由Multicopter GotoControl消费，禁止写成Rover Go-to入口；
+  当前mini的EKF2也不消费`vehicle_mocap_odometry`，给EKF2的VIO/SLAM/mocap统一走
+  `vehicle_visual_odometry`。
+- MAVLink/DDS外部里程计quality语义为`-1`失败、`0`未知、`1..100`质量；默认
+  `EKF2_EV_QMIN=0`不门控quality，故障发送端必须停止有限测量，禁止只置负quality后继续
+  发布并假定EKF会拒绝。

@@ -155,3 +155,12 @@
   `/vehicle_status_v1`名称承载不同schema。已记录正式发布前必须升版和提供translation。
   同时确认`hkust_nxt-dual_mini`为`CONFIG_NET is not set`，不生成Ethernet参数且UDP
   transport初始化被编译排除；当前真机DDS仅支持串口。
+- 2026-08-03：纠正“MANUAL_CONTROL是唯一正式控制入口”的旧结论。按源码将机载配合
+  拆分为VIO/SLAM测量输入、物理RC Position、Offboard setpoint、Mission/RTL和可选虚拟
+  摇杆；MAVLink/DDS文档均只把Rover二维local NED position Go-to列为mini正式Offboard
+  契约。确认DDS `goto_setpoint`仅供MC，mini EKF2只消费`vehicle_visual_odometry`。
+- 2026-08-03：通信复审发现Rover Direct RTL在持续`landed=true`时直接进入IDLE，即使
+  Commander可ACK Accepted并显示AUTO_RTL；Mission RTL item同样受影响，已明确禁止作为
+  当前Rover安全功能。无SD时dataman默认文件后端不可依赖，Mission需
+  `SYS_DM_BACKEND=1`使用重启即丢失的RAM backend。另纠正外部里程计quality为-1失败、
+  0未知、1..100质量；默认`EKF2_EV_QMIN=0`不会按quality拒绝有限测量。

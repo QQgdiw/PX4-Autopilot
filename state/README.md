@@ -29,9 +29,15 @@
 - MAVLink 协议已发布到 `QQgdiw/mavlink:mini-rover-tuning-v1.16.1`，固定 commit 为
   `07c6964a8fcc364c49d394f0bf0275b9fc05857d`；PX4/QGC dialect 分别为
   `mini_rover`/`qgc_mini_rover`。
-- 机载电脑正式车辆控制采用 MAVLink2 归一化 `MANUAL_CONTROL`；完整身份、链路、
-  失联、双模切换、云台和调参消息契约位于
-  `docs/mini_vehicle_mavlink_communication.md`。
+- 机载通信按原生PX4所有权分流：VIO/SLAM只向EKF2提供定位，物理RC在Position操控，
+  Offboard接收机载setpoint，Mission/RTL由Navigator执行；`MANUAL_CONTROL`仅是可选虚拟
+  摇杆。完整MAVLink契约位于`docs/mini_vehicle_mavlink_communication.md`。
+- mini Rover正式Offboard接口限定为local NED二维位置Go-to；MAVLink使用
+  `SET_POSITION_TARGET_LOCAL_NED`，DDS使用`OffboardControlMode.position +
+  TrajectorySetpoint.position[0:1]`，不承诺前向速度+yaw-rate接口。
+- VIO-only可支持local Position和Offboard，但不能满足标准RTL的global/Home要求；当前
+  Rover Direct RTL还会因持续landed而直接IDLE，修复并实车验证前禁止作为安全功能。
+- 本机无SD卡时Mission需设置`SYS_DM_BACKEND=1`使用RAM dataman，任务数据重启即丢失。
 - 当前 uXRCE-DDS 能力、全部 topics、QoS、时间/坐标约定和已知缺口位于
   `docs/mini_vehicle_dds_communication.md`。DDS client 已编译但真机默认禁用；正式
   ROS 2 集成仍需要从最终固件消息定义生成并锁定配套 `px4_msgs`。官方 package 骨架
