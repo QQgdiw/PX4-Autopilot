@@ -4,3 +4,8 @@ px4_add_module(
 	SRCS
 		mini_vehicle_control.cpp
 )
+
+px4_add_unit_gtest(
+	SRC
+		MiniVehicleControlDiagnosticsTest.cpp
+)
