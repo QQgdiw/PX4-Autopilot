@@ -149,3 +149,9 @@
   `git diff --check`通过。上述检查不包含ROS 2 Agent、USB、RC接管、云台或整车实测。
 - 2026-08-03：首次创建并推送远端分支`origin/change_mini_v1.16.1`，upstream tracking
   配置成功；已推送固件源码提交`2f5d1f003b`和通信文档提交`c8fa199435`。
+- 2026-08-03：DDS二次审计固定官方package骨架为`PX4/px4_msgs release/1.16 @
+  392e831c1f659429ca83902e66820d7094591410`。44种有效DDS类型中，实际wire差异集中在
+  自定义`VehicleStatus.is_quad_rover`；该字段加入后`MESSAGE_VERSION`仍为1，会让相同
+  `/vehicle_status_v1`名称承载不同schema。已记录正式发布前必须升版和提供translation。
+  同时确认`hkust_nxt-dual_mini`为`CONFIG_NET is not set`，不生成Ethernet参数且UDP
+  transport初始化被编译排除；当前真机DDS仅支持串口。

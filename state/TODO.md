@@ -31,6 +31,8 @@
 - [ ] 分别在 Quad/Rover 形态实测 `COM_RC_LOSS_T`、`COM_FAIL_ACT_T` 与所选
   `NAV_RCL_ACT`，确定产品失联时间线和动作。
 - [ ] 若启用正式 DDS/ROS 2 集成，从最终固件消息定义发布并锁定配套 `px4_msgs` commit。
+- [ ] 正式发布DDS前为含`is_quad_rover`的`VehicleStatus`递增`MESSAGE_VERSION`，实现
+  upstream v1到新版本的translation并验证topic后缀与wire schema。
 - [ ] 实机示波器确认 H 桥 PWM 频率、0%/100% 占空比与失效低电平。
 - [ ] 刷入新固件后实机复测右摇杆右转、左摇杆左转及直行时两轮方向。
 - [ ] 实机确认 airborne 拒绝 Quad -> Rover、landed 接受及两方向控制器接管。

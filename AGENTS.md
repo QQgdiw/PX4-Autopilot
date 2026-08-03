@@ -45,6 +45,10 @@
 - 当前DDS实际形态状态topic为`/fmu/out/vehicle_status_v1`；消息含自定义
   `is_quad_rover`字段，正式ROS 2集成必须锁定由本分支最终消息定义生成的
   `px4_msgs`，不得假定任意upstream v1.16定义兼容。
+- DDS配套包可使用`PX4/px4_msgs release/1.16 @
+  392e831c1f659429ca83902e66820d7094591410`作为骨架；当前自定义
+  `VehicleStatus`增加字段后仍保留`MESSAGE_VERSION=1`，正式发布前必须升级消息版本并
+  提供显式translation，不能用相同`_v1` topic承载不同wire schema。
 
 【项目规范区域】
 
@@ -84,3 +88,5 @@
   时间戳；禁止用宽松时间窗口拼接。response 原始数据超过 500 ms 未更新时必须失效。
 - 四条 tuning stream 只能按 `MAV_CMD_SET_MESSAGE_INTERVAL` 请求启用，不得加入默认
   MAVLink stream 配置；严谨验收只使用 MAVLink2 USB 链路。
+- 修改任何versioned DDS消息的字段或wire布局时必须同步递增`MESSAGE_VERSION`、提供旧版
+  translation并发布匹配的`px4_msgs` commit；禁止在相同版本topic后缀下静默改变schema。

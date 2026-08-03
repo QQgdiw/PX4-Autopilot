@@ -34,7 +34,9 @@
   `docs/mini_vehicle_mavlink_communication.md`。
 - 当前 uXRCE-DDS 能力、全部 topics、QoS、时间/坐标约定和已知缺口位于
   `docs/mini_vehicle_dds_communication.md`。DDS client 已编译但真机默认禁用；正式
-  ROS 2 集成仍需要从最终固件消息定义生成并锁定配套 `px4_msgs`。
+  ROS 2 集成仍需要从最终固件消息定义生成并锁定配套 `px4_msgs`。官方 package 骨架
+  固定为`PX4/px4_msgs release/1.16 @ 392e831c1f...`；自定义`VehicleStatus`尚需从
+  version 1升级并提供translation，当前DDS不具备正式发布条件。
 - Differential mini 已提供 Rate 50 Hz、Attitude 30 Hz、Velocity 25 Hz、
   Position/Path 10 Hz 的按需 stream；未加入默认遥测配置，Quad/inactive 和陈旧
   response 使用有效位/NaN 明确失效。

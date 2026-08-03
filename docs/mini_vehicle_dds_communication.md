@@ -48,9 +48,16 @@ DDS 类型必须与固件构建时的 `.msg` 定义匹配。当前固件的
 /fmu/out/vehicle_status_v1
 ```
 
-截至本文编写时，项目没有已发布的 `QQgdiw/px4_msgs` 配套仓库。直接使用任意 upstream
-`PX4/px4_msgs` 分支，不能证明 `VehicleStatus` 的字段布局与本固件一致。即使 ROS 2
-类型名称相同，字段增删或顺序不同也可能导致反序列化错误或静默错读。
+官方包的可复现基线是 `PX4/px4_msgs` 的 `release/1.16`，提交
+`392e831c1f659429ca83902e66820d7094591410`。静态对比当前 DDS 使用的 44 种消息类型，
+其中 42 种与该提交逐字相同；`ActuatorMotors` 只多了不影响 wire schema 的 `# TOPICS`
+注释，而 `VehicleStatus` 实际多了 `is_quad_rover` 字段。因此官方 release/1.16 只能作为
+package 骨架，不能直接作为本固件的最终 `px4_msgs`。
+
+更重要的是，自定义字段加入后 `VehicleStatus.MESSAGE_VERSION` 仍保持 1。这违反 versioned
+message 的演进约定：当前 ROS 2 端既无法通过 topic 后缀识别这份自定义 schema，也不能
+依赖官方 v1 translation。短期必须精确同步本固件的消息定义；长期应把自定义 schema
+升级为新版本并提供 v1 到新版本的显式 translation。
 
 DDS 正式集成前必须完成以下交付之一：
 
@@ -62,6 +69,21 @@ DDS 正式集成前必须完成以下交付之一：
 兼容，也不能混用 upstream `VehicleStatus` 和本项目的其他消息定义。在配套 artifact
 交付前，DDS 可以做传输层检查，但不能宣称完整 ROS 2 接口已验收。
 
+生成候选配套包时，先固定官方 package 骨架，再用固件源码覆盖消息定义：
+
+```bash
+mkdir -p ~/ros2_ws/src
+git clone --branch release/1.16 https://github.com/PX4/px4_msgs.git ~/ros2_ws/src/px4_msgs
+git -C ~/ros2_ws/src/px4_msgs checkout 392e831c1f659429ca83902e66820d7094591410
+/home/crocodile/PX4-Autopilot-change-mini/Tools/copy_to_ros_ws.sh ~/ros2_ws
+cd ~/ros2_ws
+colcon build --packages-select px4_msgs
+```
+
+随后必须把覆盖结果提交到项目 fork 并锁定该 commit，不能把未提交的工作区当作发布物。
+生成后应逐项检查本固件实际使用的 44 种消息类型；已注释的
+`VehicleAngularVelocity` 不在有效 DDS 类型集合中。
+
 ## 4. 物理接口和参数
 
 HKUST NXT-Dual 串口映射：
@@ -72,6 +94,9 @@ HKUST NXT-Dual 串口映射：
 | TELEM2 | `/dev/ttyS3` | 102 |
 | TELEM3 | `/dev/ttyS6` | 103 |
 | TELEM4 | `/dev/ttyS7` | 104 |
+| GPS1 | `/dev/ttyS0` | 201 |
+| GPS2 | `/dev/ttyS2` | 202 |
+| Radio Controller | `/dev/ttyS4` | 300 |
 
 推荐将 TELEM2 专用于 DDS，示例配置：
 
@@ -100,17 +125,24 @@ reboot
 | `UXRCE_DDS_CFG` | 0 | 0=禁用；选择串口后重启生效 |
 | `UXRCE_DDS_DOM_ID` | 0 | 必须与机载端 `ROS_DOMAIN_ID` 一致 |
 | `UXRCE_DDS_KEY` | 1 | 非零；同一 Agent 下每个 client 唯一 |
-| `UXRCE_DDS_PRT` | 8888 | UDP Agent 端口 |
-| `UXRCE_DDS_AG_IP` | 2130706433 | 默认 127.0.0.1 的 int32 表示 |
 | `UXRCE_DDS_PTCFG` | 0 | 0 默认、1 localhost-only、2 自定义 participant |
 | `UXRCE_DDS_SYNCT` | 1 | DDS/PX4 消息时间戳同步 |
 | `UXRCE_DDS_SYNCC` | 0 | 不修改飞控系统时钟 |
 | `UXRCE_DDS_TX_TO` | 3 s | 无发送数据后重建连接；小于 1 禁用 |
 | `UXRCE_DDS_RX_TO` | -1 | 无接收数据重建连接；小于 1 禁用 |
 
-client 代码支持 serial/UDP，但当前 `hkust_nxt-dual_mini` 板级配置没有已确认可用的
-Ethernet 物理接口。真机部署采用串口；UDP 示例只适用于 SITL 或另行完成网络硬件适配
-后的目标，不能根据参数存在就宣称本飞控已经具备 UDP 物理链路。
+通用源码为 Ethernet 目标定义了 `UXRCE_DDS_PRT=8888` 和
+`UXRCE_DDS_AG_IP=2130706433`（127.0.0.1），但二者带 `requires_ethernet` 条件，未进入
+`hkust_nxt-dual_mini` 的生成参数。该目标的 NuttX 配置明确为 `CONFIG_NET is not set`，
+因此 `UXRCE_DDS_CLIENT_UDP` 未定义，UDP transport 初始化代码被条件编译排除；CLI
+帮助仍可能显示 `-t udp`，但该目标会初始化失败。`UXRCE_DDS_CFG` 也不提供 Ethernet
+选项。当前真机 DDS 只支持串口，若未来需要 UDP，必须新增并重新构建带网络栈和实际
+Ethernet 硬件支持的独立目标。
+
+默认端口占用为 GPS1=`GPS_1_CONFIG=201`、TELEM1=`MAV_0_CONFIG=101`、RC=
+`RC_PORT_CONFIG=300`。TELEM2 默认空闲且 `SER_TEL2_BAUD=921600`，因此是当前首选。
+GPS1/GPS2/RC 的默认 baud 为 0，未经显式配置不能用于 client；TELEM3/4 默认仅 57600，
+不适合作为高吞吐 DDS 的默认选择。
 
 ## 5. Agent 启动
 
@@ -137,6 +169,7 @@ param show SER_TEL2_BAUD
 
 `dds_topics.yaml` 中的 `/fmu/out` 表示 PX4 发布到 DDS，`/fmu/in` 表示 PX4 从 DDS 接收。
 XRCE wire entity 名以 `rt/` 为前缀；ROS 2 CLI 中显示为普通 `/fmu/...` 名称。
+当前有效配置包含 24 个 `/fmu/out`、27 个 `/fmu/in`，`subscriptions_multi` 为 0。
 
 当前实现的 QoS 是固定代码行为：
 
@@ -148,6 +181,10 @@ XRCE wire entity 名以 `rt/` 为前缀；ROS 2 CLI 中显示为普通 `/fmu/...
 XRCE 创建 entity 使用可靠 control stream，不代表 topic payload 是 Reliable。ROS 2 默认
 Reliable subscription 可能与 Best Effort publisher 不兼容；推荐显式使用
 `rclcpp::SensorDataQoS()` 或等价的 Best Effort 配置，并按 topic 需要选择 durability。
+
+所有 `/fmu/out` uORB subscription 的最小 poll interval 固定为 10 ms，所以单 topic 的
+client 侧发送上限约为 100 Hz，实际频率还受源 topic 更新率、串口带宽和 Best Effort
+丢包影响。
 即使 PX4 writer 声明 Transient Local，当前 depth 为 0，业务启动仍必须等待一帧新的
 有效状态并执行 freshness 检查，不能把“能发现 topic”当成已经获得初始状态。
 
@@ -265,6 +302,10 @@ manual selector 拒绝；伪装成 MAVLink source 虽可能通过当前实现，
 
 - `/fmu/out/hybrid_vehicle_status`
 - `/fmu/in/rover_velocity_setpoint`
+- `/fmu/in/differential_velocity_setpoint`
+- `/fmu/in/rover_rate_setpoint`
+- `/fmu/in/rover_attitude_setpoint`
+- `/fmu/in/rover_position_setpoint`
 - `/fmu/out/rover_rate_tuning_status`
 - `/fmu/out/rover_attitude_tuning_status`
 - `/fmu/out/rover_velocity_tuning_status`
@@ -278,10 +319,15 @@ manual selector 拒绝；伪装成 MAVLink source 虽可能通过当前实现，
 
 ## 10. 时间戳和坐标系
 
-`UXRCE_DDS_SYNCT=1` 时，client 测量 Agent OS 与 PX4 HRT 的偏移，并在序列化/反序列化
-时转换消息时间戳。ROS 2 publisher 仍应把消息中的 `timestamp`、`timestamp_sample`
-填为当前 ROS 时钟的微秒值，不能恒填 0。使用仿真时间时要确保 Agent 和 node 的时间源
-设计一致。
+`UXRCE_DDS_SYNCT=1` 时，client 测量 Agent OS 与 PX4 HRT 的偏移。PX4 发往 DDS 时，
+只对名为 `timestamp`、`timestamp_sample` 的字段加上该偏移；DDS 发往 PX4 时，对非零
+值减去偏移并钳制到当前 HRT。输入时间戳为 0 时，代码会直接替换成接收时的当前 HRT，
+因此 0 是允许值，但会丢失源采样时刻和链路延迟信息。连续控制和严谨时效检查应填写
+Agent/ROS 时钟域的当前微秒值，不能靠恒填 0 掩盖陈旧数据。使用仿真时间时要确保
+Agent 和 node 的时间源设计一致。
+
+上述转换不会改变 PX4 的 HRT。`UXRCE_DDS_SYNCC=0` 时也不会设置 PX4 系统 realtime
+clock；即使显式启用 SYNCC，修改的也是 system clock，不是 HRT。
 
 监视以下状态：
 
@@ -294,19 +340,46 @@ PX4 不自动把 ROS 常用坐标系转换成自己的坐标系：
 - local world：NED，x=North、y=East、z=Down；
 - body：FRD，x=Forward、y=Right、z=Down；
 - `VehicleAttitude.q`：Hamilton 顺序 `[w,x,y,z]`，从 body FRD 旋转到 earth NED；
+- `VehicleOdometry`：必须读取 `pose_frame` 和 `velocity_frame`；pose 可为 NED 或
+  world-fixed FRD，velocity 还可为 body-fixed FRD，不能无条件按 NED 解读；
 - `TrajectorySetpoint`：NED，yaw/yawspeed 按 NED z 轴约定；
 - ROS ENU/FLU 数据必须在发布前显式转换，禁止只交换 x/y 或只对 z 取反。
 
 ## 11. 验证步骤
 
-在匹配的 `px4_msgs` 已交付后执行：
+先从文档锚点源码构建目标；大段输出写入文件，只查看末尾结果：
+
+```bash
+cd /home/crocodile/PX4-Autopilot-change-mini
+make hkust_nxt-dual_mini >/tmp/hkust_nxt-dual_mini.log 2>&1
+tail -20 /tmp/hkust_nxt-dual_mini.log
+```
+
+飞控启动后检查自动配置和连接状态：
+
+```text
+param show -q UXRCE_DDS_CFG
+param show -q SER_TEL2_BAUD
+uxrce_dds_client status
+```
+
+在匹配的 `px4_msgs` 已交付并启动 Agent 后执行：
 
 ```bash
 export ROS_DOMAIN_ID=0
 ros2 topic list | sort
 ros2 topic info -v /fmu/out/vehicle_status_v1
 ros2 topic echo --qos-reliability best_effort /fmu/out/vehicle_status_v1
-ros2 topic hz /fmu/out/vehicle_local_position
+ros2 topic hz /fmu/out/vehicle_local_position --qos-reliability best_effort
+```
+
+保持飞控未解锁，可用全 false 的 `OffboardControlMode` 验证 `/fmu/in` 和零时间戳转换；
+随后在 NSH 执行 `listener offboard_control_mode 1`，不得用 actuator topic 做连通性测试：
+
+```bash
+ros2 topic pub --once --qos-reliability best_effort --qos-durability volatile \
+  /fmu/in/offboard_control_mode px4_msgs/msg/OffboardControlMode \
+  '{timestamp: 0, position: false, velocity: false, acceleration: false, attitude: false, body_rate: false, thrust_and_torque: false, direct_actuator: false}'
 ```
 
 最低验收项：
