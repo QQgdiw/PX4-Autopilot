@@ -75,6 +75,7 @@ public:
 	 * @brief Update attitude controller.
 	 */
 	void updateAttControl();
+	void resetInactiveState();
 
 protected:
 	/**
@@ -91,8 +92,9 @@ private:
 
 	/**
 	 * @brief Generate and publish roverRateSetpoint from roverAttitudeSetpoint.
+	 * @return True when the attitude controller produced the rate setpoint.
 	 */
-	void generateRateSetpoint();
+	bool generateRateSetpoint();
 
 	/**
 	 * @brief Check if the necessary parameters are set.
@@ -122,6 +124,7 @@ private:
 
 	// Variables
 	hrt_abstime _timestamp{0};
+	hrt_abstime _vehicle_yaw_timestamp{0};
 	hrt_abstime _last_rate_setpoint_update{0};
 	float _vehicle_yaw{0.f};
 	float _dt{0.f};
@@ -129,6 +132,9 @@ private:
 	float _stab_yaw_setpoint{0.f}; // Yaw setpoint if rover is doing yaw control in stab mode
 	bool _stab_yaw_ctl{false}; // Indicates if rover is doing yaw control in stab mode
 	bool _prev_param_check_passed{true};
+	bool _awaiting_trajectory_setpoint{false};
+	bool _awaiting_attitude_setpoint{false};
+	bool _awaiting_yaw_sample{false};
 
 	// Controllers
 	PID _pid_yaw;

@@ -70,8 +70,11 @@ void MecanumPosVelControl::updatePosControl()
 
 	updateSubscriptions();
 
-	if ((_vehicle_control_mode.flag_control_position_enabled || _vehicle_control_mode.flag_control_velocity_enabled)
-	    && _vehicle_control_mode.flag_armed && runSanityChecks()) {
+	const bool controller_active = (_vehicle_control_mode.flag_control_position_enabled
+					|| _vehicle_control_mode.flag_control_velocity_enabled)
+				       && _vehicle_control_mode.flag_armed && runSanityChecks();
+
+	if (controller_active) {
 		generateAttitudeSetpoint();
 
 		if (_param_ro_max_thr_speed.get() > FLT_EPSILON) { // Adjust speed setpoints if infeasible
@@ -122,7 +125,7 @@ void MecanumPosVelControl::updatePosControl()
 	}
 
 	// Publish position controller status (logging only)
-	rover_velocity_status_s rover_velocity_status;
+	rover_velocity_status_s rover_velocity_status{};
 	rover_velocity_status.timestamp = _timestamp;
 	rover_velocity_status.measured_speed_body_x = _vehicle_speed_body_x;
 	rover_velocity_status.speed_body_x_setpoint = _speed_body_x_setpoint;
@@ -132,6 +135,7 @@ void MecanumPosVelControl::updatePosControl()
 	rover_velocity_status.adjusted_speed_body_y_setpoint = _speed_y_setpoint.getState();
 	rover_velocity_status.pid_throttle_body_x_integral = _pid_speed_x.getIntegral();
 	rover_velocity_status.pid_throttle_body_y_integral = _pid_speed_y.getIntegral();
+	rover_velocity_status.active = controller_active;
 	_rover_velocity_status_pub.publish(rover_velocity_status);
 }
 

@@ -92,6 +92,7 @@ private:
 	uint32_t	_pwm_mask{0};
 	bool		_pwm_initialized{false};
 	bool		_first_update_cycle{true};
+	uint32_t	_duty_cycle_mask{0};
 
 	perf_counter_t	_cycle_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};
 	perf_counter_t	_interval_perf{perf_alloc(PC_INTERVAL, MODULE_NAME": interval")};

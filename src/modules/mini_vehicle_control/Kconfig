@@ -1,0 +1,5 @@
+menuconfig MODULES_MINI_VEHICLE_CONTROL
+	bool "mini_vehicle_control"
+	default n
+	---help---
+		Enable the non-transforming mini quad-rover output arbiter.

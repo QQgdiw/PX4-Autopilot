@@ -2291,23 +2291,28 @@ void Commander::handleAutoDisarm()
 {
 	// Auto disarm when landed or kill switch engaged
 	if (isArmed()) {
+		const bool is_mini_rover = _vehicle_status.is_quad_rover
+					   && _vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER;
 
 		// Check for auto-disarm on landing or pre-flight
 		if (_param_com_disarm_land.get() > 0 || _param_com_disarm_prflt.get() > 0) {
 
 			const bool landed_amid_mission = (_vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION)
 							 && !_mission_result_sub.get().finished;
-			const bool auto_disarm_land_enabled = _param_com_disarm_land.get() > 0 && !landed_amid_mission
+			const bool auto_disarm_land_enabled = !is_mini_rover && _param_com_disarm_land.get() > 0 && !landed_amid_mission
 							      && !_config_overrides.disable_auto_disarm;
 
 			if (auto_disarm_land_enabled && _have_taken_off_since_arming) {
 				_auto_disarm_landed.set_hysteresis_time_from(false, _param_com_disarm_land.get() * 1_s);
 				_auto_disarm_landed.set_state_and_update(_vehicle_land_detected.landed, hrt_absolute_time());
 
-			} else if (_param_com_disarm_prflt.get() > 0 && !_have_taken_off_since_arming) {
+			} else if (!is_mini_rover && _param_com_disarm_prflt.get() > 0 && !_have_taken_off_since_arming) {
 				_auto_disarm_landed.set_hysteresis_time_from(false,
 						(_param_com_spoolup_time.get() + _param_com_disarm_prflt.get()) * 1_s);
 				_auto_disarm_landed.set_state_and_update(true, hrt_absolute_time());
+
+			} else if (is_mini_rover) {
+				_auto_disarm_landed.set_state_and_update(false, hrt_absolute_time());
 			}
 
 			if (_auto_disarm_landed.get_state() && !_multicopter_throw_launch.isThrowLaunchInProgress()) {

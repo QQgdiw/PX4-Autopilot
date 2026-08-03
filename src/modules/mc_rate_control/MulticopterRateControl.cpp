@@ -110,29 +110,50 @@ MulticopterRateControl::Run()
 
 	perf_begin(_loop_perf);
 
-	vehicle_status_s status{};
-	if (_vehicle_status_sub.copy(&status)) {
-		// --- 新增：Quad-Rover Rover模式保护 ---
-		if (status.is_quad_rover && status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER) {
+	const bool was_in_rover_mode = _vehicle_status.is_quad_rover
+				       && _vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER;
+	const bool vehicle_status_updated = _vehicle_status_sub.update(&_vehicle_status);
+	const bool in_rover_mode = _vehicle_status.is_quad_rover
+				   && _vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER;
+	const bool leaving_rover_mode = vehicle_status_updated && was_in_rover_mode
+					&& _vehicle_status.is_quad_rover && !in_rover_mode;
 
-		// 丢弃陀螺仪更新，防止闭环计算
-		vehicle_angular_velocity_s dummy_ang_vel{};
-		_vehicle_angular_velocity_sub.update(&dummy_ang_vel);
+	if (leaving_rover_mode) {
+		_quad_mode_entered_at = _vehicle_status.timestamp;
+	}
 
-		// 清空扭矩和推力 setpoint
+	if (in_rover_mode || leaving_rover_mode) {
+		_rate_control.resetIntegral();
+		_output_lpf_yaw.reset(0.f);
+		_rates_setpoint.zero();
+		_thrust_setpoint.zero();
+	}
+
+	// Keep the multicopter controller inactive while the rover owns the outputs.
+	if (in_rover_mode) {
+
+		vehicle_angular_velocity_s discarded_angular_velocity{};
+
+		if (_vehicle_angular_velocity_sub.update(&discarded_angular_velocity)) {
+			_last_run = discarded_angular_velocity.timestamp_sample;
+		}
+
+		vehicle_rates_setpoint_s discarded_rates_setpoint{};
+		_vehicle_rates_setpoint_sub.update(&discarded_rates_setpoint);
+
+		// Publish zero setpoints until a fresh multicopter control cycle is allowed.
 		vehicle_torque_setpoint_s torque{};
 		torque.timestamp = hrt_absolute_time();
-		memset(&torque.xyz, 0, sizeof(torque.xyz));
+		torque.timestamp_sample = discarded_angular_velocity.timestamp_sample;
 		_vehicle_torque_setpoint_pub.publish(torque);
 
 		vehicle_thrust_setpoint_s thrust{};
 		thrust.timestamp = hrt_absolute_time();
-		memset(&thrust.xyz, 0, sizeof(thrust.xyz));
+		thrust.timestamp_sample = discarded_angular_velocity.timestamp_sample;
 		_vehicle_thrust_setpoint_pub.publish(thrust);
 
 		perf_end(_loop_perf);
-		return; // 完全跳过 MC 控制逻辑
-		}
+		return;
 	}
 
 	// Check if parameters have changed
@@ -171,8 +192,6 @@ MulticopterRateControl::Run()
 			}
 		}
 
-		_vehicle_status_sub.update(&_vehicle_status);
-
 		// use rates setpoint topic
 		vehicle_rates_setpoint_s vehicle_rates_setpoint{};
 
@@ -180,7 +199,8 @@ MulticopterRateControl::Run()
 			// generate the rate setpoint from sticks
 			manual_control_setpoint_s manual_control_setpoint;
 
-			if (_manual_control_setpoint_sub.update(&manual_control_setpoint)) {
+			if (_manual_control_setpoint_sub.update(&manual_control_setpoint)
+			    && (!_vehicle_status.is_quad_rover || manual_control_setpoint.timestamp > _quad_mode_entered_at)) {
 				// manual rates control - ACRO mode
 				const Vector3f man_rate_sp{
 					math::superexpo(manual_control_setpoint.roll, _param_mc_acro_expo.get(), _param_mc_acro_supexpo.get()),
@@ -202,7 +222,8 @@ MulticopterRateControl::Run()
 			}
 
 		} else if (_vehicle_rates_setpoint_sub.update(&vehicle_rates_setpoint)) {
-			if (_vehicle_rates_setpoint_sub.copy(&vehicle_rates_setpoint)) {
+			if (_vehicle_rates_setpoint_sub.copy(&vehicle_rates_setpoint)
+			    && (!_vehicle_status.is_quad_rover || vehicle_rates_setpoint.timestamp > _quad_mode_entered_at)) {
 				_rates_setpoint(0) = PX4_ISFINITE(vehicle_rates_setpoint.roll)  ? vehicle_rates_setpoint.roll  : rates(0);
 				_rates_setpoint(1) = PX4_ISFINITE(vehicle_rates_setpoint.pitch) ? vehicle_rates_setpoint.pitch : rates(1);
 				_rates_setpoint(2) = PX4_ISFINITE(vehicle_rates_setpoint.yaw)   ? vehicle_rates_setpoint.yaw   : rates(2);
@@ -331,10 +352,11 @@ int MulticopterRateControl::task_spawn(int argc, char *argv[])
 	}
 
 	int32_t hybr_quad_rov = 0;
-        param_get(param_find("HYBR_QUAD_ROV"), &hybr_quad_rov);
-        if (hybr_quad_rov == 1) {
-                vtol = false;
-        }
+	param_get(param_find("HYBR_QUAD_ROV"), &hybr_quad_rov);
+
+	if (hybr_quad_rov == 1) {
+		vtol = false;
+	}
 
 	MulticopterRateControl *instance = new MulticopterRateControl(vtol);
 

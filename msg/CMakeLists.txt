@@ -177,6 +177,7 @@ set(msg_files
 	RcParameterMap.msg
 	RoverAttitudeSetpoint.msg
 	RoverAttitudeStatus.msg
+	RoverPositionStatus.msg
 	RoverPositionSetpoint.msg
 	RoverRateSetpoint.msg
 	RoverRateStatus.msg

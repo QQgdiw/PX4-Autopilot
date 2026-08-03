@@ -85,6 +85,7 @@ public:
 	 * @brief Update velocity controller.
 	 */
 	void updateVelControl();
+	void resetInactiveState();
 
 protected:
 	/**
@@ -107,7 +108,7 @@ private:
 	 * @brief Generate and publish roverAttitudeSetpoint and roverThrottleSetpoint
 	 *        from roverVelocitySetpoint.
 	 */
-	void generateAttitudeAndThrottleSetpoint();
+	bool generateAttitudeAndThrottleSetpoint();
 
 	/**
 	 * @brief Check if the necessary parameters are set.
@@ -136,12 +137,20 @@ private:
 
 	// Variables
 	hrt_abstime _timestamp{0};
+	hrt_abstime _vehicle_attitude_timestamp{0};
+	hrt_abstime _vehicle_velocity_timestamp{0};
 	Quatf _vehicle_attitude_quaternion{};
 	float _vehicle_speed_body_x{0.f};
 	float _vehicle_speed_body_y{0.f};
+	float _speed_body_x_setpoint{0.f};
 	float _vehicle_yaw{0.f};
 	float _dt{0.f};
+	bool _vehicle_velocity_valid{false};
 	bool _prev_param_check_passed{false};
+	bool _awaiting_trajectory_setpoint{false};
+	bool _awaiting_velocity_setpoint{false};
+	bool _awaiting_attitude_sample{false};
+	bool _awaiting_velocity_sample{false};
 	DrivingState _current_state{DrivingState::DRIVING};
 
 

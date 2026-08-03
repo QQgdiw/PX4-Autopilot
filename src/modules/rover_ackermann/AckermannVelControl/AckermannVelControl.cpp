@@ -65,7 +65,10 @@ void AckermannVelControl::updateVelControl()
 
 	updateSubscriptions();
 
-	if ((_vehicle_control_mode.flag_control_velocity_enabled) && _vehicle_control_mode.flag_armed && runSanityChecks()) {
+	const bool controller_active = _vehicle_control_mode.flag_control_velocity_enabled
+				       && _vehicle_control_mode.flag_armed && runSanityChecks();
+
+	if (controller_active) {
 		if (_vehicle_control_mode.flag_control_offboard_enabled) { // Offboard Velocity Control
 			generateVelocitySetpoint();
 		}
@@ -78,7 +81,7 @@ void AckermannVelControl::updateVelControl()
 	}
 
 	// Publish position controller status (logging only)
-	rover_velocity_status_s rover_velocity_status;
+	rover_velocity_status_s rover_velocity_status{};
 	rover_velocity_status.timestamp = _timestamp;
 	rover_velocity_status.measured_speed_body_x = _vehicle_speed_body_x;
 	rover_velocity_status.adjusted_speed_body_x_setpoint = _speed_setpoint.getState();
@@ -86,6 +89,7 @@ void AckermannVelControl::updateVelControl()
 	rover_velocity_status.adjusted_speed_body_y_setpoint = NAN;
 	rover_velocity_status.pid_throttle_body_x_integral = _pid_speed.getIntegral();
 	rover_velocity_status.pid_throttle_body_y_integral = NAN;
+	rover_velocity_status.active = controller_active;
 	_rover_velocity_status_pub.publish(rover_velocity_status);
 }
 

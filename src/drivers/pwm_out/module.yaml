@@ -29,3 +29,45 @@ actuator_output:
             200: PWM 200 Hz
             400: PWM 400 Hz
         reboot_required: true
+
+parameters:
+  - group: Actuator Outputs
+    definitions:
+      PWM_MAIN_DUTY:
+        description:
+          short: PWM Main duty-cycle output channels
+          long: |
+            Selected channels interpret their configured MIN and MAX values as
+            0 and 100 percent duty cycle. The timer rate defines the carrier
+            frequency. Channels sharing a timer must use the same protocol.
+        type: bitmask
+        bit:
+          0: PWM Main 1
+          1: PWM Main 2
+          2: PWM Main 3
+          3: PWM Main 4
+          4: PWM Main 5
+          5: PWM Main 6
+          6: PWM Main 7
+          7: PWM Main 8
+        default: 0
+        reboot_required: true
+      PWM_AUX_DUTY:
+        description:
+          short: PWM Aux duty-cycle output channels
+          long: |
+            Selected channels interpret their configured MIN and MAX values as
+            0 and 100 percent duty cycle. The timer rate defines the carrier
+            frequency. Channels sharing a timer must use the same protocol.
+        type: bitmask
+        bit:
+          0: PWM Aux 1
+          1: PWM Aux 2
+          2: PWM Aux 3
+          3: PWM Aux 4
+          4: PWM Aux 5
+          5: PWM Aux 6
+          6: PWM Aux 7
+          7: PWM Aux 8
+        default: 0
+        reboot_required: true

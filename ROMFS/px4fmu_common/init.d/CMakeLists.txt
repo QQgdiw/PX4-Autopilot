@@ -47,6 +47,7 @@ px4_add_romfs_files(
 	rc.sysinit
 
 	rc.hybrid_apps
+	rc.mini_hybrid_apps
 )
 
 if(CONFIG_MODULES_AIRSHIP_ATT_CONTROL)

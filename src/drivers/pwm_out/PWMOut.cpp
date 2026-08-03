@@ -136,6 +136,30 @@ bool PWMOut::updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS],
 				outputs[i] = 0;
 			}
 
+			if ((_duty_cycle_mask & (1u << i)) != 0) {
+				for (int timer = 0; timer < MAX_IO_TIMERS; ++timer) {
+					if ((_pwm_mask & up_pwm_servo_get_rate_group(timer) & (1u << i)) == 0) {
+						continue;
+					}
+
+					const int rate_hz = _timer_rates[timer];
+					const uint16_t minimum = _mixing_output.minValue(i);
+					const uint16_t maximum = _mixing_output.maxValue(i);
+
+					if (rate_hz > 0 && maximum > minimum) {
+						const float fraction = math::constrain(
+									       static_cast<float>(outputs[i] - math::min(outputs[i], minimum))
+									       / static_cast<float>(maximum - minimum), 0.f, 1.f);
+						outputs[i] = static_cast<uint16_t>(lroundf(fraction * (1e6f / rate_hz)));
+
+					} else {
+						outputs[i] = 0;
+					}
+
+					break;
+				}
+			}
+
 			if (_pwm_mask & (1 << i)) {
 				up_pwm_servo_set(i, outputs[i]);
 			}
@@ -217,6 +241,15 @@ void PWMOut::update_params()
 	}
 
 	updateParams();
+
+	char duty_param_name[18];
+	snprintf(duty_param_name, sizeof(duty_param_name), "%s_DUTY", _mixing_output.paramPrefix());
+	const param_t duty_param = param_find(duty_param_name);
+	int32_t duty_cycle_mask = 0;
+
+	if (duty_param != PARAM_INVALID && param_get(duty_param, &duty_cycle_mask) == PX4_OK) {
+		_duty_cycle_mask = static_cast<uint32_t>(duty_cycle_mask);
+	}
 
 	// Automatically set PWM configuration when a channel is first assigned
 	if (!_first_update_cycle) {

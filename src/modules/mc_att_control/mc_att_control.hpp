@@ -137,6 +137,7 @@ private:
 
 	hrt_abstime _last_run{0};
 	hrt_abstime _last_attitude_setpoint{0};
+	hrt_abstime _quad_mode_entered_at{0};
 
 	bool _spooled_up{false}; ///< used to make sure the vehicle cannot take off during the spoolup time
 	bool _landed{true};
@@ -146,6 +147,7 @@ private:
 	bool _vtol_in_transition_mode{false};
 	bool _is_quad_rover{false};
 	bool _in_rover_mode{false};
+	bool _reset_setpoint_on_quad_entry{false};
 
 	uint8_t _quat_reset_counter{0};
 

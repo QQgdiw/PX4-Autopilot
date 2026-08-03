@@ -213,25 +213,65 @@ MulticopterAttitudeControl::Run()
 
 	perf_begin(_loop_perf);
 
-	vehicle_status_s status{};
-	if (_vehicle_status_sub.copy(&status)) {
-	if (status.is_quad_rover && status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER) {
-		// Rover模式下完全跳过姿态控制
+	if (_vehicle_status_sub.updated()) {
+		vehicle_status_s vehicle_status;
+
+		if (_vehicle_status_sub.copy(&vehicle_status)) {
+			const bool was_in_rover_mode = _is_quad_rover && _in_rover_mode;
+			_is_quad_rover = vehicle_status.is_vtol && vehicle_status.is_quad_rover;
+			_in_rover_mode = vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER;
+			const bool in_rover_mode = _is_quad_rover && _in_rover_mode;
+
+			if (was_in_rover_mode && _is_quad_rover && !in_rover_mode) {
+				_quad_mode_entered_at = vehicle_status.timestamp;
+
+				if (_last_attitude_setpoint < _quad_mode_entered_at) {
+					_last_attitude_setpoint = _quad_mode_entered_at;
+				}
+
+				_reset_setpoint_on_quad_entry = true;
+			}
+
+			_vehicle_type_rotary_wing = (vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING);
+			_vtol = vehicle_status.is_vtol && !vehicle_status.is_quad_rover;
+			_vtol_in_transition_mode = vehicle_status.in_transition_mode;
+			_vtol_tailsitter = vehicle_status.is_vtol_tailsitter;
+
+			const bool armed = (vehicle_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED);
+			_spooled_up = armed && hrt_elapsed_time(&vehicle_status.armed_time) > _param_com_spoolup_time.get() * 1_s;
+		}
+	}
+
+	if (_is_quad_rover && _in_rover_mode) {
+		vehicle_attitude_s vehicle_attitude{};
+
+		if (_vehicle_attitude_sub.update(&vehicle_attitude)) {
+			const Quatf q{vehicle_attitude.q};
+			_last_run = vehicle_attitude.timestamp_sample;
+			_attitude_control.setAttitudeSetpoint(q, 0.f);
+			_stick_yaw.reset(Eulerf(q).psi(), _unaided_heading);
+			_quat_reset_counter = vehicle_attitude.quat_reset_counter;
+		}
+
+		// Do not reuse a setpoint that arrived while the rover controller owned the outputs.
+		vehicle_attitude_setpoint_s discarded_attitude_setpoint{};
+
+		if (_vehicle_attitude_setpoint_sub.update(&discarded_attitude_setpoint)
+		    && discarded_attitude_setpoint.timestamp > _last_attitude_setpoint) {
+			_last_attitude_setpoint = discarded_attitude_setpoint.timestamp;
+		}
+
 		_yaw_setpoint_stabilized = NAN;
 		_man_roll_input_filter.reset(0.f);
 		_man_pitch_input_filter.reset(0.f);
+		_thrust_setpoint_body.zero();
 
-		// 清空已发布的 rates setpoint，避免 MC 接收到旧值
 		vehicle_rates_setpoint_s empty_rates{};
 		empty_rates.timestamp = hrt_absolute_time();
-		memset(&empty_rates.roll, 0, sizeof(empty_rates.roll));
-		memset(&empty_rates.pitch, 0, sizeof(empty_rates.pitch));
-		memset(&empty_rates.yaw, 0, sizeof(empty_rates.yaw));
 		_vehicle_rates_setpoint_pub.publish(empty_rates);
 
 		perf_end(_loop_perf);
-		return; // 完全跳过 MC 控制逻辑
-	}
+		return;
 	}
 
 	// Check if parameters have changed
@@ -274,23 +314,6 @@ MulticopterAttitudeControl::Run()
 		_manual_control_setpoint_sub.update(&_manual_control_setpoint);
 		_vehicle_control_mode_sub.update(&_vehicle_control_mode);
 
-		if (_vehicle_status_sub.updated()) {
-			vehicle_status_s vehicle_status;
-
-			if (_vehicle_status_sub.copy(&vehicle_status)) {
-				_is_quad_rover = vehicle_status.is_vtol && vehicle_status.is_quad_rover;
-				_in_rover_mode = vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER;
-
-				_vehicle_type_rotary_wing = (vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING);
-				_vtol = vehicle_status.is_vtol && !vehicle_status.is_quad_rover;
-				_vtol_in_transition_mode = vehicle_status.in_transition_mode;
-				_vtol_tailsitter = vehicle_status.is_vtol_tailsitter;
-
-				const bool armed = (vehicle_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED);
-				_spooled_up = armed && hrt_elapsed_time(&vehicle_status.armed_time) > _param_com_spoolup_time.get() * 1_s;
-			}
-		}
-
 		if (_vehicle_land_detected_sub.updated()) {
 			vehicle_land_detected_s vehicle_land_detected;
 
@@ -308,6 +331,17 @@ MulticopterAttitudeControl::Run()
 			}
 		}
 
+		if (_reset_setpoint_on_quad_entry) {
+			_attitude_control.setAttitudeSetpoint(q, 0.f);
+			_thrust_setpoint_body.zero();
+			_yaw_setpoint_stabilized = NAN;
+			_man_roll_input_filter.reset(0.f);
+			_man_pitch_input_filter.reset(0.f);
+			_stick_yaw.reset(Eulerf(q).psi(), _unaided_heading);
+			_quat_reset_counter = v_att.quat_reset_counter;
+			_reset_setpoint_on_quad_entry = false;
+		}
+
 		// during transitions VTOL module generates attitude setpoints
 		const bool is_hovering = (_vehicle_type_rotary_wing && !_vtol_in_transition_mode);
 		const bool is_tailsitter_transition = (_vtol_tailsitter && _vtol_in_transition_mode);
@@ -317,7 +351,10 @@ MulticopterAttitudeControl::Run()
 
 		if (run_att_ctrl) {
 			// Generate the attitude setpoint from stick inputs if we are in Manual/Stabilized mode
-			if (_vehicle_control_mode.flag_control_manual_enabled &&
+			const bool manual_input_is_fresh = !_is_quad_rover
+							   || _manual_control_setpoint.timestamp > _quad_mode_entered_at;
+
+			if (_vehicle_control_mode.flag_control_manual_enabled && manual_input_is_fresh &&
 			    !_vehicle_control_mode.flag_control_altitude_enabled &&
 			    !_vehicle_control_mode.flag_control_velocity_enabled &&
 			    !_vehicle_control_mode.flag_control_position_enabled) {
@@ -337,6 +374,7 @@ MulticopterAttitudeControl::Run()
 				vehicle_attitude_setpoint_s vehicle_attitude_setpoint;
 
 				if (_vehicle_attitude_setpoint_sub.copy(&vehicle_attitude_setpoint)
+				    && (!_is_quad_rover || vehicle_attitude_setpoint.timestamp > _quad_mode_entered_at)
 				    && (vehicle_attitude_setpoint.timestamp > _last_attitude_setpoint)) {
 
 					_attitude_control.setAttitudeSetpoint(Quatf(vehicle_attitude_setpoint.q_d), vehicle_attitude_setpoint.yaw_sp_move_rate);
@@ -375,7 +413,8 @@ MulticopterAttitudeControl::Run()
 				     || pid_autotune.state == autotune_attitude_control_status_s::STATE_PITCH
 				     || pid_autotune.state == autotune_attitude_control_status_s::STATE_YAW
 				     || pid_autotune.state == autotune_attitude_control_status_s::STATE_TEST)
-				    && ((now - pid_autotune.timestamp) < 1_s)) {
+				    && ((now - pid_autotune.timestamp) < 1_s)
+				    && (!_is_quad_rover || pid_autotune.timestamp > _quad_mode_entered_at)) {
 					rates_sp += Vector3f(pid_autotune.rate_sp);
 				}
 			}
@@ -430,10 +469,11 @@ int MulticopterAttitudeControl::task_spawn(int argc, char *argv[])
 	}
 
 	int32_t hybr_quad_rov = 0;
-        param_get(param_find("HYBR_QUAD_ROV"), &hybr_quad_rov);
-        if (hybr_quad_rov == 1) {
-                vtol = false;
-        }
+	param_get(param_find("HYBR_QUAD_ROV"), &hybr_quad_rov);
+
+	if (hybr_quad_rov == 1) {
+		vtol = false;
+	}
 
 	MulticopterAttitudeControl *instance = new MulticopterAttitudeControl(vtol);
 

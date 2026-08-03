@@ -1,0 +1,24 @@
+#!/bin/sh
+#
+# @name Mini Hybrid (Quad-Rover) Apps
+# @description Starts controllers for the non-transforming mini quad-rover.
+#
+
+echo "[Mini Hybrid] Starting control modules"
+
+mc_rate_control start
+mc_att_control start
+mc_pos_control start
+mc_hover_thrust_estimator start
+land_detector start multicopter
+
+if param greater -s MC_AT_EN 0
+then
+	mc_autotune_attitude_control start
+fi
+
+control_allocator start
+flight_mode_manager start
+rover_pos_control start
+rover_differential start
+mini_vehicle_control start

@@ -56,6 +56,44 @@ void DifferentialVelControl::updateParams()
 	}
 }
 
+void DifferentialVelControl::resetInactiveState()
+{
+	_timestamp = hrt_absolute_time();
+	_dt = 0.f;
+	_vehicle_control_mode = {};
+	_vehicle_attitude_timestamp = 0;
+	_vehicle_velocity_timestamp = 0;
+	_vehicle_velocity_valid = false;
+	_vehicle_speed_body_x = 0.f;
+	_vehicle_speed_body_y = 0.f;
+	_pid_speed.resetIntegral();
+	_speed_setpoint.setForcedValue(0.f);
+	_speed_body_x_setpoint = 0.f;
+	_current_state = DrivingState::DRIVING;
+	_differential_velocity_setpoint = {};
+	_rover_steering_setpoint = {};
+	_offboard_control_mode = {};
+	_awaiting_trajectory_setpoint = true;
+	_awaiting_velocity_setpoint = true;
+	_awaiting_attitude_sample = true;
+	_awaiting_velocity_sample = true;
+
+	trajectory_setpoint_s discarded_trajectory{};
+	vehicle_control_mode_s discarded_control_mode{};
+	offboard_control_mode_s discarded_offboard_mode{};
+	differential_velocity_setpoint_s discarded_velocity_setpoint{};
+	rover_steering_setpoint_s discarded_steering_setpoint{};
+	_trajectory_setpoint_sub.update(&discarded_trajectory);
+	_offboard_control_mode_sub.update(&discarded_offboard_mode);
+	_differential_velocity_setpoint_sub.update(&discarded_velocity_setpoint);
+	_rover_steering_setpoint_sub.update(&discarded_steering_setpoint);
+	_vehicle_control_mode_sub.update(&discarded_control_mode);
+	vehicle_attitude_s discarded_attitude{};
+	vehicle_local_position_s discarded_local_position{};
+	_vehicle_attitude_sub.update(&discarded_attitude);
+	_vehicle_local_position_sub.update(&discarded_local_position);
+}
+
 void DifferentialVelControl::updateVelControl()
 {
 	const hrt_abstime timestamp_prev = _timestamp;
@@ -64,27 +102,39 @@ void DifferentialVelControl::updateVelControl()
 
 	updateSubscriptions();
 
-	if ((_vehicle_control_mode.flag_control_velocity_enabled) && _vehicle_control_mode.flag_armed && runSanityChecks()) {
+	bool controller_active = _vehicle_control_mode.flag_control_velocity_enabled
+				 && _vehicle_control_mode.flag_armed && !_awaiting_attitude_sample
+				 && !_awaiting_velocity_sample && runSanityChecks();
+
+	if (controller_active) {
 		if (_vehicle_control_mode.flag_control_offboard_enabled) { // Offboard Velocity Control
 			generateVelocitySetpoint();
 		}
 
-		generateAttitudeAndThrottleSetpoint();
+		controller_active = generateAttitudeAndThrottleSetpoint();
 
 	} else { // Reset controller and slew rate when velocity control is not active
 		_pid_speed.resetIntegral();
 		_speed_setpoint.setForcedValue(0.f);
+		_speed_body_x_setpoint = 0.f;
 	}
 
 	// Publish position controller status (logging only)
-	rover_velocity_status_s rover_velocity_status;
+	rover_velocity_status_s rover_velocity_status{};
 	rover_velocity_status.timestamp = _timestamp;
-	rover_velocity_status.measured_speed_body_x = _vehicle_speed_body_x;
+	const bool velocity_valid = _vehicle_velocity_valid && _vehicle_velocity_timestamp > 0
+				    && hrt_elapsed_time(&_vehicle_velocity_timestamp) < 500_ms
+				    && _vehicle_attitude_timestamp > 0
+				    && hrt_elapsed_time(&_vehicle_attitude_timestamp) < 500_ms;
+	rover_velocity_status.measured_speed_body_x = velocity_valid ? _vehicle_speed_body_x : NAN;
+	rover_velocity_status.speed_body_x_setpoint = _speed_body_x_setpoint;
 	rover_velocity_status.adjusted_speed_body_x_setpoint = _speed_setpoint.getState();
-	rover_velocity_status.measured_speed_body_y = _vehicle_speed_body_y;
+	rover_velocity_status.measured_speed_body_y = velocity_valid ? _vehicle_speed_body_y : NAN;
+	rover_velocity_status.speed_body_y_setpoint = NAN;
 	rover_velocity_status.adjusted_speed_body_y_setpoint = NAN;
 	rover_velocity_status.pid_throttle_body_x_integral = _pid_speed.getIntegral();
 	rover_velocity_status.pid_throttle_body_y_integral = NAN;
+	rover_velocity_status.active = controller_active;
 	_rover_velocity_status_pub.publish(rover_velocity_status);
 }
 void DifferentialVelControl::updateSubscriptions()
@@ -96,17 +146,22 @@ void DifferentialVelControl::updateSubscriptions()
 	if (_vehicle_attitude_sub.updated()) {
 		vehicle_attitude_s vehicle_attitude{};
 		_vehicle_attitude_sub.copy(&vehicle_attitude);
+		_vehicle_attitude_timestamp = vehicle_attitude.timestamp_sample;
 		_vehicle_attitude_quaternion = matrix::Quatf(vehicle_attitude.q);
 		_vehicle_yaw = matrix::Eulerf(_vehicle_attitude_quaternion).psi();
+		_awaiting_attitude_sample = !PX4_ISFINITE(_vehicle_yaw);
 	}
 
 	if (_vehicle_local_position_sub.updated()) {
 		vehicle_local_position_s vehicle_local_position{};
 		_vehicle_local_position_sub.copy(&vehicle_local_position);
+		_vehicle_velocity_timestamp = vehicle_local_position.timestamp_sample;
+		_vehicle_velocity_valid = vehicle_local_position.v_xy_valid;
 		const Vector3f velocity_in_local_frame(vehicle_local_position.vx, vehicle_local_position.vy, vehicle_local_position.vz);
 		const Vector3f velocity_in_body_frame = _vehicle_attitude_quaternion.rotateVectorInverse(velocity_in_local_frame);
 		_vehicle_speed_body_x = fabsf(velocity_in_body_frame(0)) > _param_ro_speed_th.get() ? velocity_in_body_frame(0) : 0.f;
 		_vehicle_speed_body_y = fabsf(velocity_in_body_frame(1)) > _param_ro_speed_th.get() ? velocity_in_body_frame(1) : 0.f;
+		_awaiting_velocity_sample = !_vehicle_velocity_valid || !velocity_in_body_frame.isAllFinite();
 	}
 
 }
@@ -114,7 +169,14 @@ void DifferentialVelControl::updateSubscriptions()
 void DifferentialVelControl::generateVelocitySetpoint()
 {
 	trajectory_setpoint_s trajectory_setpoint{};
-	_trajectory_setpoint_sub.copy(&trajectory_setpoint);
+	bool trajectory_available = _trajectory_setpoint_sub.update(&trajectory_setpoint);
+
+	if (trajectory_available) {
+		_awaiting_trajectory_setpoint = false;
+
+	} else if (!_awaiting_trajectory_setpoint) {
+		trajectory_available = _trajectory_setpoint_sub.copy(&trajectory_setpoint);
+	}
 
 	if (_offboard_control_mode_sub.updated()) {
 		_offboard_control_mode_sub.copy(&_offboard_control_mode);
@@ -124,7 +186,7 @@ void DifferentialVelControl::generateVelocitySetpoint()
 
 	const Vector2f velocity_in_local_frame(trajectory_setpoint.velocity[0], trajectory_setpoint.velocity[1]);
 
-	if (offboard_vel_control && velocity_in_local_frame.isAllFinite()) {
+	if (trajectory_available && offboard_vel_control && velocity_in_local_frame.isAllFinite()) {
 		differential_velocity_setpoint_s differential_velocity_setpoint{};
 		differential_velocity_setpoint.timestamp = _timestamp;
 		differential_velocity_setpoint.speed = velocity_in_local_frame.norm();
@@ -133,10 +195,15 @@ void DifferentialVelControl::generateVelocitySetpoint()
 	}
 }
 
-void DifferentialVelControl::generateAttitudeAndThrottleSetpoint()
+bool DifferentialVelControl::generateAttitudeAndThrottleSetpoint()
 {
 	if (_differential_velocity_setpoint_sub.updated()) {
 		_differential_velocity_setpoint_sub.copy(&_differential_velocity_setpoint);
+		_awaiting_velocity_setpoint = false;
+	}
+
+	if (_awaiting_velocity_setpoint) {
+		return false;
 	}
 
 	// Attitude Setpoint
@@ -176,6 +243,8 @@ void DifferentialVelControl::generateAttitudeAndThrottleSetpoint()
 		}
 	}
 
+	_speed_body_x_setpoint = speed_body_x_setpoint;
+
 	rover_throttle_setpoint_s rover_throttle_setpoint{};
 	rover_throttle_setpoint.timestamp = _timestamp;
 	rover_throttle_setpoint.throttle_body_x = RoverControl::speedControl(_speed_setpoint, _pid_speed,
@@ -183,6 +252,7 @@ void DifferentialVelControl::generateAttitudeAndThrottleSetpoint()
 			_param_ro_max_thr_speed.get(), _dt);
 	rover_throttle_setpoint.throttle_body_y = 0.f;
 	_rover_throttle_setpoint_pub.publish(rover_throttle_setpoint);
+	return true;
 
 }
 

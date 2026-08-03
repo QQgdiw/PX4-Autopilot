@@ -59,24 +59,115 @@ void RoverDifferential::updateParams()
 	}
 }
 
+void RoverDifferential::resetInactiveState()
+{
+	_timestamp = hrt_absolute_time();
+	_output_epoch = _timestamp;
+	_dt = 0.f;
+	_throttle_body_x_setpoint.setForcedValue(0.f);
+	_current_throttle_body_x = 0.f;
+	_rover_throttle_setpoint = {};
+	_rover_steering_setpoint = {};
+	_vehicle_control_mode = {};
+	// Rate/Attitude direct paths own steering only. Until an outer throttle
+	// controller publishes, the post-epoch fallback is an explicit stop.
+	_awaiting_steering_setpoint = true;
+	_control_mode_key = 0;
+	_control_mode_key_valid = false;
+
+	manual_control_setpoint_s discarded_manual_control{};
+	rover_throttle_setpoint_s discarded_throttle_setpoint{};
+	rover_steering_setpoint_s discarded_steering_setpoint{};
+	actuator_motors_s discarded_actuator_motors{};
+	vehicle_control_mode_s discarded_control_mode{};
+	_manual_control_setpoint_sub.update(&discarded_manual_control);
+	_rover_throttle_setpoint_sub.update(&discarded_throttle_setpoint);
+	_rover_steering_setpoint_sub.update(&discarded_steering_setpoint);
+	_actuator_motors_sub.update(&discarded_actuator_motors);
+	_vehicle_control_mode_sub.update(&discarded_control_mode);
+
+	_differential_rate_control.resetInactiveState();
+	_differential_att_control.resetInactiveState();
+	_differential_vel_control.resetInactiveState();
+	_differential_pos_control.resetInactiveState();
+}
+
+uint32_t RoverDifferential::controlModeKey(const vehicle_control_mode_s &mode, const uint8_t nav_state)
+{
+	uint32_t key = 0;
+	key |= static_cast<uint32_t>(mode.flag_armed) << 0;
+	key |= static_cast<uint32_t>(mode.flag_multicopter_position_control_enabled) << 1;
+	key |= static_cast<uint32_t>(mode.flag_control_manual_enabled) << 2;
+	key |= static_cast<uint32_t>(mode.flag_control_auto_enabled) << 3;
+	key |= static_cast<uint32_t>(mode.flag_control_offboard_enabled) << 4;
+	key |= static_cast<uint32_t>(mode.flag_control_position_enabled) << 5;
+	key |= static_cast<uint32_t>(mode.flag_control_velocity_enabled) << 6;
+	key |= static_cast<uint32_t>(mode.flag_control_altitude_enabled) << 7;
+	key |= static_cast<uint32_t>(mode.flag_control_climb_rate_enabled) << 8;
+	key |= static_cast<uint32_t>(mode.flag_control_acceleration_enabled) << 9;
+	key |= static_cast<uint32_t>(mode.flag_control_attitude_enabled) << 10;
+	key |= static_cast<uint32_t>(mode.flag_control_rates_enabled) << 11;
+	key |= static_cast<uint32_t>(mode.flag_control_allocation_enabled) << 12;
+	key |= static_cast<uint32_t>(mode.flag_control_termination_enabled) << 13;
+	key |= static_cast<uint32_t>(mode.source_id) << 14;
+	key |= static_cast<uint32_t>(nav_state) << 22;
+	return key;
+}
+
 void RoverDifferential::Run()
 {
 	vehicle_status_s status{};
 
-	if (_vehicle_status_sub.copy(&status)) {
-		_vehicle_status = status;
+#if defined(CONFIG_MODULES_MINI_VEHICLE_CONTROL)
+	bool driving_shape {false};
+	_hybrid_vehicle_status_sub.update(&_hybrid_vehicle_status);
+	driving_shape = _hybrid_vehicle_status.timestamp > 0
+			&& hrt_elapsed_time(&_hybrid_vehicle_status.timestamp) < 200_ms
+			&& _hybrid_vehicle_status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING;
+#endif
 
-		if (status.vehicle_type != vehicle_status_s::VEHICLE_TYPE_ROVER) {
-			actuator_motors_s stop_motors{};
-			stop_motors.timestamp = hrt_absolute_time();
-			stop_motors.reversible_flags = _param_r_rev.get();
-			for (int i = 0; i < actuator_motors_s::NUM_CONTROLS; i++) {
-				stop_motors.control[i] = NAN; // NaN 在底层 PWM 驱动中代表断电/不驱动
-			}
-			_actuator_motors_pub.publish(stop_motors);
-			return; // 立即退出，下方的所有解算逻辑统统跳过！
-		}
+	const bool vehicle_status_available = _vehicle_status_sub.copy(&status);
+
+	if (vehicle_status_available) {
+		_vehicle_status = status;
 	}
+
+#if defined(CONFIG_MODULES_MINI_VEHICLE_CONTROL)
+	const bool vehicle_status_fresh = _vehicle_status.timestamp > 0
+					  && hrt_elapsed_time(&_vehicle_status.timestamp) < 1_s;
+
+	if (!vehicle_status_fresh
+	    || _vehicle_status.vehicle_type != vehicle_status_s::VEHICLE_TYPE_ROVER
+	    || !driving_shape) {
+		resetInactiveState();
+		actuator_motors_s stop_motors {};
+		stop_motors.timestamp = hrt_absolute_time();
+		stop_motors.reversible_flags = _param_r_rev.get();
+
+		for (int i = 0; i < actuator_motors_s::NUM_CONTROLS; i++) {
+			stop_motors.control[i] = NAN; // NaN 在底层 PWM 驱动中代表断电/不驱动
+		}
+
+		_actuator_motors_pub.publish(stop_motors);
+		return;
+	}
+
+#else
+
+	if (vehicle_status_available && _vehicle_status.vehicle_type != vehicle_status_s::VEHICLE_TYPE_ROVER) {
+		actuator_motors_s stop_motors {};
+		stop_motors.timestamp = hrt_absolute_time();
+		stop_motors.reversible_flags = _param_r_rev.get();
+
+		for (int i = 0; i < actuator_motors_s::NUM_CONTROLS; i++) {
+			stop_motors.control[i] = NAN; // NaN 在底层 PWM 驱动中代表断电/不驱动
+		}
+
+		_actuator_motors_pub.publish(stop_motors);
+		return;
+	}
+
+#endif
 
 	if (_parameter_update_sub.updated()) {
 		updateParams();
@@ -86,14 +177,32 @@ void RoverDifferential::Run()
 	_timestamp = hrt_absolute_time();
 	_dt = math::constrain(_timestamp - timestamp_prev, 1_ms, 5000_ms) * 1e-6f;
 
+	if (_vehicle_control_mode_sub.updated()) {
+		vehicle_control_mode_s control_mode{};
+		_vehicle_control_mode_sub.copy(&control_mode);
+		const uint32_t key = controlModeKey(control_mode, _vehicle_status.nav_state);
+
+		if (!_control_mode_key_valid || key != _control_mode_key) {
+			if (_control_mode_key_valid) {
+				_throttle_body_x_setpoint.setForcedValue(0.f);
+				_current_throttle_body_x = 0.f;
+				_rover_throttle_setpoint = {};
+				_rover_steering_setpoint = {};
+			}
+
+			_output_epoch = hrt_absolute_time();
+			_awaiting_steering_setpoint = true;
+		}
+
+		_vehicle_control_mode = control_mode;
+		_control_mode_key = key;
+		_control_mode_key_valid = true;
+	}
+
 	_differential_pos_control.updatePosControl();
 	_differential_vel_control.updateVelControl();
 	_differential_att_control.updateAttControl();
 	_differential_rate_control.updateRateControl();
-
-	if (_vehicle_control_mode_sub.updated()) {
-		_vehicle_control_mode_sub.copy(&_vehicle_control_mode);
-	}
 
 	const bool full_manual_mode_enabled = _vehicle_control_mode.flag_control_manual_enabled
 					      && !_vehicle_control_mode.flag_control_position_enabled && !_vehicle_control_mode.flag_control_attitude_enabled
@@ -130,7 +239,12 @@ void RoverDifferential::generateSteeringAndThrottleSetpoint()
 void RoverDifferential::generateActuatorSetpoint()
 {
 	if (_rover_throttle_setpoint_sub.updated()) {
-		_rover_throttle_setpoint_sub.copy(&_rover_throttle_setpoint);
+		rover_throttle_setpoint_s throttle_setpoint{};
+		_rover_throttle_setpoint_sub.copy(&throttle_setpoint);
+
+		if (throttle_setpoint.timestamp > _output_epoch) {
+			_rover_throttle_setpoint = throttle_setpoint;
+		}
 	}
 
 	if (_actuator_motors_sub.updated()) {
@@ -140,7 +254,17 @@ void RoverDifferential::generateActuatorSetpoint()
 	}
 
 	if (_rover_steering_setpoint_sub.updated()) {
-		_rover_steering_setpoint_sub.copy(&_rover_steering_setpoint);
+		rover_steering_setpoint_s steering_setpoint{};
+		_rover_steering_setpoint_sub.copy(&steering_setpoint);
+
+		if (steering_setpoint.timestamp > _output_epoch) {
+			_rover_steering_setpoint = steering_setpoint;
+			_awaiting_steering_setpoint = false;
+		}
+	}
+
+	if (_awaiting_steering_setpoint) {
+		return;
 	}
 
 	if (!PX4_ISFINITE(_current_throttle_body_x)) {
@@ -204,7 +328,9 @@ Vector2f RoverDifferential::computeInverseKinematics(float throttle_body_x, cons
 		throttle_body_x -= sign(throttle_body_x) * excess;
 	}
 
-	// Calculate the left and right wheel speeds
+	// The differential controller's actuator order is right wheel, then left
+	// wheel. A positive yaw command therefore slows the right wheel and speeds
+	// up the left wheel for a right turn in the PX4 body-frame convention.
 	return Vector2f(throttle_body_x - speed_diff_normalized,
 			throttle_body_x + speed_diff_normalized);
 }

@@ -117,6 +117,7 @@ private:
 	bool _maybe_landed{true};
 
 	hrt_abstime _last_run{0};
+	hrt_abstime _quad_mode_entered_at{0};
 
 	perf_counter_t	_loop_perf;			/**< loop duration performance counter */
 

@@ -1,0 +1,67 @@
+#!/bin/sh
+#
+# @name Mini Quad-Rover
+#
+# @type VTOL Quadrotor
+# @class VTOL
+#
+
+set VEHICLE_TYPE mini_hybrid
+param set-default MAV_TYPE 22
+param set-default HYBR_QUAD_ROV 1
+
+# Quad X control allocation. Motor 1..4 remain the flight motors.
+param set-default CA_AIRFRAME 2
+param set-default CA_ROTOR_COUNT 4
+param set-default CA_ROTOR0_PX 1
+param set-default CA_ROTOR0_PY 1
+param set-default CA_ROTOR1_PX -1
+param set-default CA_ROTOR1_PY -1
+param set-default CA_ROTOR2_PX 1
+param set-default CA_ROTOR2_PY -1
+param set-default CA_ROTOR2_KM -0.05
+param set-default CA_ROTOR3_PX -1
+param set-default CA_ROTOR3_PY 1
+param set-default CA_ROTOR3_KM -0.05
+
+# MAIN1..4: DShot300 quad motors (Timer 0).
+param set-default PWM_MAIN_TIM0 -4
+param set-default PWM_MAIN_FUNC1 101
+param set-default PWM_MAIN_FUNC2 102
+param set-default PWM_MAIN_FUNC3 103
+param set-default PWM_MAIN_FUNC4 104
+
+# MAIN5: 90-degree camera pitch servo (Timer 1, conventional 50 Hz PWM).
+param set-default PWM_MAIN_TIM1 50
+param set-default PWM_MAIN_FUNC5 421
+param set-default PWM_MAIN_DIS5 1500
+param set-default PWM_MAIN_MIN5 1000
+param set-default PWM_MAIN_MAX5 2000
+param set-default PWM_MAIN_FAIL5 1500
+param set-default PWM_MAIN_FUNC6 0
+
+# MAIN7/8: Motor 7/8 at 1 kHz, interpreted as 0..100 percent duty cycle.
+param set-default PWM_MAIN_TIM2 1000
+param set-default PWM_MAIN_FUNC7 107
+param set-default PWM_MAIN_FUNC8 108
+param set-default PWM_MAIN_DUTY 192
+param set-default PWM_MAIN_DIS7 1000
+param set-default PWM_MAIN_DIS8 1000
+param set-default PWM_MAIN_MIN7 1000
+param set-default PWM_MAIN_MIN8 1000
+param set-default PWM_MAIN_MAX7 2000
+param set-default PWM_MAIN_MAX8 2000
+param set-default PWM_MAIN_FAIL7 1000
+param set-default PWM_MAIN_FAIL8 1000
+
+# RC channel 10 drives AUX1, which the standard gimbal module uses as pitch.
+# Auto input lets the most recently active RC or MAVLink gimbal-v2 source control it.
+param set-default RC_MAP_AUX1 10
+param set-default MNT_MODE_IN 0
+param set-default MNT_MODE_OUT 0
+param set-default MNT_MAN_ROLL 0
+param set-default MNT_MAN_PITCH 1
+param set-default MNT_MAN_YAW 0
+param set-default MNT_DO_STAB 0
+param set-default MNT_RANGE_PITCH 90
+param set-default MNT_OFF_PITCH 0

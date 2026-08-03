@@ -41,6 +41,12 @@ then
 	. ${R}etc/init.d/rc.hybrid_apps
 fi
 
+if [ $VEHICLE_TYPE = mini_hybrid ]
+then
+	# Start the non-transforming mini quad-rover apps.
+	. ${R}etc/init.d/rc.mini_hybrid_apps
+fi
+
 #
 # Differential Rover setup.
 #

@@ -109,6 +109,7 @@ void LoggedTopics::add_default_topics()
 	add_topic("radio_status");
 	add_optional_topic("rover_attitude_setpoint", 100);
 	add_optional_topic("rover_attitude_status", 100);
+	add_optional_topic("rover_position_status", 100);
 	add_optional_topic("rover_position_setpoint", 100);
 	add_optional_topic("rover_rate_setpoint", 100);
 	add_optional_topic("rover_rate_status", 100);

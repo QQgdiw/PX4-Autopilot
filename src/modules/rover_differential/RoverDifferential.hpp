@@ -56,6 +56,9 @@
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/manual_control_setpoint.h>
 #include <uORB/topics/vehicle_status.h>
+#if defined(CONFIG_MODULES_MINI_VEHICLE_CONTROL)
+#include <uORB/topics/hybrid_vehicle_status.h>
+#endif
 
 // Local includes
 #include "DifferentialRateControl/DifferentialRateControl.hpp"
@@ -92,6 +95,8 @@ protected:
 
 private:
 	void Run() override;
+	void resetInactiveState();
+	static uint32_t controlModeKey(const vehicle_control_mode_s &mode, uint8_t nav_state);
 
 	/**
 	 * @brief Generate and publish roverSteeringSetpoint and roverThrottleSetpoint from manualControlSetpoint (Manual Mode).
@@ -119,7 +124,11 @@ private:
 	uORB::Subscription _manual_control_setpoint_sub{ORB_ID(manual_control_setpoint)};
 	uORB::Subscription _actuator_motors_sub{ORB_ID(actuator_motors)};
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
-	vehicle_status_s _vehicle_status{};
+#if defined(CONFIG_MODULES_MINI_VEHICLE_CONTROL)
+	uORB::Subscription _hybrid_vehicle_status_sub {ORB_ID(hybrid_vehicle_status)};
+	hybrid_vehicle_status_s _hybrid_vehicle_status{};
+#endif
+	vehicle_status_s _vehicle_status {};
 	vehicle_control_mode_s _vehicle_control_mode{};
 	rover_steering_setpoint_s _rover_steering_setpoint{};
 	rover_throttle_setpoint_s _rover_throttle_setpoint{};
@@ -139,6 +148,10 @@ private:
 	hrt_abstime _timestamp{0};
 	float _dt{0.f};
 	float _current_throttle_body_x{0.f};
+	bool _awaiting_steering_setpoint{false};
+	uint32_t _control_mode_key{0};
+	hrt_abstime _output_epoch{0};
+	bool _control_mode_key_valid{false};
 
 	// Controllers
 	SlewRate<float> _throttle_body_x_setpoint{0.f};
