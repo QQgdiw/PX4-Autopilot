@@ -27,6 +27,7 @@
 - [x] 按原生PX4流程重写机载通信：外部定位、RC Position、Offboard、Mission/RTL与
   可选`MANUAL_CONTROL`分离，并限定mini Rover正式Offboard为二维位置Go-to。
 - [x] 编写当前 uXRCE-DDS topics、QoS、时间/坐标和兼容性边界文档。
+- [x] 为四桨瞬时归零增加mini输出原因锁存、arming安全边沿、QGC告警和判定等价单测。
 - [ ] 由 QGC Agent 按 GUIDE 固定 `qgc_mini_rover` commit，完成四页实时曲线和参数编辑。
 - [ ] 机载程序按 MAVLink 文档实现VIO `ODOMETRY`、RC Position协同、Offboard Go-to、
   命令ACK/最终状态确认和断线恢复。
@@ -45,3 +46,5 @@
 - [ ] 实机确认 airborne 拒绝 Quad -> Rover、landed 接受及两方向控制器接管。
 - [ ] 实机验证 Rover -> Quad 前存在非零姿态目标/推力/积分时，旧输入不会重新驱动 MAIN1~4。
 - [ ] 实机确认 RC channel 10 与 MAVLink gimbal v2 的控制权切换和 90 度机械范围。
+- [ ] 刷入输出诊断固件，拆桨复现降速后立即执行`mini_vehicle_control status`，记录QGC
+  `Mini output issue`/`Mini safety block`边沿消息并据锁存原因定位，不再人工盯高速listener。

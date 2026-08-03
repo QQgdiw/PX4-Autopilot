@@ -159,6 +159,15 @@
   拆分为VIO/SLAM测量输入、物理RC Position、Offboard setpoint、Mission/RTL和可选虚拟
   摇杆；MAVLink/DDS文档均只把Rover二维local NED position Go-to列为mini正式Offboard
   契约。确认DDS `goto_setpoint`仅供MC，mini EKF2只消费`vehicle_visual_odometry`。
+- 2026-08-04：实机确认四旋翼降速事件中`SERVO_OUTPUT_RAW`前四路曾同步变为0；普通
+  `listener`因高速清屏只能提供最终样本，不能证明瞬态未发生。新增只读锁存诊断，区分
+  no-source、pre-epoch、future、stale和non-finite输入，另记lockdown/manual kill/
+  force-failsafe及armed下降边沿；只在已解锁问题开始/恢复边沿向QGC报告，不改变原200 ms
+  freshness门或任一输出值。判定等价单测进入SITL test配置，最终CTest 147/147通过；
+  实现提交为`4b7c56be2731d2ee74acf1463fde37caa4d4d41c`；`make hkust_nxt-dual_mini`
+  成功，Flash 1,702,752 B / 1,792 KiB（92.79%），`.px4` SHA-256为
+  `7b7e97d451765405e30aa456f64b673245e99c5771c34f63fd1e04a1198daabf`，`.bin`为
+  `2af6c936f58551ac0f102898bcfebc209b06021f50d067bea0f2e6e575a2da1e`。尚未刷机复现。
 - 2026-08-03：通信复审发现Rover Direct RTL在持续`landed=true`时直接进入IDLE，即使
   Commander可ACK Accepted并显示AUTO_RTL；Mission RTL item同样受影响，已明确禁止作为
   当前Rover安全功能。无SD时dataman默认文件后端不可依赖，Mission需

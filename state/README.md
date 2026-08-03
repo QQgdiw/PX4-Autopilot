@@ -8,12 +8,15 @@
 - 云台：普通 90 度 PWM 舵机，默认 1500 us；RC channel 10 与 MAVLink mount/gimbal 连续控制。
 - 切换约束：Quad -> Rover 必须由 PX4 原生着陆检测确认 landed；删除变形执行器、位置检测及等待过程。
 - 当前固件目标：`make hkust_nxt-dual_mini`；airframe ID 为 22002。
-- 当前固件源码协议锚点：`2f5d1f003b3106060e70df012de59bfc3404837c`。
+- 当前固件源码锚点：`4b7c56be2731d2ee74acf1463fde37caa4d4d41c`。
 - NXT-Dual 定时器：MAIN1~4=TIM1，MAIN5/6=TIM2，MAIN7/8=TIM3。
 - 轮 PWM 默认载波：1 kHz，由 `PWM_MAIN_TIM2` 参数化；MAIN7/8 使用 duty mask `0xC0`。
 - 原生 `actuator_motors_rover.control[0]` 是右轮、`control[1]` 是左轮；mini 仲裁层
   将其路由为 MAIN8/右轮、MAIN7/左轮。
 - 安全输出：切换后仅接受目标控制器在切换 epoch 之后发布且不超过 200 ms 的样本。
+- `mini_vehicle_control` 提供锁存式输出诊断；`mini_vehicle_control status` 显示当前源年龄、
+  解锁期最大年龄、输出问题/恢复/安全阻断/armed下降次数，以及最近一次原因、四路输入和
+  arming快照。已解锁问题边沿同时通过MAVLink日志通知QGC，但不改变任何输出判定或赋值。
 - 历史行为修复：已从 `325a9d07ba` 选择性移植 Quad-Rover 自动解除锁定抑制、MC
   控制器状态更新、Rover 外环所有权及 yaw-rate setpoint 低值保留；未移植调试探针。
 - Rover -> Quad 时 MC 姿态/rate 控制器会清空旧目标、积分与滤波，并拒绝切换
@@ -52,3 +55,8 @@
   `b06be017cfbdc706493e294f3759ebf5368e9bf944b79794cb88e6d1e23c6a97`。
 - 该源码锚点已通过隔离 Linux PATH 的 PX4 CTest 146/146 和 MAVLink dialect
   测试 2/2；尚未进行 QGC、USB 实机或车辆硬件验收。
+- 输出诊断版本通过隔离Linux PATH的PX4 CTest 147/147（含
+  `unit-MiniVehicleControlDiagnostics`）及`make hkust_nxt-dual_mini`；Flash image为
+  1,702,752 B / 1,792 KiB（92.79%）。`.px4` SHA-256为
+  `7b7e97d451765405e30aa456f64b673245e99c5771c34f63fd1e04a1198daabf`，`.bin`为
+  `2af6c936f58551ac0f102898bcfebc209b06021f50d067bea0f2e6e575a2da1e`；尚未刷机复现瞬时四桨降速。
