@@ -143,7 +143,9 @@
   `.px4` SHA-256 `c8fb8aaeebe40846292c2fddd21d919ce5a7f736d3e83347c0b31794e53c9bd0`，
   `.bin` SHA-256 `b06be017cfbdc706493e294f3759ebf5368e9bf944b79794cb88e6d1e23c6a97`。
   隔离Linux PATH的PX4 CTest为146/146（52.46 s），MAVLink dialect为2/2；
-  远端同步和实机验收仍待完成。
+  实机验收仍待完成。
 - 2026-08-03：通信文档静态终审完成：`dds_topics.yaml`中的全部启用topic均在DDS文档
   覆盖，pymavlink示例通过Python语法编译，固定MAVLink枚举/消息常量与源码一致，
   `git diff --check`通过。上述检查不包含ROS 2 Agent、USB、RC接管、云台或整车实测。
+- 2026-08-03：首次创建并推送远端分支`origin/change_mini_v1.16.1`，upstream tracking
+  配置成功；已推送固件源码提交`2f5d1f003b`和通信文档提交`c8fa199435`。
