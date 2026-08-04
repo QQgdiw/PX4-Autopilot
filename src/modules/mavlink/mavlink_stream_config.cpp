@@ -318,6 +318,7 @@ bool MavlinkStreamConfigHandoff::process_pending(ConfigureCallback callback, voi
 	char stream_name[STREAM_NAME_CAPACITY] {};
 	strncpy(stream_name, _stream_name, sizeof(stream_name) - 1);
 	const float rate = _rate;
+	_execution_deadline = _deadline;
 
 	if (_cancel_requested || _shutdown || deadline_expired(_deadline)) {
 		_result = _shutdown ? Result::Exiting : Result::Timeout;
@@ -378,8 +379,17 @@ MavlinkStreamConfigHandoff::Result MavlinkStreamConfigHandoff::commit(uint32_t g
 MavlinkStreamConfigHandoff::Result MavlinkStreamConfigHandoff::commit_impl(uint32_t generation,
 		CommitCallback callback, void *context)
 {
-	if (!_initialized || callback == nullptr || pthread_mutex_lock(&_mutex) != 0) {
+	if (!_initialized || callback == nullptr) {
 		return Result::Failed;
+	}
+
+	/* process_pending() publishes this immutable generation deadline before
+	 * invoking the callback on the same main thread. Waiting for a transient
+	 * receiver-side owner remains part of the original request budget. */
+	const int lock_result = lock_until(_execution_deadline);
+
+	if (lock_result != 0) {
+		return lock_result == ETIMEDOUT ? Result::Timeout : Result::Failed;
 	}
 
 	if (!_request_active || _active_generation != generation || _state != State::Executing) {
@@ -391,6 +401,22 @@ MavlinkStreamConfigHandoff::Result MavlinkStreamConfigHandoff::commit_impl(uint3
 
 	if (_shutdown || _cancel_requested || deadline_expired(_deadline)) {
 		_result = _shutdown ? Result::Exiting : Result::Timeout;
+		_state = State::Completed;
+		const Result result = _result;
+
+		if (!_caller_waiting) {
+			release_request_locked();
+		}
+
+		pthread_cond_broadcast(&_condition);
+		pthread_mutex_unlock(&_mutex);
+		return result;
+	}
+
+	timespec now{};
+
+	if (read_clock(now) != 0 || timespec_remaining_us(_deadline, now) <= APPLY_BUDGET_US) {
+		_result = Result::Timeout;
 		_state = State::Completed;
 		const Result result = _result;
 

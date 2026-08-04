@@ -68,6 +68,22 @@
   让同优先级任务运行，receiver等待main持有的锁时使用它会造成优先级饥饿。
 - MAVLink receiver 的 pthread_create、stop 与 join 由实例内状态互斥锁串行；析构前必须
   先执行幂等 stop，避免启动窗口漏 join或并发 stop 重复 join。
+- 当前 stream 配置修复工作树位于
+  `/home/crocodile/PX4-Autopilot-mini-rover-stream-config-fix`，基于
+  `change_mini_v1.16.1 @ 9602c367e9be78f6d12971d0a019cf477517689f`；远端备份
+  `origin/testm1_v1.16.1` 仍指向该基线，不能从旧文档基线重建。
+- stream handoff 使用固定请求存储、generation、单一 1 s monotonic deadline；prepare
+  阶段在 handoff 锁外完成，commit 仅允许有界 `trylock`、非阻塞 interval 更新和链表
+  变更，retired stream 析构延迟到 reader 清空后的主线程清理。
+- receiver 启动失败必须在 `_task_running=false` 前释放 instance registry；stop-all 在
+  最终删除前必须持 registry 锁重新核对所有实例未运行，避免启动窗口双删/UAF。
+- 当前源码验证证据：`unit-MavlinkStreamConfig` 22/22，普通并发压力 300/300，关闭
+  WSL ASLR 后 TSAN 压力 100/100，PX4 CTest 148/148，mini dialect 2/2，受影响文件
+  AStyle 8/8，均无失败；USB 无电池 ACK 与带电波形尚未执行。
+- 最近 GCC 9.3.1 `hkust_nxt-dual_mini` 构建 Flash 为 1,709,128 B / 1,792 KiB
+  （93.14%）；`.px4` SHA-256 为
+  `293dd2ef1e23eb88195c466a20b76103c69c6c3202d52386f507bf7fe24ee3cb`，`.bin` 为
+  `8ded817c00d876116757f387a66892e9c634d011d8f28b809b2be79ac991c4c5`。
 
 【项目规范区域】
 
@@ -122,3 +138,7 @@
 - MAVLink高优先级receiver等待低优先级main时禁止使用`sched_yield`自旋；等待必须让出CPU、
   以同一monotonic deadline复核，且不得持锁睡眠。真实stream配置commit必须保持短小、
   非阻塞，并在返回Accepted前传回实际结果。
+- stream commit 取得 handoff 锁时不得同时持有 `_streams_mutex`；commit 回调必须自行
+  `trylock` stream mutex，失败即返回失败，避免在等待 receiver 时长期占用 stream 列表。
+- `MavlinkStreamLifecycle::retire()` 必须始终进入 retired list，禁止在 handoff commit 或
+  stream mutex 临界区析构对象；只由 reader 归零后的主线程清理释放。

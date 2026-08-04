@@ -714,11 +714,14 @@ private:
 	 * Configure default streams according to _mode for either all streams or only a single
 	 * stream.
 	 * @param configure_single_stream: if nullptr, configure all streams, else only a single stream
+	 * @param resolved_rate: if non-null, resolve the selected default without applying it
 	 * @return 0 on success, <0 on error
 	 */
-	int configure_streams_to_default(const char *configure_single_stream = nullptr, bool strict = false);
+	int configure_streams_to_default(const char *configure_single_stream = nullptr, bool strict = false,
+					 float *resolved_rate = nullptr);
 
-	int configure_requested_stream(const char *stream_name, float rate);
+	MavlinkStreamConfigHandoff::Result configure_requested_stream(const char *stream_name, float rate,
+			MavlinkStreamConfigHandoff &handoff, uint32_t generation);
 
 	void pass_message(const mavlink_message_t *msg);
 

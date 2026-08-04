@@ -45,6 +45,7 @@
 #include <lib/systemlib/px4_macros.h>
 
 #include <math.h>
+#include <errno.h>
 #include <poll.h>
 
 #ifdef CONFIG_NET
@@ -71,7 +72,12 @@
 
 MavlinkReceiver::~MavlinkReceiver()
 {
-	stop();
+	while (!stop()) {
+		/* Do not destroy receiver state while its thread may still dereference
+		 * the parent. Normal callers have already requested shutdown, so this
+		 * loop is only a defensive retry for a transient join error. */
+		px4_usleep(100000);
+	}
 
 	delete _tune_publisher;
 	delete _px4_accel;
@@ -3472,21 +3478,22 @@ void MavlinkReceiver::print_detailed_rx_stats() const
 	}
 }
 
-void MavlinkReceiver::start()
+bool MavlinkReceiver::start()
 {
-	if (_thread_state_mutex_initialized) {
-		pthread_mutex_lock(&_thread_state_mutex);
+	if (!_thread_state_mutex_initialized) {
+		PX4_ERR("receiver thread state mutex unavailable");
+		return false;
 	}
 
-	if (_thread_started.load()) {
-		if (_thread_state_mutex_initialized) {
-			pthread_mutex_unlock(&_thread_state_mutex);
-		}
+	pthread_mutex_lock(&_thread_state_mutex);
 
-		return;
+	if (_thread_started.load()) {
+		pthread_mutex_unlock(&_thread_state_mutex);
+		return true;
 	}
 
 	_should_exit.store(false);
+	_thread_exited.store(false);
 
 	pthread_attr_t receiveloop_attr;
 	pthread_attr_init(&receiveloop_attr);
@@ -3499,18 +3506,20 @@ void MavlinkReceiver::start()
 	pthread_attr_setstacksize(&receiveloop_attr,
 				  PX4_STACK_ADJUSTED(sizeof(MavlinkReceiver) + 2840 + MAVLINK_RECEIVER_NET_ADDED_STACK));
 
-	if (pthread_create(&_thread, &receiveloop_attr, MavlinkReceiver::start_trampoline, (void *)this) == 0) {
+	const int create_result = pthread_create(&_thread, &receiveloop_attr, MavlinkReceiver::start_trampoline, (void *)this);
+
+	if (create_result == 0) {
 		_thread_started.store(true);
+		_join_failure_reported = false;
 
 	} else {
-		PX4_ERR("failed to start receiver thread");
+		_thread_exited.store(true);
+		PX4_ERR("failed to start receiver thread (%i)", create_result);
 	}
 
 	pthread_attr_destroy(&receiveloop_attr);
-
-	if (_thread_state_mutex_initialized) {
-		pthread_mutex_unlock(&_thread_state_mutex);
-	}
+	pthread_mutex_unlock(&_thread_state_mutex);
+	return create_result == 0;
 }
 
 void
@@ -3524,29 +3533,55 @@ void *MavlinkReceiver::start_trampoline(void *context)
 {
 	MavlinkReceiver *self = reinterpret_cast<MavlinkReceiver *>(context);
 	self->run();
+	self->_thread_exited.store(true);
 	return nullptr;
 }
 
-void MavlinkReceiver::stop()
+bool MavlinkReceiver::stop()
 {
 	_should_exit.store(true);
 
-	if (_thread_state_mutex_initialized) {
-		pthread_mutex_lock(&_thread_state_mutex);
+	if (!_thread_state_mutex_initialized) {
+		return !_thread_started.load();
 	}
 
+	pthread_mutex_lock(&_thread_state_mutex);
+	bool stopped = true;
+
 	if (_thread_started.load()) {
-		const int join_result = pthread_join(_thread, nullptr);
+		int join_result = EDEADLK;
+
+		if (!pthread_equal(pthread_self(), _thread)) {
+			do {
+				join_result = pthread_join(_thread, nullptr);
+			} while (join_result == EINTR);
+		}
 
 		if (join_result == 0) {
 			_thread_started.store(false);
+			_thread_exited.store(true);
+			_join_failure_reported = false;
+
+		} else if (_thread_exited.load()) {
+			/* The execution lifetime is over even if the platform failed to
+			 * reap its pthread bookkeeping. Parent memory is now safe to free. */
+			_thread_started.store(false);
+
+			if (!_join_failure_reported) {
+				PX4_ERR("receiver exited but join failed (%i)", join_result);
+				_join_failure_reported = true;
+			}
+
+		} else if (!_join_failure_reported) {
+			PX4_ERR("failed to join receiver thread (%i)", join_result);
+			_join_failure_reported = true;
+			stopped = false;
 
 		} else {
-			PX4_ERR("failed to join receiver thread (%i)", join_result);
+			stopped = false;
 		}
 	}
 
-	if (_thread_state_mutex_initialized) {
-		pthread_mutex_unlock(&_thread_state_mutex);
-	}
+	pthread_mutex_unlock(&_thread_state_mutex);
+	return stopped;
 }

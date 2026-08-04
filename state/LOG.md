@@ -220,3 +220,22 @@
   `2f4cc7adbfa7aa8884ffadffdd7c94f9a48bdf8142233d1b5d02ab64eb9ee834`。
 - 2026-08-04：包含 lifecycle 析构清理的最终单测二进制重建后，普通压力 200/200、
   `setarch -R` 下 TSAN 压力 50/50 均通过；没有 ThreadSanitizer/data-race 报告。
+- 2026-08-04：在并发压力中曾用单次 handoff `trylock` 错误拒绝 receiver 短暂持锁的
+  正常请求，第161/200次稳定复现 callback 只调用1次而非2次；改为保存同 generation 的
+  `_execution_deadline` 并按该 deadline 有界等待后，最新普通压力 300/300、TSAN 100/100
+  均通过。该过程证明不能把瞬时 mutex 竞争直接当作配置失败。
+- 2026-08-04：生命周期复审发现 receiver 启动失败会在释放 instance registry 前发布
+  `_task_running=false`，可能与 task trampoline/stop-all 双删；现于失败清理末尾调用
+  `release_instance_id()`。stop-all 最终删除前新增 registry 锁内 `running()` 复核，若有
+  新注册运行实例则返回错误而不删除；主机代码重新构建通过。
+- 2026-08-04：为避免 handoff 等待期间长期持有 `_streams_mutex`，stream commit 回调
+  改为自行 `trylock` 列表锁并在锁内复核 generation 对应对象；commit 仍只做非阻塞
+  interval/链表操作，candidate 和 retired 析构均在 commit 返回后清理。
+- 2026-08-04：当前源码最终门禁全部通过：`unit-MavlinkStreamConfig` 22/22，PX4 CTest
+  148/148，普通压力 300/300，关闭 ASLR 的 TSAN 100/100，mini dialect 2/2，受影响
+  C/C++ AStyle 8/8，`git diff --check` 无诊断。GCC 9.3.1 `make hkust_nxt-dual_mini`
+  成功，Flash 1,709,128 B / 1,792 KiB（93.14%）；`.px4` SHA-256
+  `293dd2ef1e23eb88195c466a20b76103c69c6c3202d52386f507bf7fe24ee3cb`，`.bin`
+  `8ded817c00d876116757f387a66892e9c634d011d8f28b809b2be79ac991c4c5`。
+- 2026-08-04：当前 WSL 未连接飞控，USB 无电池 command 511/512 ACK、连续切页和带电
+  实时波形验收仍未执行；不能把主机压力、目标板构建或 dialect 测试表述为实机通过。

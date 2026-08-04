@@ -148,13 +148,9 @@ bool MavlinkStreamLifecycle::retire(List<MavlinkStream *> &active_streams, Mavli
 		return false;
 	}
 
-	if (_reader_count > 0) {
-		_retired_streams.add(stream);
-
-	} else {
-		delete stream;
-	}
-
+	/* Destruction is intentionally deferred so configuration commit never
+	 * executes a stream destructor while holding the handoff mutex. */
+	_retired_streams.add(stream);
 	return true;
 }
 

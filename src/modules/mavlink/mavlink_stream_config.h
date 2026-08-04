@@ -58,6 +58,8 @@ public:
 
 	/** Far above the 100 Hz main-loop handoff latency while bounding command ACK delay. */
 	static constexpr uint64_t DEFAULT_TIMEOUT_US{1'000'000};
+	/** Reserve time for the non-blocking stream apply section at the deadline edge. */
+	static constexpr uint64_t APPLY_BUDGET_US{10'000};
 	static constexpr size_t STREAM_NAME_CAPACITY{64};
 	static constexpr uint32_t LIFECYCLE_CLOSING_BIT{1u << 31};
 	static constexpr uint32_t LIFECYCLE_CALL_COUNT_MASK{LIFECYCLE_CLOSING_BIT - 1};
@@ -81,7 +83,9 @@ public:
 
 	/**
 	 * Execute the side-effecting part of a configure callback for the matching request.
-	 * The callback runs in a short commit section and must not block or call this handoff.
+	 * The callback runs in a short commit section and must not allocate, destroy,
+	 * block, log, or call this handoff. Preparation that can exceed APPLY_BUDGET_US
+	 * belongs in ConfigureCallback before commit().
 	 */
 	Result commit(uint32_t generation, CommitCallback callback, void *context);
 
@@ -133,6 +137,7 @@ private:
 	uint32_t _next_generation{0};
 	uint32_t _active_generation{0};
 	timespec _deadline{};
+	timespec _execution_deadline{};
 	char _stream_name[STREAM_NAME_CAPACITY] {};
 	float _rate{0.f};
 };

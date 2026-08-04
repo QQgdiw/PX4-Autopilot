@@ -32,9 +32,10 @@
 - [x] 实机复测 future 修复：QGC MAVLink 检测多次观察 MAIN1~4 输出不再同步归零，
   桨叶周期性降速现象消失。
 - [x] 修复 MAVLink stream 配置跨线程 data race、无界等待、ACK 假成功、退出 join 和
-  stream request/delete 生命周期问题，并完成20项确定性单测与并发/TSAN压力。
-- [x] 使用 GCC 9.3.1 完成 `make hkust_nxt-dual_mini`，并完成148项PX4 CTest、dialect、
-  受影响文件AStyle及`git diff --check`门禁。
+  stream request/delete 生命周期问题；补齐 receiver 启动失败 registry 释放、stop-all
+  锁内复核，并完成22项确定性单测。
+- [x] 使用 GCC 9.3.1 完成 `make hkust_nxt-dual_mini`，并完成148项PX4 CTest、普通压力
+  300/300、TSAN压力100/100、dialect 2/2、受影响文件AStyle 8/8及`git diff --check`门禁。
 - [ ] 由 QGC Agent 按 GUIDE 固定 `qgc_mini_rover` commit，完成四页实时曲线和参数编辑。
 - [ ] 机载程序按 MAVLink 文档实现VIO `ODOMETRY`、RC Position协同、Offboard Go-to、
   命令ACK/最终状态确认和断线恢复。

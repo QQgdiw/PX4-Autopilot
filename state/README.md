@@ -62,12 +62,14 @@
   `c76a95a286d96248ca76a39dae26641f65d240ac910624cd78da87583e5595a6`，`.bin`为
   `258930095ea2af119d9e81d90cac4592f895c87d22d61160b3e23dcbfd60eea0`；尚未刷机验收修复。
 - MAVLink stream 配置现使用固定存储、generation 和单一 1 s monotonic deadline 在
-  receiver/CLI 与 main thread 间交接；真实配置成功才返回 command 511/512 Accepted。
-  stream 按需发送与周期发送逐对象串行，删除采用 reader/retired 生命周期保护。
-- 当前修复树通过 PX4 CTest 148/148，其中 `unit-MavlinkStreamConfig` 20/20；普通并发压力
-  200/200、关闭 ASLR 后 ThreadSanitizer 50/50、mini Rover dialect 2/2。本次受影响文件
-  AStyle 14/14 通过；全仓库 AStyle 仍受 12 个未改动基线文件的既有格式问题影响。
-- GCC 9.3.1 目标构建 Flash 为 1,708,032 B / 1,792 KiB（93.08%），相对同编译器基线增加
-  5,280 B；`.px4` SHA-256 为 `4b071c48c708db5102d3aee183ab2eae9d62cf86ef53be0c683a8e8a15fc5f79`，
-  `.bin` SHA-256 为 `2f4cc7adbfa7aa8884ffadffdd7c94f9a48bdf8142233d1b5d02ab64eb9ee834`。
-  USB command/ACK 无电池验收和带电实时波形验收均尚未执行。
+  receiver/CLI 与 main thread 间交接；prepare 在 handoff 锁外完成，commit 只做有界
+  非阻塞变更，真实配置成功才返回 command 511/512 Accepted。stream 删除采用
+  reader/retired 生命周期保护，receiver 启动失败和 stop-all 注册表竞态也已加固。
+- 当前修复树通过 PX4 CTest 148/148，其中 `unit-MavlinkStreamConfig` 22/22；普通并发压力
+  300/300、关闭 ASLR 后 ThreadSanitizer 100/100、mini Rover dialect 2/2。本次受影响
+  文件 AStyle 8/8 通过，`git diff --check` 通过；全仓库 AStyle 仍可能受未改动基线文件影响。
+- 最近 GCC 9.3.1 目标构建 Flash 为 1,709,128 B / 1,792 KiB（93.14%）；`.px4` SHA-256
+  为 `293dd2ef1e23eb88195c466a20b76103c69c6c3202d52386f507bf7fe24ee3cb`，`.bin` 为
+  `8ded817c00d876116757f387a66892e9c634d011d8f28b809b2be79ac991c4c5`。
+- USB command/ACK 无电池验收和带电实时波形验收均尚未执行；目标板构建和主机自动测试
+  不能替代这两阶段实机验收。

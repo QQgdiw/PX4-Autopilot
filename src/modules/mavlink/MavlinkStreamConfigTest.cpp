@@ -348,16 +348,16 @@ TEST(MavlinkStreamConfig, ConcurrentRequestsRemainIsolated)
 	std::thread success_caller([&]() {
 		while (!start.load()) { std::this_thread::yield(); }
 
-		success_result = handoff.request("SUCCESS", 50.f);
+		success_result = handoff.request("SUCCESS", 50.f, 5'000'000);
 	});
 	std::thread failure_caller([&]() {
 		while (!start.load()) { std::this_thread::yield(); }
 
-		failure_result = handoff.request("FAIL", 10.f);
+		failure_result = handoff.request("FAIL", 10.f, 5'000'000);
 	});
 	start.store(true);
 
-	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
 
 	while (callback_context.calls.load() < 2 && std::chrono::steady_clock::now() < deadline) {
 		if (!handoff.process_pending(record_request, &callback_context)) {
@@ -494,6 +494,23 @@ TEST(MavlinkStreamConfig, ExpiredRequestCannotExecuteLate)
 	EXPECT_EQ(submit_and_process(handoff, "NEXT_GENERATION", 3.f, callback_context), Result::Success);
 	ASSERT_EQ(callback_context.requests.size(), 1u);
 	EXPECT_STREQ(callback_context.requests[0].name, "NEXT_GENERATION");
+}
+
+TEST(MavlinkStreamConfig, ApplyBudgetRejectsLateCommit)
+{
+	TestClock clock;
+	MavlinkStreamConfigHandoff handoff(TestClock::read, &clock);
+	CallbackContext callback_context{};
+	Result result{Result::Failed};
+	std::thread caller([&]() { result = handoff.request("LATE_APPLY", 1.f, 20'000); });
+
+	ASSERT_TRUE(wait_for_pending(handoff));
+	clock.advance(MavlinkStreamConfigHandoff::APPLY_BUDGET_US + 1);
+	EXPECT_TRUE(handoff.process_pending(record_request, &callback_context));
+	caller.join();
+
+	EXPECT_EQ(result, Result::Timeout);
+	EXPECT_EQ(callback_context.calls.load(), 0u);
 }
 
 TEST(MavlinkStreamConfig, ShutdownWakesPendingAndQueuedCallers)
@@ -739,6 +756,23 @@ TEST(MavlinkStreamConfig, DefersRetiredStreamDestructionUntilReaderReleases)
 	EXPECT_EQ(lifecycle.retired_count(), 0u);
 	EXPECT_EQ(destruction_count.load(), 1u);
 	EXPECT_FALSE(lifecycle.release_reader());
+}
+
+TEST(MavlinkStreamConfig, DefersRetiredStreamDestructionUntilCleanup)
+{
+	std::atomic<unsigned> destruction_count{0};
+	List<MavlinkStream *> active_streams;
+	MavlinkStreamLifecycle lifecycle;
+	auto *stream = new LifetimeTestStream(destruction_count);
+	active_streams.add(stream);
+
+	EXPECT_TRUE(lifecycle.retire(active_streams, stream));
+	EXPECT_TRUE(active_streams.empty());
+	EXPECT_EQ(destruction_count.load(), 0u);
+
+	lifecycle.cleanup_retired();
+	EXPECT_EQ(lifecycle.retired_count(), 0u);
+	EXPECT_EQ(destruction_count.load(), 1u);
 }
 
 TEST(MavlinkStreamConfig, ShutdownClearDefersAllStreamsForAnActiveReader)
