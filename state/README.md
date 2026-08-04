@@ -8,7 +8,7 @@
 - 云台：普通 90 度 PWM 舵机，默认 1500 us；RC channel 10 与 MAVLink mount/gimbal 连续控制。
 - 切换约束：Quad -> Rover 必须由 PX4 原生着陆检测确认 landed；删除变形执行器、位置检测及等待过程。
 - 当前固件目标：`make hkust_nxt-dual_mini`；airframe ID 为 22002。
-- 当前固件源码锚点：`4b7c56be2731d2ee74acf1463fde37caa4d4d41c`。
+- 当前固件源码锚点：`cb6ad318d6b5319d6e5b1ed7cd660097ac1c882c`。
 - NXT-Dual 定时器：MAIN1~4=TIM1，MAIN5/6=TIM2，MAIN7/8=TIM3。
 - 轮 PWM 默认载波：1 kHz，由 `PWM_MAIN_TIM2` 参数化；MAIN7/8 使用 duty mask `0xC0`。
 - 原生 `actuator_motors_rover.control[0]` 是右轮、`control[1]` 是左轮；mini 仲裁层
@@ -55,8 +55,8 @@
   `b06be017cfbdc706493e294f3759ebf5368e9bf944b79794cb88e6d1e23c6a97`。
 - 该源码锚点已通过隔离 Linux PATH 的 PX4 CTest 146/146 和 MAVLink dialect
   测试 2/2；尚未进行 QGC、USB 实机或车辆硬件验收。
-- 输出诊断版本通过隔离Linux PATH的PX4 CTest 147/147（含
+- future误判修复版本通过隔离Linux PATH的PX4 CTest 147/147（含
   `unit-MiniVehicleControlDiagnostics`）及`make hkust_nxt-dual_mini`；Flash image为
   1,702,752 B / 1,792 KiB（92.79%）。`.px4` SHA-256为
-  `7b7e97d451765405e30aa456f64b673245e99c5771c34f63fd1e04a1198daabf`，`.bin`为
-  `2af6c936f58551ac0f102898bcfebc209b06021f50d067bea0f2e6e575a2da1e`；尚未刷机复现瞬时四桨降速。
+  `c76a95a286d96248ca76a39dae26641f65d240ac910624cd78da87583e5595a6`，`.bin`为
+  `258930095ea2af119d9e81d90cac4592f895c87d22d61160b3e23dcbfd60eea0`；尚未刷机验收修复。

@@ -168,6 +168,15 @@
   成功，Flash 1,702,752 B / 1,792 KiB（92.79%），`.px4` SHA-256为
   `7b7e97d451765405e30aa456f64b673245e99c5771c34f63fd1e04a1198daabf`，`.bin`为
   `2af6c936f58551ac0f102898bcfebc209b06021f50d067bea0f2e6e575a2da1e`。尚未刷机复现。
+- 2026-08-04：诊断固件实机锁存`Quad/future`，四路源输入均有限，safety block与armed
+  drop均为0；问题到恢复间隔为20,139 us，armed期有效源最大年龄仅452 us。根因是
+  `Run()`先取now，之后更新执行器订阅，期间Control Allocator的新消息时间戳会晚于旧now，
+  被误判future并输出一周期NaN。修复为订阅拷贝完成后重新读取HRT，保留真正future保护；
+  提交`cb6ad318d6b5319d6e5b1ed7cd660097ac1c882c`。新增回归单测通过；首次全量CTest中
+  未改动的sitl-dataman因异步超时失败，单项重跑1/1及随后全量147/147均通过。
+  `make hkust_nxt-dual_mini`成功，Flash仍为1,702,752 B（92.79%），`.px4` SHA-256
+  `c76a95a286d96248ca76a39dae26641f65d240ac910624cd78da87583e5595a6`，`.bin`为
+  `258930095ea2af119d9e81d90cac4592f895c87d22d61160b3e23dcbfd60eea0`；尚未刷机验收。
 - 2026-08-03：通信复审发现Rover Direct RTL在持续`landed=true`时直接进入IDLE，即使
   Commander可ACK Accepted并显示AUTO_RTL；Mission RTL item同样受影响，已明确禁止作为
   当前Rover安全功能。无SD时dataman默认文件后端不可依赖，Mission需
