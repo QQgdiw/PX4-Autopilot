@@ -59,3 +59,18 @@ TEST(MiniVehicleControlDiagnostics, PreservesOriginalFreshnessDecision)
 			  originalFreshnessCheck(test_case.now, test_case.source_timestamp, test_case.mode_changed_at));
 	}
 }
+
+TEST(MiniVehicleControlDiagnostics, PostSubscriptionTimestampAvoidsSchedulingRace)
+{
+	using mini_vehicle_control::OutputIssueReason;
+	using mini_vehicle_control::classifySourceFreshness;
+
+	constexpr uint64_t run_timestamp = 1000000;
+	constexpr uint64_t source_timestamp = 1000100;
+	constexpr uint64_t post_subscription_timestamp = 1000101;
+
+	EXPECT_EQ(classifySourceFreshness(run_timestamp, source_timestamp, 0, Timeout),
+		  OutputIssueReason::FutureTimestamp);
+	EXPECT_EQ(classifySourceFreshness(post_subscription_timestamp, source_timestamp, 0, Timeout),
+		  OutputIssueReason::None);
+}

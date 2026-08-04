@@ -77,7 +77,7 @@ private:
 	void process_rc_switch();
 	uint8_t request_mode(Mode requested_mode);
 	void publish_status(hrt_abstime now);
-	void publish_motor_outputs(hrt_abstime now);
+	void publish_motor_outputs();
 	void leave_auto_mode();
 	void update_diagnostics(hrt_abstime now, const actuator_motors_s &selected_motors,
 				mini_vehicle_control::OutputIssueReason reason);

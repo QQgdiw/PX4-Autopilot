@@ -112,7 +112,7 @@ void MiniVehicleControl::Run()
 	process_vehicle_commands();
 	process_rc_switch();
 	publish_status(now);
-	publish_motor_outputs(now);
+	publish_motor_outputs();
 }
 
 hrt_abstime MiniVehicleControl::source_age(hrt_abstime now, hrt_abstime source_timestamp)
@@ -435,10 +435,12 @@ void MiniVehicleControl::update_diagnostics(hrt_abstime now, const actuator_moto
 	}
 }
 
-void MiniVehicleControl::publish_motor_outputs(hrt_abstime now)
+void MiniVehicleControl::publish_motor_outputs()
 {
 	_actuator_motors_mc_sub.update(&_mc_motors);
 	_actuator_motors_rover_sub.update(&_rover_motors);
+	// The copied source can be newer than Run()'s timestamp if its publisher ran in between.
+	const hrt_abstime now = hrt_absolute_time();
 
 	actuator_motors_s motors{};
 	motors.timestamp = now;
