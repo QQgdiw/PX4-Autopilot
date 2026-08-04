@@ -41,6 +41,8 @@
 #ifndef MAVLINK_STREAM_H_
 #define MAVLINK_STREAM_H_
 
+#include <pthread.h>
+
 #include <drivers/drv_hrt.h>
 #include <px4_platform_common/module_params.h>
 #include <containers/List.hpp>
@@ -53,7 +55,7 @@ class MavlinkStream : public ListNode<MavlinkStream *>
 public:
 
 	MavlinkStream(Mavlink *mavlink);
-	virtual ~MavlinkStream() = default;
+	virtual ~MavlinkStream();
 
 	// no copy, assignment, move, move assignment
 	MavlinkStream(const MavlinkStream &) = delete;
@@ -66,14 +68,20 @@ public:
 	 *
 	 * @param interval the interval in microseconds (us) between messages
 	 */
-	void set_interval(const int interval) { _interval = interval; }
+	bool set_interval(int interval, bool nonblocking = false);
 
 	/**
 	 * Get the interval
 	 *
 	 * @return the inveral in microseconds (us) between messages
 	 */
-	int get_interval() { return _interval; }
+	int get_interval();
+
+	/** Get rate-control fields without racing request_message(). */
+	bool get_rate_configuration(int &interval, unsigned &size_avg, bool &is_const_rate);
+
+	/** Get status fields without waiting for an in-progress on-demand request. */
+	bool get_status_snapshot(int &interval, unsigned &size, bool &is_const_rate);
 
 	/**
 	 * @return 0 if updated / sent, -1 if unchanged
@@ -95,11 +103,8 @@ public:
 	/**
 	 * This function is called in response to a MAV_CMD_REQUEST_MESSAGE command.
 	 */
-	virtual bool request_message(float param2 = 0.0, float param3 = 0.0, float param4 = 0.0,
-				     float param5 = 0.0, float param6 = 0.0, float param7 = 0.0)
-	{
-		return send();
-	}
+	bool request_message(float param2 = 0.0, float param3 = 0.0, float param4 = 0.0,
+			     float param5 = 0.0, float param6 = 0.0, float param7 = 0.0);
 
 	/**
 	 * Get the average message size
@@ -127,6 +132,11 @@ protected:
 	int _interval{1000000};		///< if set to negative value = unlimited rate
 
 	virtual bool send() = 0;
+	virtual bool request_message_impl(float param2, float param3, float param4,
+					  float param5, float param6, float param7)
+	{
+		return send();
+	}
 
 	/**
 	 * Function to collect/update data for the streams at a high rate independent of
@@ -136,9 +146,48 @@ protected:
 	 */
 	virtual void update_data() { }
 
+	/** Main-thread hook for inputs that must be drained while request_message() owns the operation lock. */
+	virtual void update_data_while_requesting() { }
+
 private:
+	int update_unlocked(const hrt_abstime &t);
+	bool lock(bool nonblocking);
+	void unlock();
+
+	pthread_mutex_t _operation_mutex{};
+	bool _operation_mutex_initialized{false};
 	hrt_abstime _last_sent{0};
 	bool _first_message_sent{false};
+};
+
+/**
+ * Defers stream destruction while a caller uses a pointer outside the stream-list lock.
+ * All methods must be called with the owning Mavlink instance's stream-list mutex held.
+ * Only the MAVLink main thread may retire or delete streams.
+ */
+class MavlinkStreamLifecycle final
+{
+public:
+	~MavlinkStreamLifecycle()
+	{
+		/* A live reader owns the retired objects. Never delete them underneath it. */
+		if (_reader_count == 0) {
+			_retired_streams.clear();
+		}
+	}
+
+	void acquire_reader() { ++_reader_count; }
+	bool release_reader();
+	bool retire(List<MavlinkStream *> &active_streams, MavlinkStream *stream);
+	void cleanup_retired();
+	void clear(List<MavlinkStream *> &active_streams);
+
+	size_t reader_count() const { return _reader_count; }
+	size_t retired_count() const { return _retired_streams.size(); }
+
+private:
+	size_t _reader_count{0};
+	List<MavlinkStream *> _retired_streams;
 };
 
 

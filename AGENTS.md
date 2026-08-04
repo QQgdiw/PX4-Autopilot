@@ -61,6 +61,13 @@
   392e831c1f659429ca83902e66820d7094591410`作为骨架；当前自定义
   `VehicleStatus`增加字段后仍保留`MESSAGE_VERSION=1`，正式发布前必须升级消息版本并
   提供显式translation，不能用相同`_v1` topic承载不同wire schema。
+- `hkust_nxt-dual_mini`的正式构建工具链是
+  `/opt/gcc-arm-none-eabi-9-2020-q2-update/bin`中的GCC 9.3.1；系统
+  `/usr/bin/arm-none-eabi-*`为GCC 13.2.1，会产生不可比较的Flash结果并污染ExternalProject缓存。
+- NuttX中MAVLink receiver优先级为175，MAVLink main默认优先级为100；`sched_yield()`只
+  让同优先级任务运行，receiver等待main持有的锁时使用它会造成优先级饥饿。
+- MAVLink receiver 的 pthread_create、stop 与 join 由实例内状态互斥锁串行；析构前必须
+  先执行幂等 stop，避免启动窗口漏 join或并发 stop 重复 join。
 
 【项目规范区域】
 
@@ -110,3 +117,8 @@
 - MAVLink/DDS外部里程计quality语义为`-1`失败、`0`未知、`1..100`质量；默认
   `EKF2_EV_QMIN=0`不门控quality，故障发送端必须停止有限测量，禁止只置负quality后继续
   发布并假定EKF会拒绝。
+- HKUST目标构建证据必须显式核对`arm-none-eabi-gcc --version`为9.3.1；切换编译器后应
+  删除对应目标生成目录以清除ExternalProject缓存，禁止跨GCC 9/13比较Flash增量。
+- MAVLink高优先级receiver等待低优先级main时禁止使用`sched_yield`自旋；等待必须让出CPU、
+  以同一monotonic deadline复核，且不得持锁睡眠。真实stream配置commit必须保持短小、
+  非阻塞，并在返回Accepted前传回实际结果。

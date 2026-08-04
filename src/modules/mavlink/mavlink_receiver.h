@@ -43,6 +43,8 @@
 
 #pragma once
 
+#include <pthread.h>
+
 #include "mavlink_ftp.h"
 #include "mavlink_log_handler.h"
 #include "mavlink_mission.h"
@@ -242,6 +244,9 @@ private:
 
 	px4::atomic_bool 	_should_exit{false};
 	pthread_t		_thread {};
+	px4::atomic_bool	_thread_started{false};
+	pthread_mutex_t	_thread_state_mutex{};
+	bool			_thread_state_mutex_initialized{false};
 	/**
 	 * @brief Updates optical flow parameters.
 	 */

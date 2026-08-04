@@ -8,7 +8,8 @@
 - 云台：普通 90 度 PWM 舵机，默认 1500 us；RC channel 10 与 MAVLink mount/gimbal 连续控制。
 - 切换约束：Quad -> Rover 必须由 PX4 原生着陆检测确认 landed；删除变形执行器、位置检测及等待过程。
 - 当前固件目标：`make hkust_nxt-dual_mini`；airframe ID 为 22002。
-- 当前固件源码锚点：`cb6ad318d6b5319d6e5b1ed7cd660097ac1c882c`。
+- 当前发布基线：`change_mini_v1.16.1 @ 9602c367e9be78f6d12971d0a019cf477517689f`；
+  MAVLink stream 修复分支为 `fix/mini-rover-mavlink-stream-config`。
 - NXT-Dual 定时器：MAIN1~4=TIM1，MAIN5/6=TIM2，MAIN7/8=TIM3。
 - 轮 PWM 默认载波：1 kHz，由 `PWM_MAIN_TIM2` 参数化；MAIN7/8 使用 duty mask `0xC0`。
 - 原生 `actuator_motors_rover.control[0]` 是右轮、`control[1]` 是左轮；mini 仲裁层
@@ -60,3 +61,13 @@
   1,702,752 B / 1,792 KiB（92.79%）。`.px4` SHA-256为
   `c76a95a286d96248ca76a39dae26641f65d240ac910624cd78da87583e5595a6`，`.bin`为
   `258930095ea2af119d9e81d90cac4592f895c87d22d61160b3e23dcbfd60eea0`；尚未刷机验收修复。
+- MAVLink stream 配置现使用固定存储、generation 和单一 1 s monotonic deadline 在
+  receiver/CLI 与 main thread 间交接；真实配置成功才返回 command 511/512 Accepted。
+  stream 按需发送与周期发送逐对象串行，删除采用 reader/retired 生命周期保护。
+- 当前修复树通过 PX4 CTest 148/148，其中 `unit-MavlinkStreamConfig` 20/20；普通并发压力
+  200/200、关闭 ASLR 后 ThreadSanitizer 50/50、mini Rover dialect 2/2。本次受影响文件
+  AStyle 14/14 通过；全仓库 AStyle 仍受 12 个未改动基线文件的既有格式问题影响。
+- GCC 9.3.1 目标构建 Flash 为 1,708,032 B / 1,792 KiB（93.08%），相对同编译器基线增加
+  5,280 B；`.px4` SHA-256 为 `4b071c48c708db5102d3aee183ab2eae9d62cf86ef53be0c683a8e8a15fc5f79`，
+  `.bin` SHA-256 为 `2f4cc7adbfa7aa8884ffadffdd7c94f9a48bdf8142233d1b5d02ab64eb9ee834`。
+  USB command/ACK 无电池验收和带电实时波形验收均尚未执行。

@@ -29,6 +29,12 @@
 - [x] 编写当前 uXRCE-DDS topics、QoS、时间/坐标和兼容性边界文档。
 - [x] 为四桨瞬时归零增加mini输出原因锁存、arming安全边沿、QGC告警和判定等价单测。
 - [x] 根据实机锁存的`Quad/future`事件修复订阅后消息被早期Run时间戳误拒绝的竞态。
+- [x] 实机复测 future 修复：QGC MAVLink 检测多次观察 MAIN1~4 输出不再同步归零，
+  桨叶周期性降速现象消失。
+- [x] 修复 MAVLink stream 配置跨线程 data race、无界等待、ACK 假成功、退出 join 和
+  stream request/delete 生命周期问题，并完成20项确定性单测与并发/TSAN压力。
+- [x] 使用 GCC 9.3.1 完成 `make hkust_nxt-dual_mini`，并完成148项PX4 CTest、dialect、
+  受影响文件AStyle及`git diff --check`门禁。
 - [ ] 由 QGC Agent 按 GUIDE 固定 `qgc_mini_rover` commit，完成四页实时曲线和参数编辑。
 - [ ] 机载程序按 MAVLink 文档实现VIO `ODOMETRY`、RC Position协同、Offboard Go-to、
   命令ACK/最终状态确认和断线恢复。
@@ -49,5 +55,7 @@
 - [ ] 实机确认 RC channel 10 与 MAVLink gimbal v2 的控制权切换和 90 度机械范围。
 - [x] 刷入输出诊断固件并用`mini_vehicle_control status`锁存`Quad/future`事件，确认不是
   stale、non-finite、safety block或armed下降，不再依赖人工盯高速listener。
-- [ ] 刷入`cb6ad318d6`修复固件拆桨验收：解锁后`output issues`不得再因`future`增加，
-  四桨不得出现对应约20 ms同步归零；若出现其他锁存原因，按新原因继续定位。
+- [ ] 连接实机USB执行stream验收阶段A：抓取command 511/512与单一最终ACK，验证消息281、
+  60100..60103、错误/超时恢复、heartbeat及连续切页20轮。
+- [ ] 拆桨、架空并固定车轮后执行带电阶段B：验证四个Rover页面active实时波形、切页停旧
+  启新、退出恢复默认及断链重连；开始前必须由用户确认供电和安全条件。

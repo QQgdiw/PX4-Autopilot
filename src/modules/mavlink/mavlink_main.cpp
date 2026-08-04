@@ -102,6 +102,8 @@ Mavlink::Mavlink() :
 	ModuleParams(nullptr),
 	_receiver(*this)
 {
+	pthread_mutex_init(&_streams_mutex, nullptr);
+
 	// initialise parameter cache
 	mavlink_update_parameters();
 
@@ -159,6 +161,11 @@ Mavlink::~Mavlink()
 		} while (running());
 	}
 
+	// The normal main-task exit already joins the receiver. Repeat this
+	// idempotently in case the main task had to be force-stopped above.
+	_stream_config_handoff.shutdown();
+	_receiver.stop();
+
 	if (_instance_id >= 0) {
 		mavlink_module_instances[_instance_id] = nullptr;
 	}
@@ -180,6 +187,13 @@ Mavlink::~Mavlink()
 	perf_free(_loop_interval_perf);
 	perf_free(_send_byte_error_perf);
 	perf_free(_forwarding_error_perf);
+
+	{
+		LockGuard lg{_streams_mutex};
+		_stream_lifecycle.clear(_streams);
+	}
+
+	pthread_mutex_destroy(&_streams_mutex);
 }
 
 void
@@ -268,13 +282,26 @@ Mavlink::set_instance_id()
 
 	for (int instance_id = 0; instance_id < MAVLINK_COMM_NUM_BUFFERS; instance_id++) {
 		if (mavlink_module_instances[instance_id] == nullptr) {
-			mavlink_module_instances[instance_id] = this;
 			_instance_id = instance_id;
+			_task_running.store(true);
+			mavlink_module_instances[instance_id] = this;
 			return true;
 		}
 	}
 
 	return false;
+}
+
+void
+Mavlink::release_instance_id()
+{
+	LockGuard lg{mavlink_module_mutex};
+
+	if (_instance_id >= 0 && mavlink_module_instances[_instance_id] == this) {
+		mavlink_module_instances[_instance_id] = nullptr;
+	}
+
+	_instance_id = -1;
 }
 
 void
@@ -1166,9 +1193,23 @@ Mavlink::send_protocol_version()
 }
 
 int
-Mavlink::configure_stream(const char *stream_name, const float rate)
+Mavlink::configure_stream(const char *stream_name, const float rate, bool strict)
 {
 	PX4_DEBUG("configure_stream(%s, %.3f)", stream_name, (double)rate);
+	const int lock_result = strict ? pthread_mutex_trylock(&_streams_mutex) : pthread_mutex_lock(&_streams_mutex);
+
+	if (lock_result != 0) {
+		return PX4_ERROR;
+	}
+
+	const int result = configure_stream_locked(stream_name, rate, strict);
+	pthread_mutex_unlock(&_streams_mutex);
+	return result;
+}
+
+int
+Mavlink::configure_stream_locked(const char *stream_name, float rate, bool strict)
+{
 
 	/* calculate interval in us, -1 means unlimited stream, 0 means disabled */
 	int interval = 0;
@@ -1184,11 +1225,13 @@ Mavlink::configure_stream(const char *stream_name, const float rate)
 		if (strcmp(stream_name, stream->get_name()) == 0) {
 			if (interval != 0) {
 				/* set new interval */
-				stream->set_interval(interval);
+				if (!stream->set_interval(interval, strict)) {
+					return PX4_ERROR;
+				}
 
 			} else {
 				/* delete stream */
-				_streams.deleteNode(stream);
+				_stream_lifecycle.retire(_streams, stream);
 				return OK; // must finish with loop after node is deleted
 			}
 
@@ -1201,7 +1244,11 @@ Mavlink::configure_stream(const char *stream_name, const float rate)
 	MavlinkStream *stream = create_mavlink_stream(stream_name, this);
 
 	if (stream != nullptr) {
-		stream->set_interval(interval);
+		if (!stream->set_interval(interval)) {
+			delete stream;
+			return PX4_ERROR;
+		}
+
 		_streams.add(stream);
 
 		return OK;
@@ -1210,41 +1257,99 @@ Mavlink::configure_stream(const char *stream_name, const float rate)
 	// if we reach here, the stream list does not contain the stream.
 	// flash constrained target's don't include all streams, and some are only available for the development dialect
 #if defined(CONSTRAINED_FLASH) || !defined(MAVLINK_DEVELOPMENT_H)
-	return PX4_OK;
-#else
-	PX4_WARN("stream %s not found", stream_name);
-	return PX4_ERROR;
+
+	if (!strict) {
+		return PX4_OK;
+	}
+
 #endif
+
+	if (!strict) {
+		PX4_WARN("stream %s not found", stream_name);
+	}
+
+	return PX4_ERROR;
 }
 
-void
+bool
+Mavlink::request_message(uint16_t message_id, float param2, float param3, float param4, float param5, float param6,
+			 float param7, bool &stream_found)
+{
+	stream_found = false;
+	MavlinkStream *requested_stream = nullptr;
+
+	{
+		LockGuard lg{_streams_mutex};
+
+		for (const auto &stream : _streams) {
+			if (stream->get_id() == message_id) {
+				stream_found = true;
+				requested_stream = stream;
+				_stream_lifecycle.acquire_reader();
+				break;
+			}
+		}
+	}
+
+	if (requested_stream == nullptr) {
+		return false;
+	}
+
+	const bool result = requested_stream->request_message(param2, param3, param4, param5, param6, param7);
+
+	{
+		LockGuard lg{_streams_mutex};
+
+		if (!_stream_lifecycle.release_reader()) {
+			PX4_ERR("stream reader accounting underflow");
+		}
+	}
+
+	return result;
+}
+
+unsigned
+Mavlink::get_message_interval(int message_id)
+{
+	MavlinkStream *requested_stream = nullptr;
+
+	{
+		LockGuard lg{_streams_mutex};
+
+		for (const auto &stream : _streams) {
+			if (stream->get_id() == message_id) {
+				requested_stream = stream;
+				_stream_lifecycle.acquire_reader();
+				break;
+			}
+		}
+	}
+
+	if (requested_stream == nullptr) {
+		return 0;
+	}
+
+	const unsigned interval = requested_stream->get_interval();
+
+	{
+		LockGuard lg{_streams_mutex};
+
+		if (!_stream_lifecycle.release_reader()) {
+			PX4_ERR("stream reader accounting underflow");
+		}
+	}
+
+	return interval;
+}
+
+MavlinkStreamConfigHandoff::Result
 Mavlink::configure_stream_threadsafe(const char *stream_name, const float rate)
 {
-	/* orb subscription must be done from the main thread,
-	 * set _subscribe_to_stream and _subscribe_to_stream_rate fields
-	 * which polled in mavlink main loop */
-	if (!should_exit()) {
-		/* wait for previous subscription completion */
-		while (_subscribe_to_stream != nullptr) {
-			px4_usleep(MAIN_LOOP_DELAY / 2);
-		}
-
-		/* copy stream name */
-		unsigned n = strlen(stream_name) + 1;
-		char *s = new char[n];
-		strcpy(s, stream_name);
-
-		/* set subscription task */
-		_subscribe_to_stream_rate = rate;
-		_subscribe_to_stream = s;
-
-		/* wait for subscription */
-		do {
-			px4_usleep(MAIN_LOOP_DELAY / 2);
-		} while (_subscribe_to_stream != nullptr);
-
-		delete[] s;
+	if (should_exit()) {
+		return MavlinkStreamConfigHandoff::Result::Exiting;
 	}
+
+	return _stream_config_handoff.request(stream_name, rate);
 }
 
 void
@@ -1301,11 +1406,19 @@ Mavlink::update_rate_mult()
 
 	/* scale down rates if their theoretical bandwidth is exceeding the link bandwidth */
 	for (const auto &stream : _streams) {
-		if (stream->const_rate()) {
-			const_rate += (stream->get_interval() > 0) ? stream->get_size_avg() * 1000000.0f / stream->get_interval() : 0;
+		int interval = 0;
+		unsigned size_avg = 0;
+		bool is_const_rate = false;
+
+		if (!stream->get_rate_configuration(interval, size_avg, is_const_rate)) {
+			return;
+		}
+
+		if (is_const_rate) {
+			const_rate += (interval > 0) ? size_avg * 1000000.0f / interval : 0;
 
 		} else {
-			rate += (stream->get_interval() > 0) ? stream->get_size_avg() * 1000000.0f / stream->get_interval() : 0;
+			rate += (interval > 0) ? size_avg * 1000000.0f / interval : 0;
 		}
 	}
 
@@ -1355,10 +1468,15 @@ Mavlink::update_rate_mult()
 	}
 
 	/* pick the minimum from bandwidth mult and hardware mult as limit */
-	_rate_mult = fminf(bandwidth_mult, hardware_mult);
-
 	/* ensure the rate multiplier never drops below 5% so that something is always sent */
-	_rate_mult = math::constrain(_rate_mult, 0.05f, 1.0f);
+	set_rate_mult(math::constrain(fminf(bandwidth_mult, hardware_mult), 0.05f, 1.0f));
+}
+
+void Mavlink::set_rate_mult(float rate_mult)
+{
+	uint32_t rate_mult_bits = 0;
+	memcpy(&rate_mult_bits, &rate_mult, sizeof(rate_mult_bits));
+	_rate_mult_bits.store(rate_mult_bits);
 }
 
 void
@@ -1394,15 +1512,15 @@ Mavlink::update_radio_status(const radio_status_s &radio_status)
 }
 
 int
-Mavlink::configure_streams_to_default(const char *configure_single_stream)
+Mavlink::configure_streams_to_default(const char *configure_single_stream, bool strict)
 {
 	int ret = 0;
 	bool stream_configured = false;
 
 	auto configure_stream_local =
-	[&stream_configured, configure_single_stream, &ret, this](const char *stream_name, float rate) {
+	[&stream_configured, configure_single_stream, &ret, strict, this](const char *stream_name, float rate) {
 		if (!configure_single_stream || strcmp(configure_single_stream, stream_name) == 0) {
-			int ret_local = configure_stream(stream_name, rate);
+			int ret_local = configure_stream(stream_name, rate, strict);
 
 			if (ret_local != 0) {
 				ret = ret_local;
@@ -1863,7 +1981,7 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 
 	if (configure_single_stream && !stream_configured && strcmp(configure_single_stream, "HEARTBEAT") != 0) {
 		// stream was not found, assume it is disabled by default
-		return configure_stream(configure_single_stream, 0.0f);
+		return configure_stream(configure_single_stream, 0.0f, strict);
 	}
 
 	return ret;
@@ -2223,6 +2341,8 @@ Mavlink::task_main(int argc, char *argv[])
 	if (set_instance_id()) {
 		if (!set_channel()) {
 			PX4_ERR("set channel failed");
+			release_instance_id();
+			_task_running.store(false);
 			return PX4_ERROR;
 		}
 
@@ -2250,6 +2370,8 @@ Mavlink::task_main(int argc, char *argv[])
 
 		if (!_message_buffer.allocate(2 * sizeof(mavlink_message_t) + 1)) {
 			PX4_ERR("msg buf alloc fail");
+			release_instance_id();
+			_task_running.store(false);
 			return PX4_ERROR;
 		}
 	}
@@ -2311,6 +2433,8 @@ Mavlink::task_main(int argc, char *argv[])
 
 			} else if (_uart_fd < 0) {
 				PX4_ERR("failed to open %s after %d attempts, exiting!", _device_name, attempts);
+				release_instance_id();
+				_task_running.store(false);
 				return PX4_ERROR;
 			}
 		}
@@ -2337,8 +2461,6 @@ Mavlink::task_main(int argc, char *argv[])
 	uint16_t event_sequence_offset = 0; // offset to account for skipped events, not sent via MAVLink
 
 	_mavlink_start_time = hrt_absolute_time();
-
-	_task_running.store(true);
 
 	while (!should_exit()) {
 		/* main loop */
@@ -2496,13 +2618,14 @@ Mavlink::task_main(int argc, char *argv[])
 		perf_end(_loop_perf);
 	}
 
+	_stream_config_handoff.shutdown();
 	_receiver.stop();
 
-	delete _subscribe_to_stream;
-	_subscribe_to_stream = nullptr;
-
 	/* delete streams */
-	_streams.clear();
+	{
+		LockGuard lg{_streams_mutex};
+		_stream_lifecycle.clear(_streams);
+	}
 
 	if (_uart_fd >= 0) {
 		/* discard all pending data, as close() might block otherwise on NuttX with flow control enabled */
@@ -2703,76 +2826,43 @@ void Mavlink::handleAndGetCurrentCommandAck()
 	}
 }
 
-void Mavlink::check_requested_subscriptions()
+int Mavlink::configure_requested_stream(const char *stream_name, float rate)
 {
-	if (_subscribe_to_stream != nullptr) {
-		if (_subscribe_to_stream_rate < -1.5f) {
-			if (configure_streams_to_default(_subscribe_to_stream) == 0) {
-				if (get_protocol() == Protocol::SERIAL) {
-					PX4_DEBUG("stream %s on device %s set to default rate", _subscribe_to_stream, _device_name);
-				}
+	const int result = rate < -1.5f ? configure_streams_to_default(stream_name, true) :
+			   configure_stream(stream_name, rate, true);
 
-#if defined(MAVLINK_UDP)
+	if (result == PX4_OK) {
+		if (rate < -1.5f) {
+			PX4_DEBUG("stream %s set to default rate", stream_name);
 
-				else if (get_protocol() == Protocol::UDP) {
-					PX4_DEBUG("stream %s on UDP port %hu set to default rate", _subscribe_to_stream, _network_port);
-				}
-
-#endif // MAVLINK_UDP
-
-			} else {
-				PX4_ERR("setting stream %s to default failed", _subscribe_to_stream);
-			}
-
-		} else if (configure_stream(_subscribe_to_stream, _subscribe_to_stream_rate) == 0) {
-			if (fabsf(_subscribe_to_stream_rate) > 0.00001f) {
-				if (get_protocol() == Protocol::SERIAL) {
-					PX4_DEBUG("stream %s on device %s enabled with rate %.1f Hz", _subscribe_to_stream, _device_name,
-						  (double)_subscribe_to_stream_rate);
-
-				}
-
-#if defined(MAVLINK_UDP)
-
-				else if (get_protocol() == Protocol::UDP) {
-					PX4_DEBUG("stream %s on UDP port %hu enabled with rate %.1f Hz", _subscribe_to_stream, _network_port,
-						  (double)_subscribe_to_stream_rate);
-				}
-
-#endif // MAVLINK_UDP
-
-			} else {
-				if (get_protocol() == Protocol::SERIAL) {
-					PX4_DEBUG("stream %s on device %s disabled", _subscribe_to_stream, _device_name);
-
-				}
-
-#if defined(MAVLINK_UDP)
-
-				else if (get_protocol() == Protocol::UDP) {
-					PX4_DEBUG("stream %s on UDP port %hu disabled", _subscribe_to_stream, _network_port);
-				}
-
-#endif // MAVLINK_UDP
-			}
+		} else if (fabsf(rate) > 0.00001f) {
+			PX4_DEBUG("stream %s enabled with rate %.1f Hz", stream_name, (double)rate);
 
 		} else {
-			if (get_protocol() == Protocol::SERIAL) {
-				PX4_ERR("stream %s on device %s not found", _subscribe_to_stream, _device_name);
-
-			}
-
-#if defined(MAVLINK_UDP)
-
-			else if (get_protocol() == Protocol::UDP) {
-				PX4_ERR("stream %s on UDP port %hu not found", _subscribe_to_stream, _network_port);
-			}
-
-#endif // MAVLINK_UDP
+			PX4_DEBUG("stream %s disabled", stream_name);
 		}
-
-		_subscribe_to_stream = nullptr;
 	}
+
+	return result;
+}
+
+void Mavlink::check_requested_subscriptions()
+{
+	_stream_config_handoff.process_pending(
+	[](void *context, const char *, float, MavlinkStreamConfigHandoff & handoff, uint32_t generation) {
+		return handoff.commit(generation,
+		[](void *commit_context, const char *stream_name, float rate) {
+			return static_cast<Mavlink *>(commit_context)->configure_requested_stream(stream_name, rate);
+		}, context);
+	}, this);
+
+	cleanup_retired_streams();
+}
+
+void Mavlink::cleanup_retired_streams()
+{
+	LockGuard lg{_streams_mutex};
+	_stream_lifecycle.cleanup_retired();
 }
 
 void Mavlink::publish_telemetry_status()
@@ -2781,13 +2871,16 @@ void Mavlink::publish_telemetry_status()
 
 	_tstatus.mode = _mode;
 	_tstatus.data_rate = _datarate;
-	_tstatus.rate_multiplier = _rate_mult;
+	_tstatus.rate_multiplier = get_rate_mult();
 	_tstatus.flow_control = get_flow_control_enabled();
 	_tstatus.ftp = ftp_enabled();
 	_tstatus.forwarding = get_forwarding_on();
 	_tstatus.mavlink_v2 = (_protocol_version == 2);
 
-	_tstatus.streams = _streams.size();
+	{
+		LockGuard lg{_streams_mutex};
+		_tstatus.streams = _streams.size();
+	}
 
 	// telemetry_status is also updated from the receiver thread, but never the same fields
 	_tstatus.timestamp = hrt_absolute_time();
@@ -2985,7 +3078,7 @@ Mavlink::display_status()
 	printf("\trates:\n");
 	printf("\t  tx: %.1f B/s\n", (double)_tstatus.tx_rate_avg);
 	printf("\t  txerr: %.1f B/s\n", (double)_tstatus.tx_error_rate_avg);
-	printf("\t  tx rate mult: %.3f\n", (double)_rate_mult);
+	printf("\t  tx rate mult: %.3f\n", (double)get_rate_mult());
 	printf("\t  tx rate max: %i B/s\n", _datarate);
 	printf("\t  rx: %.1f B/s\n", (double)_tstatus.rx_rate_avg);
 	printf("\t  rx loss: %.1f%%\n", (double)_tstatus.rx_message_lost_rate);
@@ -3052,35 +3145,90 @@ Mavlink::display_status()
 void
 Mavlink::display_status_streams()
 {
+	struct StreamStatusSnapshot {
+		char name[MavlinkStreamConfigHandoff::STREAM_NAME_CAPACITY] {};
+		int interval{0};
+		unsigned size{0};
+		bool const_rate{false};
+		bool busy{false};
+	};
+
 	printf("\t%-20s%-16s %s\n", "Name", "Rate Config (current) [Hz]", "Message Size (if active) [B]");
 
-	const float rate_mult = _rate_mult;
+	const float rate_mult = get_rate_mult();
+	StreamStatusSnapshot *snapshot = nullptr;
+	size_t snapshot_capacity = 0;
+	size_t stream_count = 0;
 
-	for (const auto &stream : _streams) {
-		const int interval = stream->get_interval();
-		const unsigned size = stream->get_size();
+	while (true) {
+		bool snapshot_complete = false;
+
+		{
+			LockGuard lg{_streams_mutex};
+			stream_count = _streams.size();
+
+			if (stream_count <= snapshot_capacity) {
+				size_t index = 0;
+
+				for (const auto &stream : _streams) {
+					strncpy(snapshot[index].name, stream->get_name(), sizeof(snapshot[index].name) - 1);
+					snapshot[index].name[sizeof(snapshot[index].name) - 1] = '\0';
+					snapshot[index].busy = !stream->get_status_snapshot(snapshot[index].interval,
+							       snapshot[index].size, snapshot[index].const_rate);
+					++index;
+				}
+
+				snapshot_complete = true;
+			}
+		}
+
+		if (snapshot_complete) {
+			break;
+		}
+
+		delete[] snapshot;
+		snapshot = new StreamStatusSnapshot[stream_count];
+
+		if (snapshot == nullptr) {
+			PX4_WARN("failed to allocate stream status snapshot");
+			return;
+		}
+
+		snapshot_capacity = stream_count;
+	}
+
+	for (size_t index = 0; index < stream_count; ++index) {
+		const StreamStatusSnapshot &stream = snapshot[index];
 		char rate_str[20];
 
-		if (interval < 0) {
+		if (stream.busy) {
+			strcpy(rate_str, "busy");
+
+		} else if (stream.interval < 0) {
 			strcpy(rate_str, "unlimited");
 
+		} else if (stream.interval == 0) {
+			strcpy(rate_str, "disabled");
+
 		} else {
-			float rate = 1000000.0f / (float)interval;
+			float rate = 1000000.0f / (float)stream.interval;
 			// Note that the actual current rate can be lower if the associated uORB topic updates at a
 			// lower rate.
-			float rate_current = stream->const_rate() ? rate : rate * rate_mult;
+			float rate_current = stream.const_rate ? rate : rate * rate_mult;
 			snprintf(rate_str, sizeof(rate_str), "%6.2f (%.3f)", (double)rate, (double)rate_current);
 		}
 
-		printf("\t%-30s%-16s", stream->get_name(), rate_str);
+		printf("\t%-30s%-16s", stream.name, rate_str);
 
-		if (size > 0) {
-			printf(" %3u\n", size);
+		if (stream.size > 0) {
+			printf(" %3u\n", stream.size);
 
 		} else {
 			printf("\n");
 		}
 	}
+
+	delete[] snapshot;
 }
 
 int
@@ -3266,19 +3414,7 @@ Mavlink::stream_command(int argc, char *argv[])
 	}
 
 	if (!err_flag && stream_name != nullptr) {
-
-		Mavlink *inst = nullptr;
-
-		if (provided_device && !provided_network_port) {
-			inst = get_instance_for_device(device_name);
-
-#ifdef MAVLINK_UDP
-
-		} else if (provided_network_port && !provided_device) {
-			inst = get_instance_for_network_port(network_port);
-#endif // MAVLINK_UDP
-
-		} else if (provided_device && provided_network_port) {
+		if (provided_device && provided_network_port) {
 			PX4_WARN("please provide either a device name or a network port");
 			return 1;
 		}
@@ -3287,8 +3423,48 @@ Mavlink::stream_command(int argc, char *argv[])
 			rate = -2.0f; // use default rate
 		}
 
-		if (inst != nullptr) {
-			inst->configure_stream_threadsafe(stream_name, rate);
+		MavlinkStreamConfigHandoff::Result result{MavlinkStreamConfigHandoff::Result::Exiting};
+		bool instance_found = false;
+
+		/* Keep the module registry lock through the bounded handoff call. This pins
+		 * the parent Mavlink object against a concurrent stop/delete. */
+		{
+			LockGuard lg{mavlink_module_mutex};
+			Mavlink *instance = nullptr;
+
+			for (Mavlink *candidate : mavlink_module_instances) {
+				if (candidate == nullptr) {
+					continue;
+				}
+
+				const bool device_matches = provided_device && candidate->_protocol == Protocol::SERIAL &&
+							    strcmp(candidate->_device_name, device_name) == 0;
+#ifdef MAVLINK_UDP
+				const bool port_matches = provided_network_port && candidate->_protocol == Protocol::UDP &&
+							  candidate->_network_port == network_port;
+#else
+				const bool port_matches = false;
+#endif // MAVLINK_UDP
+
+				if (device_matches || port_matches) {
+					instance = candidate;
+					break;
+				}
+			}
+
+			if (instance != nullptr) {
+				instance_found = true;
+				result = instance->configure_stream_threadsafe(stream_name, rate);
+			}
+		}
+
+		if (instance_found) {
+
+			if (result != MavlinkStreamConfigHandoff::Result::Success) {
+				PX4_WARN("failed to configure stream %s: %s", stream_name,
+					 MavlinkStreamConfigHandoff::result_string(result));
+				return 1;
+			}
 
 		} else {
 

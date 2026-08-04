@@ -182,3 +182,41 @@
   当前Rover安全功能。无SD时dataman默认文件后端不可依赖，Mission需
   `SYS_DM_BACKEND=1`使用重启即丢失的RAM backend。另纠正外部里程计quality为-1失败、
   0未知、1..100质量；默认`EKF2_EV_QMIN=0`不会按quality拒绝有限测量。
+- 2026-08-04：QGC现场问题定位到MAVLink stream配置使用共享裸指针轮询，存在请求字段
+  data race、结果丢失、无界等待和退出join互锁。修复改为实例内固定请求存储、generation、
+  单一1 s monotonic deadline及prepare/commit裁决；command 511/512仅在真实配置和发送
+  成功后Accepted，超时请求不能迟到生效或完成下一代请求。
+- 2026-08-04：慢`MAV_CMD_REQUEST_MESSAGE`不再持有全局stream列表锁；逐stream operation
+  mutex串行按需/周期发送，reader/retired机制延迟删除在用对象。`AVAILABLE_MODES`在慢
+  分批发送时继续暂存外部模式注册，退出会中止发送。receiver独立退出标志现参与run loop，
+  实例发布与`_task_running`在同一模块锁临界区完成，关闭启动窗口UAF。
+- 2026-08-04：NuttX receiver优先级175高于MAVLink main的100；`sched_yield`只让同优先级
+  任务运行，会饿死持锁main。mutex竞争改为不持锁的最长1 ms相对`nanosleep`并每次以
+  monotonic deadline复核，既避免优先级反转自旋，也不受`CLOCK_REALTIME`校准影响。
+- 2026-08-04：目标构建首次被系统ARM GCC 13.2.1及残留Micro XRCE-DDS ExternalProject
+  cache污染；清除当前目标生成目录并显式使用
+  `/opt/gcc-arm-none-eabi-9-2020-q2-update/bin`后，GCC 9.3.1构建通过。最终Flash为
+  1,707,880 B / 1,792 KiB（93.07%），相对同编译器基线增加5,128 B。PX4 CTest为
+  148/148（stream单测20/20），普通压力200/200、关闭ASLR后的TSAN 50/50、dialect 2/2；
+  受影响C/C++文件AStyle 14/14，`git diff --check`通过。直接运行TSAN在当前WSL因
+  `unexpected memory mapping`失败，不能作为代码失败证据；关闭ASLR后稳定通过。实机USB
+  阶段A与带电阶段B因当前WSL无飞控设备均未执行，command 511/512端到端ACK仍待硬件验收。
+- 2026-08-04：receiver新增线程状态互斥锁；启动、stop和join在同一临界区串行，receiver
+  析构也执行幂等stop，避免pthread_create后尚未发布started标志时漏join或并发stop重复join。
+- 2026-08-04：receiver生命周期加固后重新执行 `make tests`，PX4 CTest 148/148 通过（48.96 s）。
+  GCC 9.3.1 `make hkust_nxt-dual_mini` 通过，Flash为1,708,000 B / 1,792 KiB（93.08%），
+  相对同编译器基线增加5,248 B；`.px4` SHA-256为
+  `3e4d9388306c2d667b9d8c1a3e01b78b7e1b8528c90bfd2353317d5c23d4592d`，`.bin`为
+  `703c34da3417c3cefdb0564502ecb9ecd28f91431f59db5c9cb08cafe198600c`。
+- 2026-08-04：最终源码快照重复执行 `unit-MavlinkStreamConfig` 普通压力 200/200，使用
+  `setarch -R` 关闭ASLR后TSAN压力 50/50；mini dialect 2/2，receiver文件AStyle 2/2，
+  未跟踪新增文件和全量差异均无空白错误。
+- 2026-08-04：为 `MavlinkStreamLifecycle` 增加 reader 归零条件下的析构清理；reader 仍存活
+  时继续保留 retired 对象，避免异常 join 路径发生 UAF。
+- 2026-08-04：生命周期析构清理后再次执行 `make tests`，PX4 CTest 148/148 通过（49.31 s）。
+  GCC 9.3.1 目标构建成功，精确Flash image为1,708,032 B / 1,792 KiB（93.08%），相对同
+  编译器基线增加5,280 B；`.px4` SHA-256为
+  `4b071c48c708db5102d3aee183ab2eae9d62cf86ef53be0c683a8e8a15fc5f79`，`.bin`为
+  `2f4cc7adbfa7aa8884ffadffdd7c94f9a48bdf8142233d1b5d02ab64eb9ee834`。
+- 2026-08-04：包含 lifecycle 析构清理的最终单测二进制重建后，普通压力 200/200、
+  `setarch -R` 下 TSAN 压力 50/50 均通过；没有 ThreadSanitizer/data-race 报告。

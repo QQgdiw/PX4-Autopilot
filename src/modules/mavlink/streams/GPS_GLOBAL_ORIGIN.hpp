@@ -56,7 +56,7 @@ public:
 		return 0;
 	}
 
-	bool request_message(float param2, float param3, float param4, float param5, float param6, float param7) override
+	bool request_message_impl(float param2, float param3, float param4, float param5, float param6, float param7) override
 	{
 		_force_next_send = true;
 		return send();

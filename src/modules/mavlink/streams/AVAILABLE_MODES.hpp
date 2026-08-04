@@ -64,6 +64,7 @@ private:
 	static constexpr uint32_t MIN_DELAY_THRESHOLD = 1000;
 	static constexpr int MAX_NUM_EXTERNAL_MODES = vehicle_status_s::NAVIGATION_STATE_EXTERNAL8 -
 			vehicle_status_s::NAVIGATION_STATE_EXTERNAL1 + 1;
+	static_assert(MAX_NUM_EXTERNAL_MODES <= 8, "external mode staging mask is too small");
 
 	explicit MavlinkStreamAvailableModes(Mavlink *mavlink) : MavlinkStream(mavlink) {}
 
@@ -71,6 +72,8 @@ private:
 		char name[sizeof(register_ext_component_reply_s::name)] {};
 	};
 	ExternalModeName *_external_mode_names{nullptr};
+	ExternalModeName _pending_external_mode_names[MAX_NUM_EXTERNAL_MODES] {};
+	uint8_t _pending_external_mode_mask{0};
 
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
 	uORB::Subscription _register_ext_component_reply_sub{ORB_ID(register_ext_component_reply)};
@@ -80,11 +83,19 @@ private:
 	uint32_t _last_valid_nav_states_mask{0};
 	uint32_t _last_can_set_nav_states_mask{0};
 
-	void send_single_mode(const vehicle_status_s &vehicle_status, int mode_index, int total_num_modes, uint8_t nav_state,
+	bool send_single_mode(const vehicle_status_s &vehicle_status, int mode_index, int total_num_modes, uint8_t nav_state,
 			      uint32_t delay_us = 0)
 	{
+		if (_mavlink->should_exit()) {
+			return false;
+		}
+
 		if (delay_us > 0) {
 			px4_usleep(delay_us);
+		}
+
+		if (_mavlink->should_exit()) {
+			return false;
 		}
 
 		mavlink_available_modes_t available_modes{};
@@ -131,10 +142,11 @@ private:
 		}
 
 		mavlink_msg_available_modes_send_struct(_mavlink->get_channel(), &available_modes);
+		return true;
 	}
 
-	bool request_message(float param2, float param3, float param4,
-			     float param5, float param6, float param7) override
+	bool request_message_impl(float param2, float param3, float param4,
+				  float param5, float param6, float param7) override
 	{
 		bool ret = false;
 		int mode_index = roundf(param2);
@@ -159,7 +171,10 @@ private:
 
 			for (uint8_t nav_state = 0; nav_state < vehicle_status_s::NAVIGATION_STATE_MAX; ++nav_state) {
 				if ((1u << nav_state) & vehicle_status.valid_nav_states_mask) {
-					send_single_mode(vehicle_status, cur_mode_index, total_num_modes, nav_state, delay_us);
+					if (!send_single_mode(vehicle_status, cur_mode_index, total_num_modes, nav_state, delay_us)) {
+						return false;
+					}
+
 					++cur_mode_index;
 				}
 			}
@@ -180,36 +195,64 @@ private:
 			}
 
 			if (nav_state < vehicle_status_s::NAVIGATION_STATE_MAX) {
-				send_single_mode(vehicle_status, mode_index, total_num_modes, nav_state);
+				ret = send_single_mode(vehicle_status, mode_index, total_num_modes, nav_state);
 			}
-
-			ret = true;
 		}
 
 		return ret;
 	}
 
+	void capture_external_mode_registration()
+	{
+		register_ext_component_reply_s reply;
+
+		if (_register_ext_component_reply_sub.update(&reply) && reply.success && reply.mode_id != -1) {
+			const unsigned mode_index = reply.mode_id - vehicle_status_s::NAVIGATION_STATE_EXTERNAL1;
+
+			if (mode_index < MAX_NUM_EXTERNAL_MODES) {
+				memcpy(_pending_external_mode_names[mode_index].name, reply.name, sizeof(ExternalModeName::name));
+				_pending_external_mode_mask |= 1u << mode_index;
+			}
+		}
+	}
+
+	bool apply_pending_external_mode_registrations()
+	{
+		if (_pending_external_mode_mask == 0) {
+			return false;
+		}
+
+		if (_external_mode_names == nullptr) {
+			_external_mode_names = new ExternalModeName[MAX_NUM_EXTERNAL_MODES];
+		}
+
+		if (_external_mode_names == nullptr) {
+			return false;
+		}
+
+		for (unsigned mode_index = 0; mode_index < MAX_NUM_EXTERNAL_MODES; ++mode_index) {
+			if (_pending_external_mode_mask & (1u << mode_index)) {
+				memcpy(_external_mode_names[mode_index].name, _pending_external_mode_names[mode_index].name,
+				       sizeof(ExternalModeName::name));
+			}
+		}
+
+		_pending_external_mode_mask = 0;
+		return true;
+	}
+
+	void update_data_while_requesting() override
+	{
+		// Only the main thread touches this staging area. The request thread reads
+		// _external_mode_names, which is updated after it releases the operation lock.
+		capture_external_mode_registration();
+	}
+
 	void update_data() override
 	{
 		// Keep track of externally registered modes
-		register_ext_component_reply_s reply;
-		bool dynamic_update = false;
-
-		if (_register_ext_component_reply_sub.update(&reply)) {
-			if (reply.success && reply.mode_id != -1) {
-				if (!_external_mode_names) {
-					_external_mode_names = new ExternalModeName[MAX_NUM_EXTERNAL_MODES];
-				}
-
-				unsigned mode_index = reply.mode_id - vehicle_status_s::NAVIGATION_STATE_EXTERNAL1;
-
-				if (_external_mode_names && mode_index < MAX_NUM_EXTERNAL_MODES) {
-					memcpy(_external_mode_names[mode_index].name, reply.name, sizeof(ExternalModeName::name));
-				}
-
-				dynamic_update = true;
-			}
-		}
+		capture_external_mode_registration();
+		bool dynamic_update = apply_pending_external_mode_registrations();
 
 		vehicle_status_s vehicle_status;
 
