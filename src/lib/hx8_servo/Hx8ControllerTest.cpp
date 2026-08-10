@@ -96,6 +96,16 @@ Frame response(CommandId command, uint8_t servo_id, uint16_t value = 0, uint8_t 
 	return frame;
 }
 
+Frame parameterResponse(uint8_t parameter, uint16_t value)
+{
+	Frame frame = response(CommandId::ParamRead, ServoId);
+	frame.payload_length = parameterLength(parameter) + 1;
+	frame.payload[0] = parameter;
+	frame.payload[1] = static_cast<uint8_t>(value);
+	frame.payload[2] = static_cast<uint8_t>(value >> 8);
+	return frame;
+}
+
 uint64_t finishBoot(Controller &controller, const ProtectionConfig &config = validConfig(), bool expect_verified = true)
 {
 	controller.setExpectedConfig(config);
@@ -122,7 +132,7 @@ uint64_t finishBoot(Controller &controller, const ProtectionConfig &config = val
 
 		const uint8_t parameter = request.payload[0];
 		const uint16_t value = expectedValue(parameter, config);
-		controller.acceptResponse(response(CommandId::ParamRead, ServoId, value, parameterLength(parameter)), now);
+		controller.acceptResponse(parameterResponse(parameter, value), now);
 	}
 
 	EXPECT_TRUE(controller.status().online);
@@ -371,7 +381,7 @@ TEST(Hx8Controller, BootPingsAndReadsCompleteConfigurationWithoutWriting)
 		ASSERT_EQ(request.command, CommandId::ParamRead);
 		seen[request.payload[0]] = true;
 		const uint16_t value = expectedValue(request.payload[0], config);
-		controller.acceptResponse(response(CommandId::ParamRead, ServoId, value, parameterLength(request.payload[0])), now);
+		controller.acceptResponse(parameterResponse(request.payload[0], value), now);
 	}
 
 	for (uint8_t parameter : {33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 46}) {
@@ -399,7 +409,7 @@ TEST(Hx8Controller, ConfigurationMismatchPreventsVerification)
 
 		if (parameter == 42) { ++value; }
 
-		controller.acceptResponse(response(CommandId::ParamRead, ServoId, value, parameterLength(request.payload[0])), now);
+		controller.acceptResponse(parameterResponse(request.payload[0], value), now);
 	}
 
 	EXPECT_FALSE(controller.status().config_verified);
@@ -456,7 +466,7 @@ TEST(Hx8Controller, PersistentWriteUsesPerItemReadbackAndCompletes)
 		ASSERT_EQ(request.command, CommandId::ParamRead);
 		EXPECT_EQ(request.payload[0], parameter);
 		const uint16_t value = expectedValue(parameter, config);
-		controller.acceptResponse(response(CommandId::ParamRead, ServoId, value, parameterLength(request.payload[0])), now);
+		controller.acceptResponse(parameterResponse(request.payload[0], value), now);
 		++reads;
 	}
 
@@ -480,7 +490,7 @@ TEST(Hx8Controller, PersistentReadbackMismatchAbortsAndMarksUnverified)
 	commissioning.now_us = now += Controller::MinimumCommandSpacingUs;
 	request = controller.update(commissioning);
 	ASSERT_EQ(request.command, CommandId::ParamRead);
-	controller.acceptResponse(response(CommandId::ParamRead, ServoId, 99, 1), now);
+	controller.acceptResponse(parameterResponse(request.payload[0], 99), now);
 	EXPECT_FALSE(controller.status().persistent_write_active);
 	EXPECT_FALSE(controller.status().config_verified);
 }

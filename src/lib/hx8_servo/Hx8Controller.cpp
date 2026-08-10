@@ -284,7 +284,7 @@ bool Controller::responseShapeValid(const Frame &frame) const
 	case CommandId::Ping: return frame.payload_length == 0;
 
 	case CommandId::ParamRead:
-		return frame.payload_length == (isByteParameter(_outstanding_parameter) ? 1 : 2);
+		return frame.payload_length == (isByteParameter(_outstanding_parameter) ? 2 : 3);
 
 	case CommandId::ParamWrite:
 	case CommandId::TimedMove:
@@ -301,6 +301,7 @@ bool Controller::responseShapeValid(const Frame &frame) const
 void Controller::acceptResponse(const Frame &frame, uint64_t now_us)
 {
 	if (!_outstanding.valid || frame.command != _outstanding.command || frame.servo_id != _servo_id
+	    || (frame.command == CommandId::ParamRead && frame.payload[0] != _outstanding_parameter)
 	    || !responseShapeValid(frame)) {
 		notifyProtocolError();
 		return;
@@ -338,7 +339,7 @@ void Controller::acceptResponse(const Frame &frame, uint64_t now_us)
 
 void Controller::handleParameterRead(const Frame &frame, uint64_t now_us)
 {
-	const uint16_t value = frame.payload_length == 1 ? frame.payload[0] : read16(frame.payload);
+	const uint16_t value = isByteParameter(_outstanding_parameter) ? frame.payload[1] : read16(&frame.payload[1]);
 	const bool matches = value == expectedParameterValue(_outstanding_parameter);
 
 	if (_write_state == WriteState::Readback) {
