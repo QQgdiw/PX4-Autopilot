@@ -82,6 +82,9 @@ private:
 	px4::atomic<uint8_t> _commissioning_state{static_cast<uint8_t>(CommissioningState::Idle)};
 	px4::atomic<uint32_t> _status_snapshot{0};
 	px4::atomic<uint32_t> _status_error_count{0};
+	uint32_t _tx_count{0};
+	uint32_t _tx_error_count{0};
+	int _last_tx_error{0};
 	bool _event_offline{false};
 	bool _event_protection{false};
 	bool _event_config{false};

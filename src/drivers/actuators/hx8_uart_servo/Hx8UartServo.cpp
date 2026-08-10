@@ -202,6 +202,7 @@ int Hx8UartServo::init()
 	}
 
 	ScheduleOnInterval(5_ms);
+	PX4_INFO("HX8 UART device %s configured for 115200 8N1", _device);
 	return PX4_OK;
 }
 
@@ -474,8 +475,15 @@ void Hx8UartServo::Run()
 					  _explicit_commissioning};
 	const auto request = _controller.update(input);
 
-	if (request.valid && send(request) != PX4_OK) {
-		_controller.notifyTransportError();
+	if (request.valid) {
+		++_tx_count;
+		const int send_result = send(request);
+
+		if (send_result != PX4_OK) {
+			++_tx_error_count;
+			_last_tx_error = send_result;
+			_controller.notifyTransportError();
+		}
 	}
 
 	finish_commissioning_request();
@@ -487,9 +495,12 @@ void Hx8UartServo::Run()
 int Hx8UartServo::print_status()
 {
 	const uint32_t snapshot = _status_snapshot.load();
-	PX4_INFO("HX8 UART online=%d healthy=%d verified=%d errors=%" PRIu32,
+	PX4_INFO("HX8 UART device=%s online=%d healthy=%d verified=%d errors=%" PRIu32
+		 " tx=%" PRIu32 " tx_errors=%" PRIu32 " last_tx_error=%d",
+		 _device,
 		 (snapshot & StatusOnline) != 0, (snapshot & StatusHealthy) != 0,
-		 (snapshot & StatusConfigVerified) != 0, _status_error_count.load());
+		 (snapshot & StatusConfigVerified) != 0, _status_error_count.load(),
+		 _tx_count, _tx_error_count, _last_tx_error);
 	return PX4_OK;
 }
 
