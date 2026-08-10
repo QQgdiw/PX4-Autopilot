@@ -482,7 +482,7 @@ git commit -m "feat[hx8]: add UART protocol codec"
 - Create: `src/lib/hx8_servo/Hx8ControllerTest.cpp`
 - Modify: `src/lib/hx8_servo/CMakeLists.txt`
 
-**Interfaces:** vendor parameter IDs are response 33, ID 34, baud 36, stall release 37, stall-power 38 mW, voltage low/high 39/40 mV, temperature limit 41 degrees C, power 42 mW, current 43 mA, power-on lock 46.
+**Interfaces:** vendor parameter IDs are response 33, ID 34, baud 36, stall release 37, stall-power 38 mW, voltage low/high 39/40 mV, temperature limit 41 thermistor ADC (converted from the PX4 Celsius parameter), power 42 mW, current 43 mA, power-on lock 46.
 
 ```cpp
 struct ProtectionConfig {

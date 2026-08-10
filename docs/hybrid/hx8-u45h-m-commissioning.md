@@ -58,7 +58,8 @@ Use these parameter units exactly:
 - `HX8_PWR_LIM`, `HX8_CFG_SPWR`, and `HX8_CFG_PWR`: mW;
 - `HX8_CFG_CUR`: mA;
 - `HX8_CFG_VMIN` and `HX8_CFG_VMAX`: mV;
-- `HX8_CFG_TEMP`: temperature protection threshold in degrees Celsius.
+- `HX8_CFG_TEMP`: temperature protection threshold in degrees Celsius; the
+  driver converts it to the vendor thermistor ADC representation on the wire.
 
 1. Verify the responding device ID and set `HX8_ID`. Confirm that only the
    intended servo responds.

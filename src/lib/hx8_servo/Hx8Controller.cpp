@@ -51,12 +51,29 @@ float adcToTemperature(uint16_t adc)
 					 + 1.0 / (273.15 + 25.0)) - 273.15);
 }
 
+uint16_t temperatureToAdc(uint16_t temperature_c)
+{
+	if (temperature_c == 0) {
+		return 0;
+	}
+
+	const double kelvin = static_cast<double>(temperature_c) + 273.15;
+	const double ratio = std::exp(3435.0 * (1.0 / kelvin - 1.0 / (273.15 + 25.0)));
+	const double sample = 4096.0 * ratio / (1.0 + ratio);
+
+	if (sample < 1.0 || sample >= 4096.0) {
+		return 0;
+	}
+
+	return static_cast<uint16_t>(::lround(sample));
+}
+
 } // namespace
 
 bool Controller::calibrated(const ProtectionConfig &config)
 {
 	return config.response_enabled == 1 && config.stall_release_enabled == 1
-	       && config.stall_power_mw != 0 && config.temperature_limit_c != 0
+	       && config.stall_power_mw != 0 && temperatureToAdc(config.temperature_limit_c) != 0
 	       && config.power_limit_mw != 0 && config.current_limit_ma != 0
 	       && config.voltage_min_mv >= MinimumSupplyMv && config.voltage_max_mv <= MaximumSupplyMv
 	       && config.voltage_min_mv < config.voltage_max_mv;
@@ -440,7 +457,7 @@ uint16_t Controller::expectedParameterValue(uint8_t parameter) const
 
 	case 40: return _expected.voltage_max_mv;
 
-	case 41: return _expected.temperature_limit_c;
+	case 41: return temperatureToAdc(_expected.temperature_limit_c);
 
 	case 42: return _expected.power_limit_mw;
 

@@ -68,7 +68,10 @@ uint16_t expectedValue(uint8_t parameter, const ProtectionConfig &config)
 
 	case 40: return config.voltage_max_mv;
 
-	case 41: return config.temperature_limit_c;
+	case 41:
+		if (config.temperature_limit_c == 70) { return 741; }
+
+		return config.temperature_limit_c;
 
 	case 42: return config.power_limit_mw;
 
