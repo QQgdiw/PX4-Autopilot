@@ -63,6 +63,7 @@ private:
 	bool valid_motion_command(const hx8_servo_command_s &command) const;
 	int send(const hx8::PendingRequest &request);
 	int configure_uart();
+	int open_uart();
 
 	char _device[64] {};
 	int _fd{-1};

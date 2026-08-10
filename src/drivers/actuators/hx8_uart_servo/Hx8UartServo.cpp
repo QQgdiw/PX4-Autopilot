@@ -187,6 +187,16 @@ int Hx8UartServo::init()
 		return -EINVAL;
 	}
 
+	ScheduleOnInterval(5_ms);
+	return PX4_OK;
+}
+
+int Hx8UartServo::open_uart()
+{
+	if (_fd >= 0) {
+		return PX4_OK;
+	}
+
 	_fd = open(_device, O_RDWR | O_NOCTTY | O_NONBLOCK);
 
 	if (_fd < 0) {
@@ -201,7 +211,6 @@ int Hx8UartServo::init()
 		return uart_result;
 	}
 
-	ScheduleOnInterval(5_ms);
 	PX4_INFO("HX8 UART device %s configured for 115200 8N1", _device);
 	return PX4_OK;
 }
@@ -434,6 +443,15 @@ void Hx8UartServo::emit_events()
 
 void Hx8UartServo::Run()
 {
+	const int uart_result = open_uart();
+
+	if (uart_result != PX4_OK) {
+		_last_tx_error = uart_result;
+		publish_atomic_status();
+		publish_status();
+		return;
+	}
+
 	_armed_sub.copy(&_armed);
 	_mode_sub.copy(&_mode);
 	const uint64_t now = hrt_absolute_time();
