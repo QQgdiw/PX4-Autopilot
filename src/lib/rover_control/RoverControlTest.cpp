@@ -39,6 +39,13 @@
 #include <gtest/gtest.h>
 #include "RoverControl.hpp"
 
+TEST(RoverControl, manualSteeringInputReversesOnlyManualSteeringSign)
+{
+	EXPECT_FLOAT_EQ(RoverControl::manualSteeringInput(-1.f), 1.f);
+	EXPECT_FLOAT_EQ(RoverControl::manualSteeringInput(0.f), 0.f);
+	EXPECT_FLOAT_EQ(RoverControl::manualSteeringInput(1.f), -1.f);
+}
+
 TEST(calcWaypointTransitionAngle, invalidInputs)
 {
 	Vector2f prev_wp_ned(NAN, NAN);

@@ -47,8 +47,15 @@ private:
 	void receiveFeedback();
 	void publishStatus(hrt_abstime now, const bool online[2]);
 
-	UAVCAN_DRIVER::CanInitHelper<16> _can{uavcan_can::Can2Mask};
+	// C610 feedback can continue arriving from both motors while logger startup
+	// temporarily delays the uavcan work queue. Keep enough software FIFO depth
+	// to absorb that bounded startup burst without converting it into a CAN gate
+	// fault.
+	UAVCAN_DRIVER::CanInitHelper<128> _can{uavcan_can::Can2Mask};
 	uavcan::ICanIface *_iface{nullptr};
+#if defined(UAVCAN_STM32H7_NUTTX)
+	uavcan_stm32h7::CanIface *_h7_iface{nullptr};
+#endif
 	hybrid_control::M2006SpeedController _speed[2] {};
 	hybrid_control::M2006DriveGate _gate{};
 
@@ -76,8 +83,14 @@ private:
 	uint32_t _tx_full_count{0};
 	uint32_t _tx_error_count{0};
 	uint32_t _timeout_count{0};
+	uint32_t _last_tx_id{0};
+	uint8_t _last_tx_dlc{0};
+	uint8_t _last_tx_data[8] {};
+	int _last_tx_result{0};
+	bool _last_tx_valid{false};
 	unsigned _consecutive_tx_failures{0};
 	uint64_t _last_can_error_count{0};
+	uint32_t _last_reported_fault_bits{0};
 	bool _rx_error{false};
 	bool _controller_config_valid{false};
 

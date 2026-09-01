@@ -9,9 +9,9 @@ uint32 DRIVE_FAULT_COMMAND = 8
 # Array index 0 is the left motor (C610 ID 1).
 # Array index 1 is the right motor (C610 ID 2).
 uint64[2] feedback_timestamp           # last valid feedback time (microseconds)
-float32[2] target_rpm                  # output-shaft speed setpoint
-float32[2] measured_rpm                # measured output-shaft speed
-float32[2] speed_error                 # target minus measured speed
+float32[2] target_rpm                  # C610 motor rotor speed setpoint
+float32[2] measured_rpm                # C610 motor rotor feedback speed
+float32[2] speed_error                 # target minus measured rotor speed
 int16[2] current_command               # commanded C610 torque current
 int16[2] torque_current                # measured C610 torque current
 uint16[2] encoder                      # raw C610 encoder position

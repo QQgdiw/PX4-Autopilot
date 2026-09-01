@@ -111,7 +111,7 @@ void DifferentialRateControl::generateRateAndThrottleSetpoint()
 			_rover_throttle_setpoint_pub.publish(rover_throttle_setpoint);
 			rover_rate_setpoint_s rover_rate_setpoint{};
 			rover_rate_setpoint.timestamp = _timestamp;
-			rover_rate_setpoint.yaw_rate_setpoint = math::interpolate<float> (manual_control_setpoint.roll, -1.f, 1.f,
+			rover_rate_setpoint.yaw_rate_setpoint = math::interpolate<float> (RoverControl::manualSteeringInput(manual_control_setpoint.roll), -1.f, 1.f,
 								-_max_yaw_rate, _max_yaw_rate);
 			_rover_rate_setpoint_pub.publish(rover_rate_setpoint);
 		}

@@ -50,6 +50,19 @@ private:
 		StatusConfigCheckComplete = 1u << 3
 	};
 
+	struct ProtectionSnapshot {
+		uint64_t sample_time_us{0};
+		uint32_t command_sequence{0};
+		float angle_deg{NAN};
+		float voltage_v{NAN};
+		float current_a{NAN};
+		float power_w{NAN};
+		float temperature_c{NAN};
+		uint8_t status_flags{0};
+		uint8_t protection_flags{0};
+		uint8_t command_result{0};
+	};
+
 	bool load_parameters();
 	void publish_status();
 	void publish_atomic_status();
@@ -83,6 +96,8 @@ private:
 	px4::atomic<uint8_t> _commissioning_state{static_cast<uint8_t>(CommissioningState::Idle)};
 	px4::atomic<uint32_t> _status_snapshot{0};
 	px4::atomic<uint32_t> _status_error_count{0};
+	px4::atomic<bool> _first_protection_snapshot_valid{false};
+	ProtectionSnapshot _first_protection_snapshot{};
 	uint32_t _tx_count{0};
 	uint32_t _tx_error_count{0};
 	int _last_tx_error{0};

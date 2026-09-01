@@ -130,6 +130,18 @@ TEST(TransformationPosition, As5600NormalizesWrappedTravel)
 	EXPECT_TRUE(std::isnan(normalizeAs5600(1.f, 2.f, 2.f)));
 }
 
+TEST(TransformationPosition, PreservesDirectedSideOfNearPiEndpoint)
+{
+	const float deg = static_cast<float>(M_PI / 180.0);
+
+	// The Rover endpoint is +180 degrees along the configured direction.
+	EXPECT_NEAR(normalizeAs5600(95.1f * deg, -85.f * deg, 95.f * deg), 1.f, 1e-5f);
+	EXPECT_NEAR(normalizeAs5600(-84.9f * deg, -85.f * deg, 95.f * deg), 0.f, 1e-5f);
+
+	// Preserve the opposite direction as well.
+	EXPECT_NEAR(normalizeAs5600(-95.1f * deg, 85.f * deg, -95.f * deg), 1.f, 1e-5f);
+}
+
 TEST(TransformationPosition, TmagRatioUsesVectorMagnitude)
 {
 	TmagRatioFilter filter;

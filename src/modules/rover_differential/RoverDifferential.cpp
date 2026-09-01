@@ -117,7 +117,7 @@ void RoverDifferential::generateSteeringAndThrottleSetpoint()
 	if (_manual_control_setpoint_sub.update(&manual_control_setpoint)) {
 		rover_steering_setpoint_s rover_steering_setpoint{};
 		rover_steering_setpoint.timestamp = _timestamp;
-		rover_steering_setpoint.normalized_speed_diff = manual_control_setpoint.roll;
+		rover_steering_setpoint.normalized_speed_diff = RoverControl::manualSteeringInput(manual_control_setpoint.roll);
 		_rover_steering_setpoint_pub.publish(rover_steering_setpoint);
 		rover_throttle_setpoint_s rover_throttle_setpoint{};
 		rover_throttle_setpoint.timestamp = _timestamp;

@@ -117,6 +117,7 @@ private:
 
 	manual_control_setpoint_s       _manual_control_setpoint {};    /**< manual control setpoint */
 	vehicle_control_mode_s          _vehicle_control_mode {};       /**< vehicle control mode */
+	vehicle_status_s                _vehicle_status {};             /**< latest vehicle status sample */
 
 	perf_counter_t  _loop_perf;             /**< loop duration performance counter */
 

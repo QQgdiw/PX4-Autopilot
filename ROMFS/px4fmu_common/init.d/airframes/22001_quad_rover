@@ -54,7 +54,8 @@ param set-default -s CYPHAL_ENABLE 0
 param set-default M2K_EN 1
 param set-default M2K_L_ID 1
 param set-default M2K_R_ID 2
-param set-default M2K_MAX_RPM 500
+param set-default M2K_MAX_RPM 18000
+param set-default M2K_RPM_SLEW 18000
 param set-default M2K_CUR_LIM 10000
 
 # Bench calibration is required before driving can be armed.
@@ -69,4 +70,3 @@ param set-default HYB_SV_ROV 0
 
 # Custom Parameters
 param set-default HYBRID_TRANS_T 2.0
-param set-default HYBRID_MAX_Z 0.5

@@ -49,6 +49,30 @@ struct CanRxItem {
  */
 class CanIface : public uavcan::ICanIface, uavcan::Noncopyable
 {
+public:
+	enum ErrorSnapshotKind : uavcan::uint32_t {
+		ErrorSnapshotCanError = 1U << 0,
+		ErrorSnapshotBusOff = 1U << 1,
+		ErrorSnapshotTxTimeout = 1U << 2,
+		ErrorSnapshotRxFifoLost = 1U << 3
+	};
+
+	struct ErrorSnapshot {
+		uavcan::uint32_t kind{0};
+		uavcan::uint32_t psr{0};
+		uavcan::uint32_t ecr{0};
+		uavcan::uint32_t ir{0};
+		uavcan::uint32_t txfqs{0};
+		uavcan::uint32_t txbrp{0};
+		uavcan::uint32_t txbto{0};
+		uavcan::uint32_t txbcf{0};
+		uavcan::uint32_t cccr{0};
+		uavcan::uint64_t monotonic_usec{0};
+		uavcan::uint64_t error_count{0};
+		bool ecr_valid{false};
+	};
+
+private:
 	class RxQueue
 	{
 		CanRxItem *const buf_;
@@ -124,6 +148,12 @@ class CanIface : public uavcan::ICanIface, uavcan::Noncopyable
 	fdcan::CanType *const can_;
 	uavcan::uint64_t error_cnt_;
 	uavcan::uint32_t served_aborts_cnt_;
+	uavcan::uint32_t can_error_log_cnt_{0};
+	uavcan::uint32_t bus_off_cnt_{0};
+	uavcan::uint32_t tx_timeout_cnt_{0};
+	uavcan::uint32_t rx_fifo_lost_cnt_{0};
+	ErrorSnapshot error_snapshot_{};
+	bool error_snapshot_valid_{false};
 	BusEvent &update_event_;
 	TxItem pending_tx_[NumTxMailboxes];
 	uavcan::uint8_t peak_tx_mailbox_index_;
@@ -146,7 +176,7 @@ class CanIface : public uavcan::ICanIface, uavcan::Noncopyable
 	bool waitCCCRBitStateChange(uint32_t mask, bool target_state);
 
 public:
-	enum { MaxRxQueueCapacity = 64 };
+	enum { MaxRxQueueCapacity = 128 };
 
 	enum OperatingMode {
 		NormalMode,
@@ -179,7 +209,10 @@ public:
 	void handleTxInterrupt(uavcan::uint64_t utc_usec);
 	void handleRxInterrupt(uavcan::uint8_t fifo_index);
 
-	void handleBusOff();
+	void handleBusOff(uavcan::uint32_t observed_ir = 0);
+
+	void captureErrorSnapshot(uavcan::uint32_t kind, uavcan::uint32_t ecr,
+			uavcan::uint32_t observed_ir);
 
 	/**
 	 * This method is used to count errors and abort transmission on error if necessary.
@@ -213,6 +246,17 @@ public:
 	 * See @ref uavcan::CanIOFlagAbortOnError.
 	 */
 	uavcan::uint32_t getVoluntaryTxAbortCount() const { return served_aborts_cnt_; }
+	uavcan::uint64_t getInternalErrorCount() const;
+	uavcan::uint32_t getCanErrorLogCount() const;
+	uavcan::uint32_t getBusOffCount() const;
+	uavcan::uint32_t getTxTimeoutCount() const;
+	uavcan::uint32_t getRxFifoLostCount() const;
+
+	/**
+	 * Returns the first FDCAN hardware-error snapshot captured since init.
+	 * The snapshot is intentionally latched once to preserve the first failure.
+	 */
+	bool getErrorSnapshot(ErrorSnapshot &out) const;
 
 	/**
 	 * Returns the number of frames pending in the RX queue.

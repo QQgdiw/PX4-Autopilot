@@ -56,7 +56,8 @@
 #include <uORB/topics/actuator_servos.h>
 #include <uORB/topics/actuator_armed.h>
 #include <uORB/topics/manual_control_setpoint.h>
-#include <uORB/topics/vehicle_local_position.h>
+#include <uORB/topics/manual_control_switches.h>
+#include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/hybrid_vehicle_status.h>
 #include <uORB/topics/vehicle_control_mode.h>
@@ -111,12 +112,11 @@ private:
 	 */
 	bool check_safe_to_transform(bool to_rover);
 
-	void updateParams() override;
-
 	// === uORB 订阅 (获取系统状态与遥控器输入) ===
 	uORB::Subscription _actuator_armed_sub{ORB_ID(actuator_armed)};
 	uORB::Subscription _manual_control_setpoint_sub{ORB_ID(manual_control_setpoint)};
-	uORB::Subscription _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
+	uORB::Subscription _manual_control_switches_sub{ORB_ID(manual_control_switches)};
+	uORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
 	uORB::Subscription _vehicle_control_mode_sub{ORB_ID(vehicle_control_mode)};
 	uORB::Subscription _encoder_sub{ORB_ID(sensor_encoder)};
 	uORB::SubscriptionMultiArray<magnetic_sensor_s, 2> _magnetic_subs{ORB_ID::magnetic_sensor};
@@ -139,9 +139,7 @@ private:
 	// 用于向地面站回复 "指令已收到并执行"，避免 QGC 报错超时
 	uORB::Publication<vehicle_command_ack_s> _vehicle_command_ack_pub{ORB_ID(vehicle_command_ack)};
 
-	param_t _param_handle_rc_map_trans_sw{PARAM_INVALID};
-	int32_t _rc_map_trans_sw_val{0};
-	float last_transfer_switch{-1.0f};
+	uint8_t _last_transition_switch{manual_control_switches_s::SWITCH_POS_NONE};
 
 	// 缓存结构体
 	actuator_motors_s _mc_motors{};
@@ -156,7 +154,20 @@ private:
 	bool _transformation_initialized{false};
 	hrt_abstime _transition_start_time{0};
 	bool _transition_timing_active{false};
+	// Startup-only diagnostic probe. It records event edges only and never changes
+	// transition, actuator, or fault behavior.
+	hrt_abstime _startup_probe_started{0};
+	bool _startup_probe_hx8_seen{false};
+	bool _startup_probe_hx8_online{false};
+	bool _startup_probe_hx8_healthy{false};
+	bool _startup_probe_hx8_verified{false};
+	bool _startup_probe_hx8_command_accepted{false};
+	uint8_t _startup_probe_hx8_result{0};
+	uint32_t _startup_probe_hx8_sequence{0};
+	bool _startup_probe_first_rc_logged{false};
+	bool _startup_probe_fault_logged{false};
 	actuator_armed_s _actuator_armed{};
+	vehicle_land_detected_s _vehicle_land_detected{};
 	hx8_servo_status_s _hx8_status{};
 	uint32_t _hx8_sequence{0};
 	hybrid_control::HybridTarget _hx8_last_target{hybrid_control::HybridTarget::None};
@@ -190,7 +201,6 @@ private:
 		(ParamFloat<px4::params::HYB_ANG_TOL>)		_param_hyb_ang_tol,
 		(ParamFloat<px4::params::HYB_SENS_TO>)		_param_hyb_sens_to,
 		(ParamFloat<px4::params::HYB_DBNC_T>)		_param_hyb_dbnc_t,
-		(ParamFloat<px4::params::HYBRID_MAX_Z>)   	_param_hybrid_max_z,   // 允许变形为车模式的最大高度(米)
 		(ParamInt<px4::params::HYBRID_MAN_CH>)    	_param_hybrid_man_ch,  // 手动接管机构的 AUX 通道 (1-6)
 		(ParamFloat<px4::params::HYBRID_ANG_ROV>) 	_param_hybrid_ang_rov, // 车模式的机构目标角度 (rad)
 		(ParamFloat<px4::params::HYBRID_ANG_QUD>)	_param_hybrid_ang_qud,  // 飞机模式的机构目标角度 (rad)

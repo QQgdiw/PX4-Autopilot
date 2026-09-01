@@ -18,8 +18,12 @@ validation.
 
 ## CAN wheel bench test
 
-1. Verify `UAVCAN_ENABLE=0`, `M2K_EN=1`, `M2K_L_ID=1`, `M2K_R_ID=2`, and
-   `M2K_MAX_RPM=500`, then reboot after changing an ownership or ID parameter.
+1. Verify `UAVCAN_ENABLE=0`, `M2K_EN=1`, `M2K_L_ID=1`, `M2K_R_ID=2`,
+   `M2K_MAX_RPM=18000`, and `M2K_RPM_SLEW=18000`, then reboot after changing
+   an ownership or ID parameter. `M2K_MAX_RPM` and `M2K_RPM_SLEW` are in C610
+   motor-rotor RPM and RPM/s. The C610 feedback is before the 36:1 gearbox;
+   the vehicle's total mechanical reduction is 144:1 (including the 4:1
+   downstream reduction).
    If `m2006_can` is stopped, reboot before starting it or DroneCAN again; the
    low-level CAN driver cannot be safely reinitialized in the same boot.
 2. Limit the first test to 1000 current-command units:
@@ -123,8 +127,10 @@ For every accepted test interval record:
 Use `rover_ulog_plot.py` for the Rover rate, attitude, and speed loops. Do not
 tune an outer loop until its inner loop is accepted.
 
-The current `RO_MAX_THR_SPEED=2.47` m/s is theoretical, derived from 500 rpm,
-340 mm wheel diameter, and 3.6:1 reduction. Replace it with a loaded measured
+The current `RO_MAX_THR_SPEED=2.47` m/s is a stale theoretical value from the
+old 500 rpm/output-shaft and 340 mm/3.6:1 assumptions. The current hardware
+uses a 345 mm wheel, a 36:1 C610 gearbox, and an additional 4:1 mechanical
+reduction (144:1 total). Replace `RO_MAX_THR_SPEED` with a loaded measured
 maximum before final vehicle-speed or position tuning.
 
 ## Acceptance record

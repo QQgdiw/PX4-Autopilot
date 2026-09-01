@@ -15,7 +15,17 @@ float clamp01(float value)
 
 float wrappedDifference(float value, float reference)
 {
-	return atan2f(sinf(value - reference), cosf(value - reference));
+	const float raw = value - reference;
+	const float wrapped = atan2f(sinf(raw), cosf(raw));
+
+	// atan2f() has an implementation-dependent sign for the exact pi tie.
+	// Preserve the configured endpoint direction so a 180-degree HX8 span
+	// does not invert and classify the Rover endpoint as Quad.
+	if (fabsf(fabsf(wrapped) - static_cast<float>(M_PI)) < 1e-5f) {
+		return raw < 0.f ? -static_cast<float>(M_PI) : static_cast<float>(M_PI);
+	}
+
+	return wrapped;
 }
 
 bool finiteVector(const TmagVector &sample)
@@ -36,7 +46,17 @@ float normalizeAs5600(float angle, float quad_angle, float rover_angle)
 		return NAN;
 	}
 
-	const float position = wrappedDifference(angle, quad_angle) / endpoint_travel;
+	// Keep the measured angle on the same directed revolution as the
+	// configured endpoint travel.  A shortest-angle wrap alone is ambiguous
+	// when the configured span is 180 degrees: for example, with -85 -> 95,
+	// a measured 95.1 degrees is 180.1 degrees from Quad and must remain just
+	// beyond the Rover endpoint, rather than wrapping to -179.9 degrees and
+	// being misclassified as Quad.
+	const float raw_difference = angle - quad_angle;
+	const float revolutions = (endpoint_travel - raw_difference) / (2.f * static_cast<float>(M_PI));
+	const float directed_difference = raw_difference
+			+ roundf(revolutions) * (2.f * static_cast<float>(M_PI));
+	const float position = directed_difference / endpoint_travel;
 	return clamp01(position);
 }
 

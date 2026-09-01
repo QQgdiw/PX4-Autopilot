@@ -152,7 +152,7 @@ void DifferentialPosControl::manualPositionMode()
 					    -1.f, 1.f, -_param_ro_speed_limit.get(), _param_ro_speed_limit.get());
 	const float bearing_scaling = math::min(_max_yaw_rate / _param_ro_yaw_p.get(),
 						_param_rd_trans_drv_trn.get() - FLT_EPSILON);
-	const float bearing_delta = math::interpolate<float>(math::deadzone(manual_control_setpoint.roll,
+	const float bearing_delta = math::interpolate<float>(math::deadzone(RoverControl::manualSteeringInput(manual_control_setpoint.roll),
 				    _param_ro_yaw_stick_dz.get()), -1.f, 1.f, -bearing_scaling, bearing_scaling);
 
 	if (fabsf(speed_body_x_setpoint) < FLT_EPSILON) { // Turn on spot

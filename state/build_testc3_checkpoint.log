@@ -1,0 +1,17 @@
+[1/6] Generating git version header
+[2/6] Building C object src/lib/version/CMakeFiles/version.dir/version.c.obj
+[3/6] Linking C static library src/lib/version/libversion.a
+[4/6] Linking CXX executable zeroone_x6_hybrid.elf
+Memory region         Used Size  Region Size  %age Used
+        ITCM_RAM:          0 GB        64 KB      0.00%
+           FLASH:     1872672 B      1920 KB     95.25%
+       DTCM1_RAM:          0 GB        64 KB      0.00%
+       DTCM2_RAM:          0 GB        64 KB      0.00%
+        AXI_SRAM:       99844 B       512 KB     19.04%
+           SRAM1:          0 GB       128 KB      0.00%
+           SRAM2:          0 GB       128 KB      0.00%
+           SRAM3:          0 GB        32 KB      0.00%
+           SRAM4:          2 KB        64 KB      3.12%
+          BKPRAM:          0 GB         4 KB      0.00%
+[5/6] Generating ../../zeroone_x6_hybrid.bin
+[6/6] Creating /home/crocodile/PX4-Autopilot-debug-testc1-v1.16.1/build/zeroone_x6_hybrid/zeroone_x6_hybrid.px4

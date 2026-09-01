@@ -85,19 +85,23 @@ TEST(Hx8CommandPolicy, FaultOnlyReleasesBoundedlyAndClearAllowsSameTargetAgain)
 		hybrid_control::Hx8CommandAction::Move);
 }
 
-TEST(Hx8CommandPolicy, StableHoldCarriesCurrentEndpointAndAckMatchesSequence)
+TEST(Hx8CommandPolicy, StableHoldIsSentOnceWhenMotionBecomesEnabled)
 {
 	hybrid_control::Hx8CommandPolicy policy;
-	hybrid_control::TransformationOutput output{hybrid_control::HybridState::TransitionToQuad,
+	hybrid_control::TransformationOutput output{hybrid_control::HybridState::Flying,
 		hybrid_control::HybridTarget::Flying, hybrid_control::SensorSource::None,
 		hybrid_control::TransformFault::None, false, false, 0.f};
-	auto move = policy.update(hybrid_control::ActuatorBackend::Hx8, output, 0);
-	EXPECT_FALSE(policy.motionAcknowledged(move.sequence, false, 1, 1));
-	EXPECT_TRUE(policy.motionAcknowledged(move.sequence, true, 1, 1));
-	output.state = hybrid_control::HybridState::Flying;
-	auto hold = policy.update(hybrid_control::ActuatorBackend::Hx8, output, 200'000);
+	EXPECT_EQ(policy.update(hybrid_control::ActuatorBackend::Hx8, output, 0, false).action,
+		hybrid_control::Hx8CommandAction::None);
+	auto hold = policy.update(hybrid_control::ActuatorBackend::Hx8, output, 20'000, true);
 	EXPECT_EQ(hold.action, hybrid_control::Hx8CommandAction::Hold);
 	EXPECT_EQ(hold.target, hybrid_control::HybridTarget::Flying);
+	EXPECT_EQ(policy.update(hybrid_control::ActuatorBackend::Hx8, output, 220'000, true).action,
+		hybrid_control::Hx8CommandAction::None);
+	EXPECT_EQ(policy.update(hybrid_control::ActuatorBackend::Hx8, output, 240'000, false).action,
+		hybrid_control::Hx8CommandAction::None);
+	EXPECT_EQ(policy.update(hybrid_control::ActuatorBackend::Hx8, output, 260'000, true).action,
+		hybrid_control::Hx8CommandAction::Hold);
 }
 
 TEST(Hx8CommandPolicy, MotionHealthUsesOnlyCurrentMoveSequence)

@@ -32,6 +32,7 @@
 
 #include "hybrid_vehicle_control.hpp"
 
+#include <climits>
 #include <cmath>
 #include <cstring>
 
@@ -54,6 +55,8 @@ static_assert(static_cast<uint8_t>(TransformFault::InvalidConfiguration)
 namespace
 {
 static constexpr hrt_abstime MANUAL_CONTROL_TIMEOUT = 1_s;
+static constexpr hrt_abstime LAND_DETECTION_TIMEOUT = 2_s;
+static constexpr hrt_abstime STARTUP_PROBE_WINDOW = 10_s;
 
 bool timestamp_fresh(uint64_t timestamp, hrt_abstime now, uint64_t timeout_us)
 {
@@ -300,6 +303,13 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 		actuator.command_accepted = _hx8_command_policy.motionCommandHealthy(_hx8_status.command_sequence,
 				_hx8_status.command_accepted, _hx8_status.command_result,
 				hx8_servo_status_s::RESULT_NONE, hx8_servo_status_s::RESULT_ACCEPTED);
+
+		if (!actuator.command_accepted) {
+			PX4_ERR("HX8 motion unhealthy expected_seq=%" PRIu32 " status_seq=%" PRIu32 " accepted=%d result=%u",
+				_hx8_command_policy.lastMotionSequence(), _hx8_status.command_sequence,
+				_hx8_status.command_accepted, _hx8_status.command_result);
+		}
+
 		actuator.protection_flags = _hx8_status.protection_flags;
 	}
 
@@ -353,9 +363,17 @@ void HybridVehicleControl::Run()
 
 	updateParams();
 	_actuator_armed_sub.update(&_actuator_armed);
+	_vehicle_land_detected_sub.update(&_vehicle_land_detected);
 	_vehicle_control_mode_sub.update(&_vcontrol_mode);
 
 	const hrt_abstime now = hrt_absolute_time();
+
+	if (_startup_probe_started == 0) {
+		_startup_probe_started = now;
+		PX4_INFO("HYBDBG startup t=0 backend=%d rc_man_ch=%d",
+			 (int)_param_hyb_act_type.get(), (int)_param_hybrid_man_ch.get());
+	}
+
 	const TransformationConfig requested_config = transformation_config();
 	const bool safe_to_apply = !_actuator_armed.armed && !_actuator_armed.prearmed;
 	const bool configuration_applied = _transformation_config_tracker.update(requested_config, safe_to_apply);
@@ -369,6 +387,37 @@ void HybridVehicleControl::Run()
 	}
 
 	const TransformationConfig &active_config = _transformation_config_tracker.active();
+	const bool startup_probe_active = now - _startup_probe_started <= STARTUP_PROBE_WINDOW;
+
+	if (startup_probe_active && active_config.backend == hybrid_control::ActuatorBackend::Hx8) {
+		const bool changed = !_startup_probe_hx8_seen
+				     || _startup_probe_hx8_online != _hx8_status.online
+				     || _startup_probe_hx8_healthy != _hx8_status.healthy
+				     || _startup_probe_hx8_verified != _hx8_status.config_verified
+				     || _startup_probe_hx8_command_accepted != _hx8_status.command_accepted
+				     || _startup_probe_hx8_result != _hx8_status.command_result
+				     || _startup_probe_hx8_sequence != _hx8_status.command_sequence;
+
+		if (changed) {
+			const unsigned long long elapsed = static_cast<unsigned long long>(now - _startup_probe_started);
+			const unsigned long long age = _hx8_status.last_valid_response != 0
+						       && now >= _hx8_status.last_valid_response
+						       ? static_cast<unsigned long long>(now - _hx8_status.last_valid_response) : ULLONG_MAX;
+			PX4_INFO("HYBDBG hx8 t=%llu online=%d healthy=%d verified=%d accepted=%d result=%u seq=%u id=%u rsp_age=%llu angle=%.3f",
+				 (unsigned long long)elapsed, (int)_hx8_status.online, (int)_hx8_status.healthy,
+				 (int)_hx8_status.config_verified, (int)_hx8_status.command_accepted,
+				 (unsigned)_hx8_status.command_result, (unsigned)_hx8_status.command_sequence,
+				 (unsigned)_hx8_status.servo_id, age, (double)_hx8_status.angle_deg);
+			_startup_probe_hx8_seen = true;
+			_startup_probe_hx8_online = _hx8_status.online;
+			_startup_probe_hx8_healthy = _hx8_status.healthy;
+			_startup_probe_hx8_verified = _hx8_status.config_verified;
+			_startup_probe_hx8_command_accepted = _hx8_status.command_accepted;
+			_startup_probe_hx8_result = _hx8_status.command_result;
+			_startup_probe_hx8_sequence = _hx8_status.command_sequence;
+		}
+	}
+
 	const TransformFault configuration_fault = hybrid_control::validateTransformationConfig(active_config);
 
 	if (configuration_fault == TransformFault::None) {
@@ -391,6 +440,21 @@ void HybridVehicleControl::Run()
 
 void HybridVehicleControl::update_state_machine(const TransformationInput &input)
 {
+	const bool hx8_feedback_bad = _transformation_config_tracker.hasActive()
+				      && _transformation_config_tracker.active().backend == hybrid_control::ActuatorBackend::Hx8
+				      && (!input.position.valid || !input.position.endpoint_confirmed || !input.actuator.online
+					  || !input.actuator.healthy || !input.actuator.config_verified);
+	const bool airborne_quad_feedback_degraded = _transformation_output.state == hybrid_control::HybridState::Flying
+				      && _actuator_armed.armed && !_vehicle_land_detected.landed
+				      && !_vehicle_land_detected.maybe_landed && hx8_feedback_bad;
+
+	// Keep the established Quad control state through a transient HX8 feedback
+	// loss while airborne. New transformation requests remain blocked by the
+	// unchanged state and no command is generated until feedback recovers.
+	if (airborne_quad_feedback_degraded) {
+		return;
+	}
+
 	bool request_rover = false;
 	bool request_quad = false;
 
@@ -417,19 +481,7 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 	manual_control_setpoint_s manual{};
 
 	if (_manual_control_setpoint_sub.update(&manual)) {
-		float transfer_switch = -1.f;
 		float manual_rc_value = 0.f;
-		const bool manual_sample_fresh = timestamp_fresh(manual.timestamp, input.now_us, MANUAL_CONTROL_TIMEOUT);
-
-		switch (_rc_map_trans_sw_val) {
-		case 5: transfer_switch = manual.aux1; break;
-		case 6: transfer_switch = manual.aux2; break;
-		case 7: transfer_switch = manual.aux3; break;
-		case 8: transfer_switch = manual.aux4; break;
-		case 9: transfer_switch = manual.aux5; break;
-		case 10: transfer_switch = manual.aux6; break;
-		default: break;
-		}
 
 		switch (_param_hybrid_man_ch.get()) {
 		case 1: manual_rc_value = manual.aux1; break;
@@ -446,6 +498,13 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 		if (_manual_control_cache.fresh(input.now_us, MANUAL_CONTROL_TIMEOUT)) {
 			const float current_manual_value = _manual_control_cache.value();
 
+			if (!_startup_probe_first_rc_logged && input.now_us - _startup_probe_started <= STARTUP_PROBE_WINDOW) {
+				PX4_INFO("HYBDBG rc-first t=%llu value=%.3f mapped_ch=%d",
+					 (unsigned long long)(input.now_us - _startup_probe_started),
+					 (double)current_manual_value, (int)_param_hybrid_man_ch.get());
+				_startup_probe_first_rc_logged = true;
+			}
+
 			if (_manual_value_initialized
 			    && fabsf(current_manual_value - _last_manual_value) > 0.5f
 			    && hybrid_control::manualCommissioningPermitted(_transformation_output,
@@ -457,8 +516,21 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 			_last_manual_value = current_manual_value;
 		}
 
-		if (manual_sample_fresh && std::isfinite(transfer_switch)
-		    && fabsf(transfer_switch - last_transfer_switch) > 0.5f) {
+	}
+
+	manual_control_switches_s switches{};
+
+	if (_manual_control_switches_sub.update(&switches)
+	    && timestamp_fresh(switches.timestamp, input.now_us, MANUAL_CONTROL_TIMEOUT)) {
+		const bool previous_switch_valid = _last_transition_switch == manual_control_switches_s::SWITCH_POS_ON
+							  || _last_transition_switch == manual_control_switches_s::SWITCH_POS_OFF;
+		const bool switch_changed = previous_switch_valid && switches.transition_switch != _last_transition_switch;
+
+		if (switch_changed
+		    && (switches.transition_switch == manual_control_switches_s::SWITCH_POS_ON
+			|| switches.transition_switch == manual_control_switches_s::SWITCH_POS_OFF)) {
+			PX4_INFO("HYBDBG transition-switch previous=%u current=%u",
+				 (unsigned)_last_transition_switch, (unsigned)switches.transition_switch);
 			_manual_commissioning_active = false;
 
 			if (_vcontrol_mode.flag_control_auto_enabled) {
@@ -470,19 +542,23 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 				_vehicle_command_pub.publish(mode_command);
 			}
 
-			if (transfer_switch > 0.5f && last_transfer_switch <= 0.5f) {
+			if (switches.transition_switch == manual_control_switches_s::SWITCH_POS_ON) {
 				request_rover = true;
 				request_quad = false;
 
-			} else if (transfer_switch < -0.5f && last_transfer_switch >= -0.5f) {
+			} else {
 				request_quad = true;
 				request_rover = false;
 			}
 		}
 
-		if (manual_sample_fresh && std::isfinite(transfer_switch)) {
-			last_transfer_switch = transfer_switch;
+		if (!previous_switch_valid
+		    && (switches.transition_switch == manual_control_switches_s::SWITCH_POS_ON
+			|| switches.transition_switch == manual_control_switches_s::SWITCH_POS_OFF)) {
+			PX4_INFO("HYBDBG transition-switch baseline=%u", (unsigned)switches.transition_switch);
 		}
+
+		_last_transition_switch = switches.transition_switch;
 	}
 
 	const bool manual_control_fresh = _manual_control_cache.fresh(input.now_us, MANUAL_CONTROL_TIMEOUT);
@@ -500,10 +576,20 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 
 	HybridTarget requested_target = HybridTarget::None;
 
-	if (request_rover && check_safe_to_transform(true)) {
-		requested_target = HybridTarget::Driving;
+	if (request_rover) {
+		const bool rover_safe = check_safe_to_transform(true);
+		PX4_INFO("HYBDBG transition-request target=rover safe=%d armed=%d prearmed=%d state=%u fault=%u",
+			 (int)rover_safe, (int)_actuator_armed.armed, (int)_actuator_armed.prearmed,
+			 (unsigned)_transformation_output.state, (unsigned)_transformation_output.fault);
+
+		if (rover_safe) {
+			requested_target = HybridTarget::Driving;
+		}
 
 	} else if (request_quad) {
+		PX4_INFO("HYBDBG transition-request target=quad armed=%d prearmed=%d state=%u fault=%u",
+			 (int)_actuator_armed.armed, (int)_actuator_armed.prearmed,
+			 (unsigned)_transformation_output.state, (unsigned)_transformation_output.fault);
 		requested_target = HybridTarget::Flying;
 	}
 
@@ -526,7 +612,29 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 		? _hx8_command_policy.motionAcknowledged(_hx8_status.command_sequence, _hx8_status.command_accepted,
 			_hx8_status.command_result, hx8_servo_status_s::RESULT_ACCEPTED)
 		: transformation_pwm_command_effective();
+	const HybridState previous_state = _transformation_output.state;
+	const TransformFault previous_fault = _transformation_output.fault;
 	_transformation_output = _transformation.update(state_input);
+
+	const bool first_fault = previous_fault == TransformFault::None
+				 && _transformation_output.fault != TransformFault::None
+				 && !_startup_probe_fault_logged;
+
+	if ((input.now_us - _startup_probe_started <= STARTUP_PROBE_WINDOW || first_fault)
+	    && (_transformation_output.state != previous_state || _transformation_output.fault != previous_fault)) {
+		PX4_INFO("HYBDBG state t=%llu state=%u-%u target=%u fault=%u-%u hx8[o=%d h=%d v=%d a=%d r=%u seq=%u] pos=%.3f valid=%d",
+			 (unsigned long long)(input.now_us - _startup_probe_started), (unsigned)previous_state,
+			 (unsigned)_transformation_output.state, (unsigned)_transformation_output.target,
+			 (unsigned)previous_fault, (unsigned)_transformation_output.fault, (int)state_input.actuator.online,
+			 (int)state_input.actuator.healthy, (int)state_input.actuator.config_verified,
+			 (int)state_input.actuator.command_accepted, (unsigned)_hx8_status.command_result,
+			 (unsigned)_hx8_status.command_sequence, (double)state_input.position.normalized,
+			 (int)state_input.position.valid);
+
+		if (first_fault) {
+			_startup_probe_fault_logged = true;
+		}
+	}
 
 	if (hybrid_control::isTransformationFaulted(_transformation_output)) {
 		_manual_commissioning_active = false;
@@ -536,10 +644,15 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 bool HybridVehicleControl::check_safe_to_transform(bool to_rover)
 {
 	if (to_rover) {
-		vehicle_local_position_s local_position{};
+		const bool land_detection_fresh = timestamp_fresh(_vehicle_land_detected.timestamp,
+									      hrt_absolute_time(), LAND_DETECTION_TIMEOUT);
+		const bool landed = land_detection_fresh && _vehicle_land_detected.landed;
+		PX4_INFO("HYBDBG land-gate fresh=%d landed=%d maybe=%d timestamp=%llu",
+			 (int)land_detection_fresh, (int)_vehicle_land_detected.landed,
+			 (int)_vehicle_land_detected.maybe_landed,
+			 (unsigned long long)_vehicle_land_detected.timestamp);
 
-		if (_vehicle_local_position_sub.copy(&local_position)
-		    && local_position.z_valid && -local_position.z > _param_hybrid_max_z.get()) {
+		if (!landed) {
 			return false;
 		}
 	}
@@ -683,10 +796,21 @@ void HybridVehicleControl::publish_hx8_command(hrt_abstime now)
 	command.acceleration_time_ms = static_cast<uint16_t>(acc);
 	command.deceleration_time_ms = static_cast<uint16_t>(dec);
 	command.power_mw = static_cast<uint16_t>(power);
-	const auto decision = _hx8_command_policy.update(hybrid_control::ActuatorBackend::Hx8, _transformation_output, now);
+	// Transformation is permitted while normally disarmed. Explicit lockdown and
+	// failsafe remain hard inhibits; the transformation state machine separately
+	// gates unhealthy actuator feedback and faulted states.
+	const bool motion_enabled = !_actuator_armed.lockdown && !_actuator_armed.manual_lockdown
+				    && !_actuator_armed.force_failsafe;
+	const auto decision = _hx8_command_policy.update(hybrid_control::ActuatorBackend::Hx8, _transformation_output, now,
+			      motion_enabled);
 	if (decision.action == hybrid_control::Hx8CommandAction::None) {
 		return;
 	}
+
+	PX4_INFO("HYBDBG hx8-command action=%u target=%u seq=%u armed=%d prearmed=%d lockdown=%d",
+		 (unsigned)decision.action, (unsigned)decision.target, (unsigned)decision.sequence,
+		 (int)_actuator_armed.armed, (int)_actuator_armed.prearmed, (int)_actuator_armed.lockdown);
+
 	command.sequence = decision.sequence;
 	command.type = decision.action == hybrid_control::Hx8CommandAction::Move ? hx8_servo_command_s::COMMAND_MOVE
 			: decision.action == hybrid_control::Hx8CommandAction::Hold ? hx8_servo_command_s::COMMAND_HOLD
@@ -734,17 +858,4 @@ void HybridVehicleControl::publish_motor_outputs(hrt_abstime now)
 	}
 
 	_actuator_motors_final_pub.publish(motors);
-}
-
-void HybridVehicleControl::updateParams()
-{
-	ModuleParams::updateParams();
-
-	if (_param_handle_rc_map_trans_sw == PARAM_INVALID) {
-		_param_handle_rc_map_trans_sw = param_find("RC_MAP_TRANS_SW");
-	}
-
-	if (_param_handle_rc_map_trans_sw != PARAM_INVALID) {
-		param_get(_param_handle_rc_map_trans_sw, &_rc_map_trans_sw_val);
-	}
 }

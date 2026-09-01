@@ -20,6 +20,7 @@ constexpr uint8_t BootParameters[] {33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 46};
 constexpr uint8_t WritableParameters[] {33, 37, 38, 39, 40, 41, 42, 43, 46};
 constexpr uint8_t MovingFlag = 1u << 0;
 constexpr uint8_t ErrorAndProtectionFlags = 0xfc;
+constexpr uint8_t CommandExecutingResponse = 1;
 constexpr uint16_t MinimumSupplyMv = 9000;
 constexpr uint16_t MaximumSupplyMv = 12600;
 
@@ -113,7 +114,8 @@ void Controller::setServoId(uint8_t servo_id)
 
 void Controller::setTarget(const MotionCommand &command)
 {
-	if (command.sequence <= _last_target_sequence || command.type != 0 || !std::isfinite(command.target_angle_deg)
+	if (command.sequence <= _last_target_sequence || (command.type != 0 && command.type != 1 && command.type != 3)
+	    || !std::isfinite(command.target_angle_deg)
 	    || command.target_angle_deg < -180.f || command.target_angle_deg > 180.f
 	    || command.servo_id > 254 || command.servo_id != _servo_id
 	    || command.power_mw == 0 || command.power_mw > _expected.power_limit_mw
@@ -262,7 +264,8 @@ PendingRequest Controller::update(const ControllerInput &input)
 		return makeParameterRead(BootParameters[_boot_index], input.now_us);
 	}
 
-	const bool motion_allowed = (input.armed || input.prearmed) && !input.lockdown && !input.failsafe
+	const bool transition_move = _target.type == 1;
+	const bool motion_allowed = (input.armed || input.prearmed || transition_move) && !input.lockdown && !input.failsafe
 				    && _status.online && _status.healthy && _status.config_verified;
 
 	if (_target_pending) {
@@ -398,7 +401,9 @@ void Controller::handleCommandResponse(const Frame &frame)
 		}
 
 	} else {
-		_status.command_accepted = frame.payload[0] == 0;
+		// HX8 acknowledges a timed command with 0 while idle and 1 while it
+		// has entered the executing state. Values 2 and above are errors.
+		_status.command_accepted = frame.payload[0] <= CommandExecutingResponse;
 		_status.command_result = static_cast<uint8_t>(_status.command_accepted ? OperationResult::Accepted :
 					 OperationResult::Rejected);
 	}

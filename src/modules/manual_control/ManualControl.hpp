@@ -141,6 +141,7 @@ private:
 	uint8_t _system_id{1};
 	bool _rotary_wing{false};
 	bool _vtol{false};
+	bool _rover{false};
 
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::COM_RC_IN_MODE>) _param_com_rc_in_mode,

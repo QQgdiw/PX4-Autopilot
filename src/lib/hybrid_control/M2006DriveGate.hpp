@@ -38,6 +38,7 @@ private:
 	uint64_t _recovery_healthy_since{0};
 	bool _feedback_timer_active{false};
 	bool _recovery_timer_active{false};
+	bool _command_qualified{false};
 };
 
 } // namespace hybrid_control

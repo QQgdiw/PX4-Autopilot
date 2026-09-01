@@ -411,6 +411,28 @@ void Hx8UartServo::emit_events()
 	}
 
 	if (protection && !_event_protection) {
+		if (!_first_protection_snapshot_valid.load()) {
+			_first_protection_snapshot.sample_time_us = status.sample_time_us;
+			_first_protection_snapshot.command_sequence = status.command_sequence;
+			_first_protection_snapshot.angle_deg = status.angle_deg;
+			_first_protection_snapshot.voltage_v = status.voltage_v;
+			_first_protection_snapshot.current_a = status.current_a;
+			_first_protection_snapshot.power_w = status.power_w;
+			_first_protection_snapshot.temperature_c = status.temperature_c;
+			_first_protection_snapshot.status_flags = status.status_flags;
+			_first_protection_snapshot.protection_flags = status.protection_flags;
+			_first_protection_snapshot.command_result = status.command_result;
+			_first_protection_snapshot_valid.store(true);
+
+			PX4_WARN("HX8 protection snapshot flags=0x%02x protection=0x%02x seq=%" PRIu32
+				 " angle=%.3f V=%.3f I=%.3f P=%.3f T=%.2f result=%u",
+				 _first_protection_snapshot.status_flags, _first_protection_snapshot.protection_flags,
+				 _first_protection_snapshot.command_sequence, (double)_first_protection_snapshot.angle_deg,
+				 (double)_first_protection_snapshot.voltage_v, (double)_first_protection_snapshot.current_a,
+				 (double)_first_protection_snapshot.power_w, (double)_first_protection_snapshot.temperature_c,
+				 (unsigned)_first_protection_snapshot.command_result);
+		}
+
 		/* EVENT */
 		events::send(events::ID("hx8_uart_protection"), events::Log::Critical,
 			     "HX8 actuator protection active");
@@ -459,6 +481,8 @@ void Hx8UartServo::Run()
 
 	if (_command_sub.updated() && _command_sub.copy(&_command)) {
 		if (_command.sequence <= _last_sequence) {
+			PX4_ERR("local sequence reject seq=%" PRIu32 " last=%" PRIu32 " type=%u target=%.3f",
+				_command.sequence, _last_sequence, _command.type, (double)_command.target_angle_deg);
 			_controller.rejectCommand(_command.sequence);
 
 		} else {
@@ -470,14 +494,32 @@ void Hx8UartServo::Run()
 			} else if (_command.type == hx8_servo_command_s::COMMAND_MOVE
 				   || _command.type == hx8_servo_command_s::COMMAND_HOLD) {
 				if (!valid_motion_command(_command)) {
+					PX4_ERR("local motion reject seq=%" PRIu32 " target=%.3f endpoints=%.3f/%.3f "
+						"id=%u/%u time=%u/%u acc=%u/%u dec=%u/%u power=%u/%u trans=%.3f",
+						_command.sequence, (double)_command.target_angle_deg, (double)_quad_angle_deg,
+						(double)_rover_angle_deg, _command.servo_id, _configured_servo_id,
+						_command.move_time_ms, _move_time_ms, _command.acceleration_time_ms, _acceleration_time_ms,
+						_command.deceleration_time_ms, _deceleration_time_ms, _command.power_mw, _run_power_mw,
+						(double)_transition_time_s);
 					_controller.rejectCommand(_command.sequence);
 
 				} else {
-					hx8::MotionCommand command {_command.timestamp, _command.sequence, 0, _configured_servo_id,
+					hx8::MotionCommand command {_command.timestamp, _command.sequence, _command.type, _configured_servo_id,
 								    _command.target_angle_deg, _move_time_ms,
 								    _acceleration_time_ms, _deceleration_time_ms,
 								    _run_power_mw};
 					_controller.setTarget(command);
+					const auto &status = _controller.status();
+
+					if (status.command_sequence == _command.sequence
+					    && status.command_result == static_cast<uint8_t>(hx8::OperationResult::None)) {
+						PX4_INFO("motion queued seq=%" PRIu32 " type=%u target=%.3f",
+							 _command.sequence, _command.type, (double)_command.target_angle_deg);
+
+					} else {
+						PX4_ERR("controller motion reject seq=%" PRIu32 " status_seq=%" PRIu32 " result=%u",
+							_command.sequence, status.command_sequence, status.command_result);
+					}
 				}
 
 			} else {
@@ -514,11 +556,26 @@ int Hx8UartServo::print_status()
 {
 	const uint32_t snapshot = _status_snapshot.load();
 	PX4_INFO("HX8 UART device=%s online=%d healthy=%d verified=%d errors=%" PRIu32
-		 " tx=%" PRIu32 " tx_errors=%" PRIu32 " last_tx_error=%d",
-		 _device,
-		 (snapshot & StatusOnline) != 0, (snapshot & StatusHealthy) != 0,
-		 (snapshot & StatusConfigVerified) != 0, _status_error_count.load(),
-		 _tx_count, _tx_error_count, _last_tx_error);
+			 " tx=%" PRIu32 " tx_errors=%" PRIu32 " last_tx_error=%d endpoints=%.3f/%.3f",
+			 _device,
+			 (snapshot & StatusOnline) != 0, (snapshot & StatusHealthy) != 0,
+			 (snapshot & StatusConfigVerified) != 0, _status_error_count.load(),
+		 _tx_count, _tx_error_count, _last_tx_error, (double)_quad_angle_deg,
+		 (double)_rover_angle_deg);
+
+	if (_first_protection_snapshot_valid.load()) {
+		const ProtectionSnapshot &protection = _first_protection_snapshot;
+		PX4_INFO("HX8 first protection t=%" PRIu64 " flags=0x%02x protection=0x%02x seq=%" PRIu32
+			 " angle=%.3f V=%.3f I=%.3f P=%.3f T=%.2f result=%u",
+			 protection.sample_time_us, protection.status_flags, protection.protection_flags,
+			 protection.command_sequence, (double)protection.angle_deg, (double)protection.voltage_v,
+			 (double)protection.current_a, (double)protection.power_w,
+			 (double)protection.temperature_c, (unsigned)protection.command_result);
+
+	} else {
+		PX4_INFO("HX8 first protection=none");
+	}
+
 	return PX4_OK;
 }
 

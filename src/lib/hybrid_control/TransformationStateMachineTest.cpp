@@ -193,6 +193,20 @@ TEST(TransformationStateMachine, As5600EndpointComparisonWrapsAtTwoPi)
 	EXPECT_TRUE(output.position_confirmed);
 }
 
+TEST(TransformationStateMachine, Hx8NormalizationPreservesPositivePiEndpointDirection)
+{
+	EXPECT_NEAR(normalizeAs5600(89.9f * static_cast<float>(M_PI / 180.0),
+			-90.f * static_cast<float>(M_PI / 180.0), 90.f * static_cast<float>(M_PI / 180.0)),
+			0.9994f, 0.001f);
+}
+
+TEST(TransformationStateMachine, Hx8NormalizationPreservesNegativePiEndpointDirection)
+{
+	EXPECT_NEAR(normalizeAs5600(-89.9f * static_cast<float>(M_PI / 180.0),
+			90.f * static_cast<float>(M_PI / 180.0), -90.f * static_cast<float>(M_PI / 180.0)),
+			0.9994f, 0.001f);
+}
+
 TEST(TransformationStateMachine, RepeatedTransitionRequestDoesNotRestartTimeout)
 {
 	TransformationStateMachine machine;

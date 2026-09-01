@@ -85,6 +85,7 @@ void ManualControl::processInput(hrt_abstime now)
 			_system_id = vehicle_status.system_id;
 			_rotary_wing = (vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING);
 			_vtol = vehicle_status.is_vtol && !vehicle_status.is_quad_rover;
+			_rover = vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER;
 		}
 	}
 
@@ -361,6 +362,13 @@ void ManualControl::updateParams()
 
 void ManualControl::processStickArming(const manual_control_setpoint_s &input)
 {
+	if (_rover) {
+		_stick_arm_hysteresis.set_state_and_update(false, input.timestamp);
+		_stick_disarm_hysteresis.set_state_and_update(false, input.timestamp);
+		_stick_kill_hysteresis.set_state_and_update(false, input.timestamp);
+		return;
+	}
+
 	// Arm gesture
 	const bool right_stick_centered = (fabsf(input.pitch) < 0.1f) && (fabsf(input.roll) < 0.1f);
 	const bool left_stick_lower_right = (input.throttle < -0.8f) && (input.yaw > 0.9f);

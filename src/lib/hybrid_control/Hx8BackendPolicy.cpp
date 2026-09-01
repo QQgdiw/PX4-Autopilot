@@ -79,13 +79,23 @@ uint32_t Hx8CommandPolicy::nextSequence()
 	return _sequence;
 }
 
-Hx8CommandDecision Hx8CommandPolicy::update(ActuatorBackend backend, const TransformationOutput &output, uint64_t now_us)
+Hx8CommandDecision Hx8CommandPolicy::update(ActuatorBackend backend, const TransformationOutput &output, uint64_t now_us,
+		bool motion_enabled)
 {
+	const bool motion_enabled_rising = motion_enabled && !_motion_enabled;
+	_motion_enabled = motion_enabled;
+
+	if (!motion_enabled) {
+		_held_target = HybridTarget::None;
+	}
+
 	if (backend != ActuatorBackend::Hx8) {
 		return {};
 	}
 
 	if (isTransformationFaulted(output)) {
+		_held_target = HybridTarget::None;
+
 		if (_release_attempts >= 3 || (_release_sent && now_us - _last_release_us < 20'000)) {
 			return {};
 		}
@@ -102,16 +112,19 @@ Hx8CommandDecision Hx8CommandPolicy::update(ActuatorBackend backend, const Trans
 	if ((output.target == HybridTarget::Flying || output.target == HybridTarget::Driving)
 	    && (output.state == HybridState::TransitionToQuad || output.state == HybridState::TransitionToRover)
 	    && output.target != _last_target) {
+		_held_target = HybridTarget::None;
 		_last_target = output.target;
 		_last_motion_sequence = nextSequence();
 		return {Hx8CommandAction::Move, output.target, _last_motion_sequence};
 	}
 
-	const bool stable = output.state == HybridState::Flying || output.state == HybridState::Driving;
+	const HybridTarget stable_target = output.state == HybridState::Flying ? HybridTarget::Flying
+					  : output.state == HybridState::Driving ? HybridTarget::Driving : HybridTarget::None;
 
-	if (stable && now_us >= _last_hold_us && now_us - _last_hold_us >= 200'000) {
-		_last_hold_us = now_us;
-		const HybridTarget target = output.state == HybridState::Flying ? HybridTarget::Flying : HybridTarget::Driving;
+	if (motion_enabled && stable_target != HybridTarget::None
+	    && (motion_enabled_rising || stable_target != _held_target)) {
+		_held_target = stable_target;
+		const HybridTarget target = stable_target;
 		return {Hx8CommandAction::Hold, target, nextSequence()};
 	}
 
@@ -121,10 +134,11 @@ Hx8CommandDecision Hx8CommandPolicy::update(ActuatorBackend backend, const Trans
 void Hx8CommandPolicy::resetAfterFaultClear()
 {
 	_last_target = HybridTarget::None;
+	_held_target = HybridTarget::None;
+	_motion_enabled = false;
 	_last_motion_sequence = 0;
 	_release_attempts = 0;
 	_release_sent = false;
-	_last_hold_us = 0;
 }
 
 bool Hx8CommandPolicy::motionCommandHealthy(uint32_t status_sequence, bool accepted, uint8_t result,

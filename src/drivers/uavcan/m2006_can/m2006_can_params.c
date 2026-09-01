@@ -54,15 +54,15 @@ PARAM_DEFINE_INT32(M2K_L_REV, 0);
 PARAM_DEFINE_INT32(M2K_R_REV, 0);
 
 /**
- * Maximum motor output-shaft speed
+ * Maximum C610 motor rotor feedback speed
  *
  * @unit rpm
  * @min 1.0
- * @max 500.0
+ * @max 18000.0
  * @decimal 1
  * @group M2006 CAN
  */
-PARAM_DEFINE_FLOAT(M2K_MAX_RPM, 500.0f);
+PARAM_DEFINE_FLOAT(M2K_MAX_RPM, 18000.0f);
 
 /**
  * C610 current command limit
@@ -110,7 +110,7 @@ PARAM_DEFINE_FLOAT(M2K_SPD_D, 0.0f);
 PARAM_DEFINE_FLOAT(M2K_SPD_FF, 0.0f);
 
 /**
- * Motor target speed slew rate
+ * Motor rotor target speed slew rate
  *
  * The value is expressed in rpm per second.
  *
@@ -119,7 +119,7 @@ PARAM_DEFINE_FLOAT(M2K_SPD_FF, 0.0f);
  * @decimal 1
  * @group M2006 CAN
  */
-PARAM_DEFINE_FLOAT(M2K_RPM_SLEW, 500.0f);
+PARAM_DEFINE_FLOAT(M2K_RPM_SLEW, 18000.0f);
 
 /**
  * Motor feedback timeout

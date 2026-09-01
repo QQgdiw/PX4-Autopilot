@@ -213,25 +213,33 @@ MulticopterAttitudeControl::Run()
 
 	perf_begin(_loop_perf);
 
-	vehicle_status_s status{};
-	if (_vehicle_status_sub.copy(&status)) {
-	if (status.is_quad_rover && status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER) {
-		// Rover模式下完全跳过姿态控制
-		_yaw_setpoint_stabilized = NAN;
-		_man_roll_input_filter.reset(0.f);
-		_man_pitch_input_filter.reset(0.f);
+	// Cache the newest status once, then evaluate spool-up from the cached
+	// armed_time on every control cycle.  A status topic normally only updates
+	// at state transitions; calculating _spooled_up only inside copy() would
+	// leave it false forever after arming.
+	_vehicle_status_sub.copy(&_vehicle_status);
 
-		// 清空已发布的 rates setpoint，避免 MC 接收到旧值
-		vehicle_rates_setpoint_s empty_rates{};
-		empty_rates.timestamp = hrt_absolute_time();
-		memset(&empty_rates.roll, 0, sizeof(empty_rates.roll));
-		memset(&empty_rates.pitch, 0, sizeof(empty_rates.pitch));
-		memset(&empty_rates.yaw, 0, sizeof(empty_rates.yaw));
-		_vehicle_rates_setpoint_pub.publish(empty_rates);
+	if (_vehicle_status.timestamp != 0) {
+		const bool armed = (_vehicle_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED);
+		_spooled_up = armed && hrt_elapsed_time(&_vehicle_status.armed_time) > _param_com_spoolup_time.get() * 1_s;
 
-		perf_end(_loop_perf);
-		return; // 完全跳过 MC 控制逻辑
-	}
+		if (_vehicle_status.is_quad_rover && _vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER) {
+			// Rover模式下完全跳过姿态控制
+			_yaw_setpoint_stabilized = NAN;
+			_man_roll_input_filter.reset(0.f);
+			_man_pitch_input_filter.reset(0.f);
+
+			// 清空已发布的 rates setpoint，避免 MC 接收到旧值
+			vehicle_rates_setpoint_s empty_rates{};
+			empty_rates.timestamp = hrt_absolute_time();
+			memset(&empty_rates.roll, 0, sizeof(empty_rates.roll));
+			memset(&empty_rates.pitch, 0, sizeof(empty_rates.pitch));
+			memset(&empty_rates.yaw, 0, sizeof(empty_rates.yaw));
+			_vehicle_rates_setpoint_pub.publish(empty_rates);
+
+			perf_end(_loop_perf);
+			return; // 完全跳过 MC 控制逻辑
+		}
 	}
 
 	// Check if parameters have changed
@@ -274,22 +282,12 @@ MulticopterAttitudeControl::Run()
 		_manual_control_setpoint_sub.update(&_manual_control_setpoint);
 		_vehicle_control_mode_sub.update(&_vehicle_control_mode);
 
-		if (_vehicle_status_sub.updated()) {
-			vehicle_status_s vehicle_status;
-
-			if (_vehicle_status_sub.copy(&vehicle_status)) {
-				_is_quad_rover = vehicle_status.is_vtol && vehicle_status.is_quad_rover;
-				_in_rover_mode = vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER;
-
-				_vehicle_type_rotary_wing = (vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING);
-				_vtol = vehicle_status.is_vtol && !vehicle_status.is_quad_rover;
-				_vtol_in_transition_mode = vehicle_status.in_transition_mode;
-				_vtol_tailsitter = vehicle_status.is_vtol_tailsitter;
-
-				const bool armed = (vehicle_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED);
-				_spooled_up = armed && hrt_elapsed_time(&vehicle_status.armed_time) > _param_com_spoolup_time.get() * 1_s;
-			}
-		}
+		_is_quad_rover = _vehicle_status.is_vtol && _vehicle_status.is_quad_rover;
+		_in_rover_mode = _vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER;
+		_vehicle_type_rotary_wing = (_vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING);
+		_vtol = _vehicle_status.is_vtol && !_vehicle_status.is_quad_rover;
+		_vtol_in_transition_mode = _vehicle_status.in_transition_mode;
+		_vtol_tailsitter = _vehicle_status.is_vtol_tailsitter;
 
 		if (_vehicle_land_detected_sub.updated()) {
 			vehicle_land_detected_s vehicle_land_detected;

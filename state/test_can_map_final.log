@@ -1,0 +1,15 @@
+[1/6] Generating git version header
+[2/6] Building C object src/lib/version/CMakeFiles/version.dir/version.c.o
+[3/6] Linking C static library src/lib/version/libversion.a
+[4/6] Linking CXX executable unit-MavlinkStatustextHandler
+[5/6] Linking CXX executable bin/px4
+[5/6] Running tests
+   Site: crocodile
+   Build name: Linux-c++
+Test project /home/crocodile/PX4-Autopilot-debug-testc1-v1.16.1/build/px4_sitl_test
+    Start 20: unit-CanInterfaceMap
+1/1 Test #20: unit-CanInterfaceMap .............   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.02 sec

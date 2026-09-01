@@ -2,6 +2,7 @@
 #include "CanOwnership.hpp"
 
 #include <cstring>
+#include <inttypes.h>
 
 #include <px4_platform_common/board_common.h>
 #include <px4_platform_common/events.h>
@@ -71,6 +72,9 @@ bool M2006Can::init()
 	}
 
 	_iface = _can.driver.getIface(0);
+#if defined(UAVCAN_STM32H7_NUTTX)
+	_h7_iface = _can.driver.getIface(0);
+#endif
 
 	if (_iface == nullptr) {
 		PX4_ERR("CAN2 interface unavailable");
@@ -145,9 +149,14 @@ bool M2006Can::sendCommand(const int16_t left, const int16_t right)
 	frame.id = command.id;
 	frame.dlc = command.dlc;
 	std::memcpy(frame.data, command.data, sizeof(command.data));
+	_last_tx_id = frame.id;
+	_last_tx_dlc = frame.dlc;
+	std::memcpy(_last_tx_data, frame.data, sizeof(_last_tx_data));
+	_last_tx_valid = true;
 	const uavcan::MonotonicTime deadline = UAVCAN_DRIVER::SystemClock::instance().getMonotonic()
 					       + uavcan::MonotonicDuration::fromUSec(RunIntervalUs);
 	const int result = _iface->send(frame, deadline, uavcan::CanIOFlagAbortOnError);
+	_last_tx_result = result;
 
 	if (result > 0) {
 		++_tx_count;
@@ -250,8 +259,11 @@ void M2006Can::Run()
 	}
 
 	const uint64_t current_can_error_count = _iface->getErrorCount();
+	const uint64_t previous_can_error_count = _last_can_error_count;
 	const bool can_error = _rx_error || current_can_error_count > _last_can_error_count
 			       || _consecutive_tx_failures >= TxFailureLimit;
+	const uint64_t can_error_delta = current_can_error_count > previous_can_error_count
+					 ? current_can_error_count - previous_can_error_count : 0;
 	_last_can_error_count = current_can_error_count;
 
 	const hybrid_control::M2006NormalizedCommand command = hybrid_control::adaptM2006Command(
@@ -271,6 +283,39 @@ void M2006Can::Run()
 		now
 	};
 	const bool drive_enabled = _gate.update(gate_input);
+	const uint32_t fault_bits = _gate.faultBits();
+
+	// Report each newly latched gate fault once. This preserves the existing
+	// safety behavior while exposing the per-cycle inputs needed to diagnose
+	// arm/drive startup races without flooding the console every 2 ms.
+	if (fault_bits != 0) {
+		const uint32_t new_fault_bits = fault_bits & ~_last_reported_fault_bits;
+
+		if (new_fault_bits != 0) {
+			const uint64_t command_age_us = now >= _motors.timestamp ? now - _motors.timestamp : 0;
+			const bool command_future = _motors.timestamp > now;
+			PX4_WARN("gate fault new=0x%08" PRIx32 " total=0x%08" PRIx32
+				 " armed=%d driving=%d inhibit=%d online=%d/%d"
+				 " cmd_fresh=%d cmd_finite=%d cfg=%d can=%d rxerr=%d"
+				 " can_count=%" PRIu64 " delta=%" PRIu64
+				 " tx_fail=%u cmd_age=%" PRIu64 " future=%d"
+				 " ctrl=%.4f/%.4f",
+				 new_fault_bits, fault_bits,
+				 static_cast<int>(_armed.armed), static_cast<int>(hybrid_driving),
+				 static_cast<int>(output_inhibited), static_cast<int>(online[0]),
+				 static_cast<int>(online[1]), static_cast<int>(command_fresh),
+				 static_cast<int>(command.finite), static_cast<int>(_controller_config_valid),
+				 static_cast<int>(can_error), static_cast<int>(_rx_error),
+				 current_can_error_count, can_error_delta, _consecutive_tx_failures,
+				 command_age_us, static_cast<int>(command_future),
+				 static_cast<double>(command.left), static_cast<double>(command.right));
+		}
+
+		_last_reported_fault_bits = fault_bits;
+
+	} else {
+		_last_reported_fault_bits = 0;
+	}
 	float dt = 0.002f;
 
 	if (_last_run != 0 && now > _last_run) {
@@ -310,6 +355,58 @@ int M2006Can::print_status()
 		 _iface != nullptr ? _iface->getErrorCount() : 0);
 	PX4_INFO("fault=0x%08" PRIx32 " current=%d/%d", _gate.faultBits(),
 		 static_cast<int>(_current_command[0]), static_cast<int>(_current_command[1]));
+	if (_last_tx_valid) {
+		PX4_INFO("last TX id=0x%03" PRIx32 " dlc=%u result=%d data=%02x %02x %02x %02x %02x %02x %02x %02x",
+			_last_tx_id, static_cast<unsigned>(_last_tx_dlc), _last_tx_result,
+			_last_tx_data[0], _last_tx_data[1], _last_tx_data[2], _last_tx_data[3],
+			_last_tx_data[4], _last_tx_data[5], _last_tx_data[6], _last_tx_data[7]);
+	} else {
+		PX4_INFO("last TX: none");
+	}
+#if defined(UAVCAN_STM32H7_NUTTX)
+	uavcan_stm32h7::CanIface::ErrorSnapshot snapshot{};
+	if (_h7_iface != nullptr) {
+		PX4_INFO("H7 err internal=%" PRIu64 " rx_overflow=%" PRIu32
+			 " cel=%" PRIu32 " busoff=%" PRIu32 " tx_timeout=%" PRIu32
+			 " rx_fifo_lost=%" PRIu32 " abort=%" PRIu32 " rxq=%u",
+			 _h7_iface->getInternalErrorCount(), _h7_iface->getRxQueueOverflowCount(),
+			 _h7_iface->getCanErrorLogCount(), _h7_iface->getBusOffCount(),
+			 _h7_iface->getTxTimeoutCount(), _h7_iface->getRxFifoLostCount(),
+			 _h7_iface->getVoluntaryTxAbortCount(), _h7_iface->getRxQueueLength());
+	}
+
+	if (_h7_iface != nullptr && _h7_iface->getErrorSnapshot(snapshot)) {
+		const uint32_t psr = snapshot.psr;
+		const uint32_t ecr = snapshot.ecr;
+		PX4_INFO("first snapshot kind=0x%02" PRIx32 " t=%" PRIu64 "us",
+			 snapshot.kind, snapshot.monotonic_usec);
+		PX4_INFO("PSR=0x%08" PRIx32 " LEC=%" PRIu32 " DLEC=%" PRIu32 " ACT=%" PRIu32 " EP=%" PRIu32 " EW=%" PRIu32 " BO=%" PRIu32,
+			 psr,
+			 static_cast<uavcan::uint32_t>((psr & FDCAN_PSR_LEC) >> FDCAN_PSR_LEC_Pos),
+			 static_cast<uavcan::uint32_t>((psr & FDCAN_PSR_DLEC) >> FDCAN_PSR_DLEC_Pos),
+			 static_cast<uavcan::uint32_t>((psr & FDCAN_PSR_ACT) >> FDCAN_PSR_ACT_Pos),
+			 static_cast<uavcan::uint32_t>((psr & FDCAN_PSR_EP) ? 1U : 0U),
+			 static_cast<uavcan::uint32_t>((psr & FDCAN_PSR_EW) ? 1U : 0U),
+			 static_cast<uavcan::uint32_t>((psr & FDCAN_PSR_BO) ? 1U : 0U));
+		if (snapshot.ecr_valid) {
+			PX4_INFO("ECR=0x%08" PRIx32 " TEC=%" PRIu32 " REC=%" PRIu32 " CEL=%" PRIu32,
+				 ecr,
+				 static_cast<uavcan::uint32_t>((ecr & FDCAN_ECR_TEC) >> FDCAN_ECR_TEC_Pos),
+				 static_cast<uavcan::uint32_t>((ecr & FDCAN_ECR_TREC) >> FDCAN_ECR_TREC_Pos),
+				 static_cast<uavcan::uint32_t>((ecr & FDCAN_ECR_CEL) >> FDCAN_ECR_CEL_Pos));
+
+		} else {
+			PX4_INFO("ECR=not sampled for software-path snapshot");
+		}
+		PX4_INFO("IR=0x%08" PRIx32 " TXFQS=0x%08" PRIx32 " TXBRP=0x%08" PRIx32,
+			 snapshot.ir, snapshot.txfqs, snapshot.txbrp);
+		PX4_INFO("TXBTO=0x%08" PRIx32 " TXBCF=0x%08" PRIx32 " CCCR=0x%08" PRIx32,
+			 snapshot.txbto, snapshot.txbcf, snapshot.cccr);
+
+	} else {
+		PX4_INFO("first snapshot=none");
+	}
+#endif
 	return 0;
 }
 

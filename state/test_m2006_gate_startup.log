@@ -1,0 +1,29 @@
+Running main() from /home/crocodile/PX4-Autopilot-debug-testc1-v1.16.1/build/px4_sitl_test/googletest-src/googletest/src/gtest_main.cc
+[==========] Running 10 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 10 tests from M2006DriveGate
+[ RUN      ] M2006DriveGate.RequiresBothFeedbackStreams
+[       OK ] M2006DriveGate.RequiresBothFeedbackStreams (0 ms)
+[ RUN      ] M2006DriveGate.FeedbackQualificationIsIndependentOfCommandHealth
+[       OK ] M2006DriveGate.FeedbackQualificationIsIndependentOfCommandHealth (0 ms)
+[ RUN      ] M2006DriveGate.LatchesFeedbackLossUntilDisarmedHealthy
+[       OK ] M2006DriveGate.LatchesFeedbackLossUntilDisarmedHealthy (0 ms)
+[ RUN      ] M2006DriveGate.ReportsAndLatchesCanAndCommandFaults
+[       OK ] M2006DriveGate.ReportsAndLatchesCanAndCommandFaults (0 ms)
+[ RUN      ] M2006DriveGate.DisarmedRecoveryIgnoresInvalidWheelCommand
+[       OK ] M2006DriveGate.DisarmedRecoveryIgnoresInvalidWheelCommand (0 ms)
+[ RUN      ] M2006DriveGate.FirstArmedInvalidCommandWaitsForQualification
+[       OK ] M2006DriveGate.FirstArmedInvalidCommandWaitsForQualification (0 ms)
+[ RUN      ] M2006DriveGate.LeavingDrivingOnlyDisablesOutput
+[       OK ] M2006DriveGate.LeavingDrivingOnlyDisablesOutput (0 ms)
+[ RUN      ] M2006DriveGate.ArmedNonDrivingBadInputsDoNotLatchFaults
+[       OK ] M2006DriveGate.ArmedNonDrivingBadInputsDoNotLatchFaults (0 ms)
+[ RUN      ] M2006DriveGate.OutputInhibitionDoesNotDisableFaultMonitoring
+[       OK ] M2006DriveGate.OutputInhibitionDoesNotDisableFaultMonitoring (0 ms)
+[ RUN      ] M2006DriveGate.CommandTimestampFreshnessRejectsStaleAndFutureSamples
+[       OK ] M2006DriveGate.CommandTimestampFreshnessRejectsStaleAndFutureSamples (0 ms)
+[----------] 10 tests from M2006DriveGate (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 10 tests from 1 test suite ran. (0 ms total)
+[  PASSED  ] 10 tests.

@@ -1,0 +1,172 @@
+# Test Workspace State
+
+This directory records the status of testing for `debug/testc1-v1.16.1`.
+
+- Base: `origin/testc1_v1.16.1` at `d86bdd6a4a957704a7c4218a628d6007e2a4e1f9`
+- Scope: build and debug the `zeroone_x6_hybrid` firmware only.
+- Worktree: `/home/crocodile/PX4-Autopilot-debug-testc1-v1.16.1`
+- USB diagnosis: the post-initialization FDCAN filter configuration path was the
+  reproducible USB CDC blocker. M2006 now retains the driver's initial
+  accept-to-FIFO0 policy and software-filters C610 IDs instead of re-entering
+  FDCAN INIT at runtime.
+- Implemented topology: PMU/DroneCAN owns physical CAN1; M2006/C610 owns physical
+  CAN2 (FDCAN2, PB12 RX and PB13 TX). The H7 driver now maps each instance's
+  physical mask to local logical interfaces and tracks ownership per physical
+  bus. M2006 continues to use logical interface zero, which maps to FDCAN2 for a
+  CAN2-only helper.
+- Final host verification artifact:
+  `build/zeroone_x6_hybrid/zeroone_x6_hybrid.px4`, 1,751,883 bytes, generated
+  2026-07-23 21:24:26 +0800. SHA-256:
+  `4e6e7788f02d180a7a3ab76df2862fb9be1170cbdf4a58e7f8bc65498bdc0369`.
+- Target hardware acceptance for USB CDC, PMU DroneCAN on CAN1, simultaneous
+  M2006 IDs 1/2 on CAN2, and reversed startup order has not yet been performed.
+- First target report: USB is stable and M2006 CAN2 is healthy (`rx=395776`,
+  `tx=196905`, `hw errors=0`, both motors online, `can_error_count=0`), but
+  `uavcan status` reports `application not running`; PMU communication/LED is
+  therefore not yet validated.
+- DroneCAN-only isolation also fails with M2006 disabled across a full power
+  cycle, so CAN2-first ownership is excluded as a necessary cause. A temporary
+  staged startup diagnostic is available at
+  `build/zeroone_x6_hybrid/zeroone_x6_hybrid_dronecan_start_diag.px4`, SHA-256
+  `c6a500730d1cb9c2e1d538d25de999c55380e5b4bfd2031f26cba4080acf08fd`.
+- Root cause: commit `b299183a29` initialized the STM32H7 driver's logical
+  interface count to zero until asynchronous hardware init, but libuavcan
+  requires at least one interface while constructing `UavcanNode`. Commits
+  `7f1a479735` and `7014e3ce55` establish a tested pre-init `CanDriverView`
+  used directly by production for logical count and CAN1/CAN2 mapping.
+- Final production artifact:
+  `build/zeroone_x6_hybrid/zeroone_x6_hybrid_dronecan_topology_fix.px4`,
+  1,752,452 bytes, generated 2026-07-24 16:15:16 +0800. SHA-256:
+  `5e34d479ce59f99f86b47e849fdfe3fc43323664ca5b0afd4a8e341f6c992dee`.
+  Host verification passed `CanInterfaceMap`, `CanOwnership`, and
+  `hybridCheck` 1/1 each plus `make zeroone_x6_hybrid`. Target acceptance is
+  complete: DroneCAN/PMU runs on CAN1, both M2006/C610 nodes run on CAN2,
+  USB/QGC remains stable, and a disarmed simultaneous C610 disconnect/reconnect
+  recovered both nodes without a latched fault.
+- HX8 commissioning inputs supplied so far: servo ID 0, provisional Quad/Rover
+  endpoints 90/180 degrees, regulated 12 V supply, and 36 W allowed run power.
+  Persistent protection fields use mW/mA/mV and a Celsius temperature limit;
+  live temperature telemetry separately uses a raw thermistor ADC conversion.
+- User-selected HX8 protection candidates were stall power 48000 mW, current
+  limit 5000 mA, and 65 C temperature threshold. BEC output is
+  confirmed sufficient. Persistent write remains blocked pending resolution of
+  the 48 W stall threshold versus 36 W internal/run power-limit relationship.
+- User subsequently chose to retain all HX8 manufacturer-default internal
+  protection settings. Their numeric values are not represented by PX4's zero
+  placeholders and must be read from the vendor tool/manual or protocol before
+  PX4 expected-value parameters can be populated.
+- Manufacturer defaults were supplied: response 0, ID 0, baud code 5
+  (115200), stall protection 0, stall power 6000 mW, voltage 4000--12600 mV,
+  temperature 70 C, power 20000 mW, current 4000 mA, power hysteresis 0,
+  power-on lock 0, angle limit enabled at +/-180.0 degrees, soft start
+  disabled, soft-start time 3000 ms, and midpoint offset 0.
+- These defaults cannot be accepted unchanged: response and stall protection
+  must be enabled; 4 V undervoltage conflicts with the intended 9.0--12.6 V
+  safety envelope; and a 20 W persistent limit requires runtime motion power
+  no greater than 20 W. Register 41 is documented in degrees C, exposing a
+  now-fixed driver unit bug where expected configuration used raw ADC.
+- Approved safe commissioning profile: response/stall protection enabled,
+  stall power 6000 mW, temperature 70 C, internal and runtime power 20000 mW,
+  current 4000 mA, voltage 9000--12600 mV, and power-on lock disabled.
+- Implementation now uses `HX8_CFG_TEMP` in degrees C for register 41 while
+  retaining ADC conversion only for live telemetry. HX8 config validation no
+  longer consumes PWM endpoints; absent-driver CLI returns failure; unsafe
+  response/stall/voltage settings and motion power above the persistent limit
+  are rejected.
+- Host tests pass all four `Hx8` targets and `TransformationStateMachine`.
+  `make zeroone_x6_hybrid` passes. Final local artifact SHA-256:
+  `0e24dd9d851c8f3651c1b8c7310a26cb9ef4a48dae62ce6cac009a953164244b`.
+  Hardware validation remains pending.
+- Fix committed locally as `ece4655271d71b7bc8f720685c0e2a460dfd1ae8`
+  (`fix[hx8]: enforce safe servo commissioning`); branch is one commit ahead
+  of `origin/testc1_v1.16.1` and has not been pushed.
+- HX8 bench diagnosis: vendor-tool communication and all configured protection
+  values are valid, but PX4 has zero valid RX frames. The original ZeroOne
+  public PX4 repository and X6 V2 branch use the same serial mapping as this
+  worktree. A local diagnostic build now reports the opened device and TX
+  attempt/error counts from `hx8_uart_servo status`.
+- Diagnostic commit: `9cc27c286073b614075332199a7e39daaa9e1734`
+  (`test[hx8]: expose UART transmission diagnostics`). Current firmware SHA-256:
+  `c57d58d7277c63b54f0e0e51fde2e81696bb78a578b6f33bacc8050c995ff1cc`.
+- Root cause confirmed by target diagnostic: opening the UART in the NSH task
+  left an invalid FD in the serial work queue (`EBADF=-9` on every send). Commit
+  `5b35c8704e7894bc7259cfdbbaf7e729c8b50203` opens/configures it in `Run()`.
+  Current firmware SHA-256 is
+  `a18663a0d4e9e1cfdc85592432d37bde460a0406f6c1d38054f7e19088f9b148`.
+- Hardware then confirmed clean Ping TX/RX. Vendor ParamRead responses echo the
+  register number before its value (`05 1c 03 03 00 21 01 49` for register 33
+  value 1), which the old controller rejected. Commit `8355722b3a` fixes the
+  response shape and extraction. Current firmware SHA-256:
+  `37f2b333539489d62ac7ddd2bab0df1999b80c503891e87a51f957c9c7cfa543`.
+- Full register capture proved register 41 stores raw ADC 741 for the vendor
+  UI's 70 C threshold. Commit `1c954ca375` keeps `HX8_CFG_TEMP=70` user-facing
+  but converts it to ADC for protocol compare/write. Current firmware SHA-256:
+  `52b14c39582a84dd1d0a81d6fcc3c7df01ffa184596f89dbb7f2f99bf837c963`.
+- Current RC/HX8 diagnosis found two independent defects. The hybrid module
+  interpreted `RC_MAP_TRANS_SW=7` as `manual_control_setpoint.aux3`, although
+  AUX3 is controlled by `RC_MAP_AUX3`; it now consumes the canonical
+  `manual_control_switches.transition_switch` output from `rc_update`.
+- Stable HX8 HOLD previously issued a new timed-move command every 200 ms. An
+  armed servo could reject the next command while the preceding 1000 ms move
+  was still active. HOLD is now sent once when motion becomes enabled or the
+  stable endpoint changes, and is re-armed only after motion is disabled.
+- Host verification passes HX8 Protocol 10/10, Controller 23/23, CLI 1/1,
+  BackendPolicy 7/7, TransformationStateMachine 44/44, and ManualControl 7/7.
+  `make zeroone_x6_hybrid` passes. Current uncommitted artifact SHA-256:
+  `d2a3a052934af0dfa7696540af983128498393fdf03421cac04456a6af37a6ba`.
+- The latest cached-status MC spool-up correction was rebuilt as
+  `build/zeroone_x6_hybrid/zeroone_x6_hybrid.px4`, SHA-256
+  `c97433197a51f651bc778b8447600c071fa4feb795991366814a1857fa3fc471`; it
+  remains unverified on hardware.
+- Target reproduction then exposed a third HX8 defect: the vendor returned
+  command response code `1` while the servo status reported
+  `STATUS_COMMAND_EXECUTING` (`status_flags=1`) with no protection bits. PX4
+  treated every nonzero command response as rejected, latched fault 11, and
+  sent a secondary RELEASE. Command response `0` (accepted/idle) and `1`
+  (accepted/executing) are now accepted; `2+` remains rejection/error.
+- The response-code fix passes HX8 Protocol 10/10, Controller 24/24,
+  CLI 1/1, and BackendPolicy 7/7. `make zeroone_x6_hybrid` passes. Current
+  firmware SHA-256:
+  `da4a1d0fd53a7e9c2e9ef9df916a488a0c8b867cef6d4d595426e24fba54737c`.
+- Target validation of that artifact confirmed the response-code fix for
+  RELEASE (`command_accepted=true`, `command_result=1`), but a Rover MOVE to
+  exactly `HX8_ANG_ROV=180.0` still produces a real fault 11. Quad HOLD at
+  90 degrees uses the same ID, timing, and 20 W power envelope successfully,
+  leaving the exact upper-angle boundary as the leading hardware/protocol
+  variable. A temporary 179-degree boundary test is pending.
+- A fuller UART capture included `05 1C 0B 02 00 01 2F`, proving one TimedMove
+  was accepted/executing. The surrounding status frames still reported angle
+  about 89.7 degrees and moving, so this frame does not prove that the Rover
+  179-degree MOVE was sent. The following `05 1C 18 02 00 01 3C` is an
+  accepted Stop/RELEASE response.
+- A diagnostic firmware now reports local sequence rejection and local motion
+  acceptance, including sequence, type, target, cached endpoints, timing,
+  power, and transition parameters. Current artifact SHA-256:
+  `bd7d426be1cd242dd5902c28d45c2466532f1b0e3d58cf6986b727605286d5a4`.
+- Hardware showed the outer motion validator accepts Rover sequences 4 and 8,
+  and the captured TimedMove ACK is accepted/executing, while the servo angle
+  remains near 89.7 degrees at only 14 mA/167 mW. The earlier diagnostic was
+  emitted before `Controller::setTarget()` and therefore did not prove the
+  controller's internal result. A corrected diagnostic now logs controller
+  queue/rejection and the exact sequence/result tuple that triggers fault 11.
+  Current artifact SHA-256:
+  `c04cedb3fee00510b440ca8f893c0820beacd88958b7d55fe8e33ec796962ddc`.
+- Rover tuning reference is maintained in
+  `docs/hybrid/rover_pid_and_parameter_reference.md`. The worktree-local
+  `rover_ulog_plot.py` loads a fixed relevant-topic whitelist and generates six
+  control/mode plots plus a parameter-and-error summary. It does not dump raw
+  ULog samples. Current default logging may omit `m2006_motor_status`,
+  `actuator_motors_rover`, and `hybrid_vehicle_status`; the script reports such
+  omissions explicitly.
+- Section 10 of the Rover tuning reference orders all Rover/M2006 parameters
+  by the required inside-out tuning sequence and records the test method,
+  observation target, and too-high/too-low symptoms for each parameter.
+- The 2026-09 integration line uses `testc3_v1.16.1` as an immutable checkpoint
+  of the validated testc1 working state. `debug/testc4_v1.16.1` is the semantic
+  integration branch for testc2; Rover tuning is migrated afterward from a
+  separate worktree so the two integration boundaries remain auditable.
+- The testc3 checkpoint candidate builds as `zeroone_x6_hybrid`: FLASH is
+  1,872,672 / 1,966,080 bytes (95.25%). The `.px4` SHA-256 is
+  `d0c8642d51886f13f75a07f0f911e1943a4a96dbe51b92befd16bc786cecc981` and
+  the `.bin` SHA-256 is
+  `88ce13b7eaf91f111e70f551336169d7b4145cf1c73f6512f7c5d507de4d7708`.

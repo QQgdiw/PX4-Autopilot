@@ -249,6 +249,28 @@ TEST(Hx8Controller, RejectsRepeatedOutOfOrderAndExpiredCommands)
 	EXPECT_FALSE(controller.status().command_accepted);
 }
 
+TEST(Hx8Controller, AcceptsTimedMoveWhileServoReportsExecuting)
+{
+	Controller controller;
+	uint64_t now = finishBoot(controller);
+	controller.setTarget(motion(10, now));
+	now += Controller::MinimumCommandSpacingUs;
+	const PendingRequest request = controller.update(input(now, true));
+	ASSERT_TRUE(request.valid);
+	EXPECT_EQ(request.command, CommandId::TimedMove);
+
+	controller.acceptResponse(response(CommandId::TimedMove, ServoId, 1, 1), now);
+	EXPECT_TRUE(controller.status().command_accepted);
+	EXPECT_EQ(controller.status().command_result, static_cast<uint8_t>(OperationResult::Accepted));
+
+	controller.setTarget(motion(11, now));
+	now += Controller::MinimumCommandSpacingUs;
+	ASSERT_TRUE(controller.update(input(now, true)).valid);
+	controller.acceptResponse(response(CommandId::TimedMove, ServoId, 2, 1), now);
+	EXPECT_FALSE(controller.status().command_accepted);
+	EXPECT_EQ(controller.status().command_result, static_cast<uint8_t>(OperationResult::Rejected));
+}
+
 TEST(Hx8Controller, RejectsUnsafeMotionParametersBeforeChangingServoId)
 {
 	Controller controller;
@@ -320,6 +342,26 @@ TEST(Hx8Controller, GatesMotionOnArmingSafetyAndVerifiedCalibration)
 	controller.acceptResponse(response(CommandId::TimedMove, ServoId, 0, 1), now);
 	EXPECT_FALSE(controller.status().config_verified);
 	EXPECT_NE(controller.update(input(now += Controller::MinimumCommandSpacingUs, true)).priority, RequestPriority::Target);
+}
+
+TEST(Hx8Controller, AllowsOnlyTransitionMoveWhileDisarmed)
+{
+	Controller controller;
+	uint64_t now = finishBoot(controller);
+	MotionCommand transition = motion(20, now);
+	transition.type = 1;
+	controller.setTarget(transition);
+	now += Controller::MinimumCommandSpacingUs;
+	PendingRequest request = controller.update(input(now));
+	ASSERT_TRUE(request.valid);
+	EXPECT_EQ(request.priority, RequestPriority::Target);
+
+	controller.acceptResponse(response(CommandId::TimedMove, ServoId, 0, 1), now);
+	MotionCommand hold = motion(21, now + Controller::MinimumCommandSpacingUs);
+	hold.type = 3;
+	controller.setTarget(hold);
+	now += Controller::MinimumCommandSpacingUs;
+	EXPECT_NE(controller.update(input(now)).priority, RequestPriority::Target);
 }
 
 TEST(Hx8Controller, RejectsMotionPowerAbovePersistentLimit)

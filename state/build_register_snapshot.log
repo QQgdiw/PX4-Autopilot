@@ -1,0 +1,32 @@
+[1/21] Linking CXX static library src/drivers/uavcan/libuavcan_drivers/libuavcan_stm32h7_driver.a
+[2/21] Linking CXX static library src/drivers/uavcan/libdrivers__uavcan.a
+[3/21] Generating px4 event json file from source
+[4/21] Generating combined event json file
+[5/21] Generating component_general.json and checksums.h
+[6/21] Building CXX object src/modules/logger/CMakeFiles/modules__logger.dir/logger.cpp.obj
+[7/21] ROMFS: copying extras
+[8/21] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_messages.cpp.obj
+[9/21] Linking CXX static library src/modules/logger/libmodules__logger.a
+[10/21] Building CXX object src/drivers/uavcan/m2006_can/CMakeFiles/drivers__m2006_can.dir/M2006Can.cpp.obj
+[11/21] Linking CXX static library src/drivers/uavcan/m2006_can/libdrivers__m2006_can.a
+[12/21] Linking CXX static library src/modules/mavlink/libmodules__mavlink_original.a
+[13/21] ROMFS: pruning
+[14/21] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/modules__mavlink_unity.cpp.obj
+[15/21] Linking CXX static library src/modules/mavlink/libmodules__mavlink.a
+[16/21] ROMFS: generating image
+[17/21] Building C object ROMFS/CMakeFiles/romfs.dir/nsh_romfsimg.c.obj
+[18/21] Linking C static library ROMFS/libromfs.a
+[19/21] Linking CXX executable zeroone_x6_hybrid.elf
+Memory region         Used Size  Region Size  %age Used
+        ITCM_RAM:          0 GB        64 KB      0.00%
+           FLASH:     1869352 B      1920 KB     95.08%
+       DTCM1_RAM:          0 GB        64 KB      0.00%
+       DTCM2_RAM:          0 GB        64 KB      0.00%
+        AXI_SRAM:       99844 B       512 KB     19.04%
+           SRAM1:          0 GB       128 KB      0.00%
+           SRAM2:          0 GB       128 KB      0.00%
+           SRAM3:          0 GB        32 KB      0.00%
+           SRAM4:          2 KB        64 KB      3.12%
+          BKPRAM:          0 GB         4 KB      0.00%
+[20/21] Generating ../../zeroone_x6_hybrid.bin
+[21/21] Creating /home/crocodile/PX4-Autopilot-debug-testc1-v1.16.1/build/zeroone_x6_hybrid/zeroone_x6_hybrid.px4

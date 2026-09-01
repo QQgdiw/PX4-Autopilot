@@ -1,0 +1,5 @@
+ninja: Entering directory `build/px4_sitl_test'
+[1/4] Building CXX object src/lib/hybrid_control/CMakeFiles/hybrid_control.dir/M2006DriveGate.cpp.o
+[2/4] Linking CXX static library src/lib/hybrid_control/libhybrid_control.a
+[3/4] Building CXX object src/lib/hybrid_control/CMakeFiles/unit-M2006DriveGate.dir/M2006DriveGateTest.cpp.o
+[4/4] Linking CXX executable unit-M2006DriveGate

@@ -69,6 +69,55 @@ TEST(M2006DriveGate, ReportsAndLatchesCanAndCommandFaults)
 	EXPECT_FALSE(gate.update(input));
 }
 
+TEST(M2006DriveGate, DisarmedRecoveryIgnoresInvalidWheelCommand)
+{
+	M2006DriveGate gate;
+	DriveGateInput input{false, true, false, true, true, {true, true}, false, 0};
+	gate.update(input);
+	input.now_us = 100000;
+	gate.update(input);
+	input.armed = true;
+	ASSERT_TRUE(gate.update(input));
+
+	input.can_error = true;
+	input.command_finite = false;
+	EXPECT_FALSE(gate.update(input));
+	EXPECT_EQ(gate.faultBits(), DriveFaultCan | DriveFaultCommand);
+
+	input.armed = false;
+	input.can_error = false;
+	input.command_fresh = false;
+	input.command_finite = false;
+	input.now_us = 200000;
+	EXPECT_FALSE(gate.update(input));
+	input.now_us = 300000;
+	EXPECT_FALSE(gate.update(input));
+	EXPECT_EQ(gate.faultBits(), DriveFaultNone);
+}
+
+TEST(M2006DriveGate, FirstArmedInvalidCommandWaitsForQualification)
+{
+	M2006DriveGate gate;
+	DriveGateInput input{false, true, false, true, true, {true, true}, false, 0};
+	gate.update(input);
+	input.now_us = 100000;
+	gate.update(input);
+
+	input.armed = true;
+	input.command_fresh = false;
+	input.command_finite = false;
+	EXPECT_FALSE(gate.update(input));
+	EXPECT_EQ(gate.faultBits(), DriveFaultNone);
+
+	input.command_fresh = true;
+	input.command_finite = true;
+	EXPECT_TRUE(gate.update(input));
+
+	input.command_fresh = false;
+	EXPECT_FALSE(gate.update(input));
+	EXPECT_EQ(gate.faultBits(), DriveFaultCommand);
+}
+
 TEST(M2006DriveGate, LeavingDrivingOnlyDisablesOutput)
 {
 	M2006DriveGate gate;

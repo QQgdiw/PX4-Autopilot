@@ -50,6 +50,17 @@ using namespace matrix;
 namespace RoverControl
 {
 /**
+ * Convert the manual roll stick convention to the Rover yaw convention used
+ * by the differential steering controllers.
+ *
+ * The installed vehicle's physical steering direction is opposite to the
+ * generic manual roll sign, while throttle/pitch and wheel direction remain
+ * correct.  Keep this conversion at the manual-input boundary so Offboard
+ * and autonomous yaw setpoints are unaffected.
+ */
+float manualSteeringInput(float manual_roll);
+
+/**
  * Applies acceleration/deceleration slew rate to a throttle setpoint.
  * @param motor_setpoint Throttle setpoint with applied slew rate [-1, 1] (Updated by this function)
  * @param throttle_setpoint Throttle setpoint pre slew rate [-1, 1]

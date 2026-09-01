@@ -113,7 +113,8 @@ void DifferentialAttControl::generateAttitudeAndThrottleSetpoint()
 			rover_throttle_setpoint.throttle_body_y = 0.f;
 			_rover_throttle_setpoint_pub.publish(rover_throttle_setpoint);
 
-			const float steering_input = math::deadzone(manual_control_setpoint.roll, _param_ro_yaw_stick_dz.get());
+			const float steering_input = math::deadzone(RoverControl::manualSteeringInput(manual_control_setpoint.roll),
+					_param_ro_yaw_stick_dz.get());
 			const float yaw_rate_setpoint = math::interpolate<float>(steering_input, -1.f, 1.f, -_max_yaw_rate,
 							_max_yaw_rate);
 

@@ -465,7 +465,10 @@ Retain `HYBRID_STATE_TRANSITIONING=1` so current Commander comparisons remain va
 
 - [ ] **Step 3: Add M2006 parameters with exact bounds**
 
-Define `M2K_EN`, IDs 1-4, reversal flags, `M2K_MAX_RPM` 1-500, `M2K_CUR_LIM` 0-10000, `M2K_SPD_P/I/D/FF`, `M2K_RPM_SLEW`, `M2K_FB_TO`, and `M2K_CMD_TO`. Mark enable and IDs reboot-required. Defaults must match the approved design.
+Define `M2K_EN`, IDs 1-4, reversal flags, `M2K_MAX_RPM` 1-18000 in C610
+rotor-feedback RPM, `M2K_CUR_LIM` 0-10000, `M2K_SPD_P/I/D/FF`,
+`M2K_RPM_SLEW` in rotor RPM/s, `M2K_FB_TO`, and `M2K_CMD_TO`. Mark enable and
+IDs reboot-required. Defaults must match the corrected hardware speed domain.
 
 - [ ] **Step 4: Add transformation parameters**
 
@@ -743,7 +746,8 @@ param set-default CYPHAL_ENABLE 0
 param set-default M2K_EN 1
 param set-default M2K_L_ID 1
 param set-default M2K_R_ID 2
-param set-default M2K_MAX_RPM 500
+param set-default M2K_MAX_RPM 18000
+param set-default M2K_RPM_SLEW 18000
 param set-default M2K_CUR_LIM 10000
 param set-default RO_MAX_THR_SPEED 2.47
 ```

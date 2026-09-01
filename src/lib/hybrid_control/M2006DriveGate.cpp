@@ -18,6 +18,19 @@ bool M2006DriveGate::update(const DriveGateInput &input)
 	const bool feedback_healthy = input.feedback_healthy[0] && input.feedback_healthy[1];
 	const bool command_healthy = input.command_fresh && input.command_finite;
 	const bool all_healthy = feedback_healthy && command_healthy && !input.can_error;
+	// A disarmed/non-driving vehicle may legitimately publish NaN wheel outputs.
+	// Recovery must therefore depend on feedback and CAN health, while command
+	// freshness/finiteness remains mandatory whenever armed driving is enabled.
+	const bool recovery_healthy = feedback_healthy && !input.can_error;
+
+	if (!input.armed || !input.driving) {
+		_command_qualified = false;
+
+	} else if (command_healthy) {
+		// RoverDifferential starts publishing only after arming. Treat the first
+		// armed cycle without a sample as startup qualification, not a fault.
+		_command_qualified = true;
+	}
 
 	if (!feedback_healthy) {
 		_feedback_timer_active = false;
@@ -44,7 +57,7 @@ bool M2006DriveGate::update(const DriveGateInput &input)
 			_fault_bits |= DriveFaultCan;
 		}
 
-		if (!command_healthy) {
+		if (_command_qualified && !command_healthy) {
 			_fault_bits |= DriveFaultCommand;
 		}
 	}
@@ -52,7 +65,7 @@ bool M2006DriveGate::update(const DriveGateInput &input)
 	if (_fault_bits == DriveFaultNone) {
 		_recovery_timer_active = false;
 
-	} else if (input.armed || !all_healthy) {
+	} else if (input.armed || !recovery_healthy) {
 		_recovery_timer_active = false;
 
 	} else if (!_recovery_timer_active) {

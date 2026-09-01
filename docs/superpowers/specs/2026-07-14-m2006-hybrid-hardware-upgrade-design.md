@@ -26,8 +26,9 @@ Hardware facts:
 - Left C610: ID 1, feedback ID `0x201`.
 - Right C610: ID 2, feedback ID `0x202`.
 - Both current commands share standard CAN frame `0x200`.
-- Wheel diameter: 340 mm.
-- M2006 output shaft to wheel reduction: 3.6:1.
+- Wheel diameter: 345 mm.
+- C610/M2006 gearbox reduction: 36:1; downstream mechanical reduction: 4:1;
+  total reduction from motor rotor to wheel: 144:1.
 - Transformation servo: M8.
 - No DroneCAN or Cyphal devices currently share CAN1.
 
@@ -129,7 +130,9 @@ normalized wheel command
 Requirements:
 
 - Constrain normalized commands to `[-1, 1]`.
-- Default maximum output-shaft speed is 500 rpm, DJI's no-load rating.
+- C610 feedback RPM is motor rotor speed before the 36:1 gearbox. The 500 rpm
+  nominal rating is the gearbox output-shaft speed, corresponding to about
+  18000 motor feedback RPM.
 - Keep left and right direction reversal independent and configurable.
 - Apply anti-windup whenever the current command saturates.
 - Reset integrators whenever drive is disabled, a fault occurs, or a stopped controller is re-enabled.
@@ -137,7 +140,9 @@ Requirements:
 - `RO_SPEED_LIM` remains the upper requested vehicle-speed limit.
 - Re-identify `RO_MAX_THR_SPEED`; do not reuse the previous DShot value.
 
-At 500 rpm, 3.6:1 additional reduction, and a 340 mm wheel, theoretical no-load vehicle speed is approximately 2.47 m/s. This is an initial `RO_MAX_THR_SPEED` estimate, not a loaded vehicle result.
+The previous 500 rpm/3.6:1/340 mm theoretical speed estimate is obsolete.
+`RO_MAX_THR_SPEED` must be recalculated from the 345 mm wheel and 144:1 total
+reduction, then replaced with a loaded measured maximum.
 
 ## 6. M2006 Safety State
 
@@ -212,13 +217,13 @@ Direct manual servo commissioning is allowed only while disarmed through PX4 act
 | `M2K_R_ID` | 2 | Right C610 ID |
 | `M2K_L_REV` | 0 | Reverse left direction |
 | `M2K_R_REV` | 0 | Reverse right direction |
-| `M2K_MAX_RPM` | 500 | Full-scale output-shaft rpm |
+| `M2K_MAX_RPM` | 18000 | Full-scale C610 motor rotor feedback rpm |
 | `M2K_CUR_LIM` | 10000 | Absolute C610 command limit |
 | `M2K_SPD_P` | 0 | Speed proportional gain; bench configuration required |
 | `M2K_SPD_I` | 0 | Speed integral gain; bench configuration required |
 | `M2K_SPD_D` | 0 | Speed derivative gain |
 | `M2K_SPD_FF` | 0 | Speed feedforward gain |
-| `M2K_RPM_SLEW` | 500 rpm/s | Target-rpm rate limit |
+| `M2K_RPM_SLEW` | 18000 rpm/s | C610 motor rotor target rate limit |
 | `M2K_FB_TO` | 0.05 s | Motor feedback timeout |
 | `M2K_CMD_TO` | 0.10 s | Final actuator command timeout |
 

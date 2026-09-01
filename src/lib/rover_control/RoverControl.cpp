@@ -35,6 +35,11 @@
 using namespace matrix;
 namespace RoverControl
 {
+float manualSteeringInput(const float manual_roll)
+{
+	return -manual_roll;
+}
+
 float throttleControl(SlewRate<float> &motor_setpoint, const float throttle_setpoint,
 		      const float current_motor_setpoint, const float max_accel, const float max_decel, const float max_thr_spd,
 		      const float dt)

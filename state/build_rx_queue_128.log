@@ -1,0 +1,36 @@
+[1/25] Building CXX object src/drivers/uavcan/libuavcan_drivers/CMakeFiles/uavcan_stm32h7_driver.dir/src/uc_stm32h7_thread.cpp.obj
+[2/25] Generating px4 event json file from source
+[3/25] Building CXX object src/drivers/uavcan/libuavcan_drivers/CMakeFiles/uavcan_stm32h7_driver.dir/src/uc_stm32h7_can.cpp.obj
+[4/25] Linking CXX static library src/drivers/uavcan/libuavcan_drivers/libuavcan_stm32h7_driver.a
+[5/25] Building CXX object src/drivers/uavcan/m2006_can/CMakeFiles/drivers__m2006_can.dir/M2006Can.cpp.obj
+[6/25] Linking CXX static library src/drivers/uavcan/m2006_can/libdrivers__m2006_can.a
+[7/25] Generating combined event json file
+[8/25] Generating component_general.json and checksums.h
+[9/25] Building CXX object src/modules/logger/CMakeFiles/modules__logger.dir/logger.cpp.obj
+[10/25] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_messages.cpp.obj
+[11/25] ROMFS: copying extras
+[12/25] Linking CXX static library src/modules/logger/libmodules__logger.a
+[13/25] Linking CXX static library src/modules/mavlink/libmodules__mavlink_original.a
+[14/25] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/modules__mavlink_unity.cpp.obj
+[15/25] ROMFS: pruning
+[16/25] Linking CXX static library src/modules/mavlink/libmodules__mavlink.a
+[17/25] ROMFS: generating image
+[18/25] Building C object ROMFS/CMakeFiles/romfs.dir/nsh_romfsimg.c.obj
+[19/25] Linking C static library ROMFS/libromfs.a
+[20/25] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/uavcan_servers.cpp.obj
+[21/25] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/uavcan_main.cpp.obj
+[22/25] Linking CXX static library src/drivers/uavcan/libdrivers__uavcan.a
+[23/25] Linking CXX executable zeroone_x6_hybrid.elf
+Memory region         Used Size  Region Size  %age Used
+        ITCM_RAM:          0 GB        64 KB      0.00%
+           FLASH:     1870152 B      1920 KB     95.12%
+       DTCM1_RAM:          0 GB        64 KB      0.00%
+       DTCM2_RAM:          0 GB        64 KB      0.00%
+        AXI_SRAM:       99844 B       512 KB     19.04%
+           SRAM1:          0 GB       128 KB      0.00%
+           SRAM2:          0 GB       128 KB      0.00%
+           SRAM3:          0 GB        32 KB      0.00%
+           SRAM4:          2 KB        64 KB      3.12%
+          BKPRAM:          0 GB         4 KB      0.00%
+[24/25] Generating ../../zeroone_x6_hybrid.bin
+[25/25] Creating /home/crocodile/PX4-Autopilot-debug-testc1-v1.16.1/build/zeroone_x6_hybrid/zeroone_x6_hybrid.px4

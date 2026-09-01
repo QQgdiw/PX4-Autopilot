@@ -205,9 +205,9 @@ inline void handleTxInterrupt(uavcan::uint8_t iface_index)
 		iface->handleTxInterrupt(utc_usec);
 
 	} else if ((fdcan::Can[iface_index]->IR & FDCAN_IR_BO) != 0) {
-
+		const uint32_t ir = fdcan::Can[iface_index]->IR;
 		fdcan::Can[iface_index]->IR  = FDCAN_IR_BO;
-		iface->handleBusOff();
+		iface->handleBusOff(ir);
 
 	}
 }
@@ -249,7 +249,7 @@ inline void handleRxInterrupt(uavcan::uint8_t iface_index)
 	} else if ((IR & FDCAN_IR_BO) != 0) {
 
 		fdcan::Can[iface_index]->IR  = FDCAN_IR_BO;
-		iface->handleBusOff();
+		iface->handleBusOff(IR);
 
 	} else {
 		UAVCAN_ASSERT(0);
@@ -925,8 +925,33 @@ void CanIface::handleTxInterrupt(const uavcan::uint64_t utc_usec)
 }
 
 
-void CanIface::handleBusOff()
+void CanIface::captureErrorSnapshot(const uavcan::uint32_t kind, const uavcan::uint32_t ecr,
+			const uavcan::uint32_t observed_ir)
 {
+	if (error_snapshot_valid_) {
+		return;
+	}
+
+	error_snapshot_.kind = kind;
+	error_snapshot_.psr = can_->PSR;
+	error_snapshot_.ecr = ecr;
+	error_snapshot_.ir = can_->IR | observed_ir;
+	error_snapshot_.txfqs = can_->TXFQS;
+	error_snapshot_.txbrp = can_->TXBRP;
+	error_snapshot_.txbto = can_->TXBTO;
+	error_snapshot_.txbcf = can_->TXBCF;
+	error_snapshot_.cccr = can_->CCCR;
+	error_snapshot_.monotonic_usec = clock::getMonotonic().toUSec();
+	error_snapshot_.error_count = error_cnt_;
+	error_snapshot_.ecr_valid = (kind & (ErrorSnapshotCanError | ErrorSnapshotBusOff)) != 0;
+	error_snapshot_valid_ = true;
+}
+
+void CanIface::handleBusOff(const uavcan::uint32_t observed_ir)
+{
+	const uint32_t ecr = can_->ECR;
+	captureErrorSnapshot(ErrorSnapshotBusOff, ecr, observed_ir | FDCAN_IR_BO);
+	bus_off_cnt_++;
 	error_cnt_++;
 
 	/*
@@ -992,6 +1017,8 @@ void CanIface::handleRxInterrupt(uavcan::uint8_t fifo_index)
 
 	// Check for message lost; count an error
 	if ((*RXFnS & FDCAN_RXFnS_RFnL) != 0) {
+		captureErrorSnapshot(ErrorSnapshotRxFifoLost, 0, can_->IR);
+		rx_fifo_lost_cnt_++;
 		error_cnt_++;
 	}
 
@@ -1057,9 +1084,12 @@ void CanIface::handleRxInterrupt(uavcan::uint8_t fifo_index)
 void CanIface::pollErrorFlagsFromISR()
 {
 	// Read CAN Error Logging counter (This also resets the error counter)
-	const uavcan::uint8_t cel = ((can_->ECR & FDCAN_ECR_CEL) >> FDCAN_ECR_CEL_Pos);
+	const uint32_t ecr = can_->ECR;
+	const uavcan::uint8_t cel = ((ecr & FDCAN_ECR_CEL) >> FDCAN_ECR_CEL_Pos);
 
 	if (cel > 0) {
+		captureErrorSnapshot(ErrorSnapshotCanError, ecr, 0);
+		can_error_log_cnt_ += cel;
 
 		// Serve abort requests
 		for (uint8_t i = 0; i < NumTxMailboxes; i++) {
@@ -1076,6 +1106,18 @@ void CanIface::pollErrorFlagsFromISR()
 	}
 }
 
+bool CanIface::getErrorSnapshot(ErrorSnapshot &out) const
+{
+	CriticalSectionLocker lock;
+
+	if (!error_snapshot_valid_) {
+		return false;
+	}
+
+	out = error_snapshot_;
+	return true;
+}
+
 void CanIface::discardTimedOutTxMailboxes(uavcan::MonotonicTime current_time)
 {
 	CriticalSectionLocker lock;
@@ -1084,9 +1126,11 @@ void CanIface::discardTimedOutTxMailboxes(uavcan::MonotonicTime current_time)
 		TxItem &txi = pending_tx_[i];
 
 		if (((1 << txi.index) & can_->TXBRP) && txi.deadline < current_time) {
+			captureErrorSnapshot(ErrorSnapshotTxTimeout, 0, can_->IR);
 			// Request to Cancel Tx item
 			can_->TXBCR = (1 << txi.index);
 			txi.pending = false;
+			tx_timeout_cnt_++;
 			error_cnt_++;
 		}
 	}
@@ -1119,6 +1163,36 @@ uavcan::uint64_t CanIface::getErrorCount() const
 {
 	CriticalSectionLocker lock;
 	return error_cnt_ + rx_queue_.getOverflowCount();
+}
+
+uavcan::uint64_t CanIface::getInternalErrorCount() const
+{
+	CriticalSectionLocker lock;
+	return error_cnt_;
+}
+
+uavcan::uint32_t CanIface::getCanErrorLogCount() const
+{
+	CriticalSectionLocker lock;
+	return can_error_log_cnt_;
+}
+
+uavcan::uint32_t CanIface::getBusOffCount() const
+{
+	CriticalSectionLocker lock;
+	return bus_off_cnt_;
+}
+
+uavcan::uint32_t CanIface::getTxTimeoutCount() const
+{
+	CriticalSectionLocker lock;
+	return tx_timeout_cnt_;
+}
+
+uavcan::uint32_t CanIface::getRxFifoLostCount() const
+{
+	CriticalSectionLocker lock;
+	return rx_fifo_lost_cnt_;
 }
 
 unsigned CanIface::getRxQueueLength() const

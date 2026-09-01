@@ -35,7 +35,8 @@ struct Hx8CommandDecision {
 class Hx8CommandPolicy
 {
 public:
-	Hx8CommandDecision update(ActuatorBackend backend, const TransformationOutput &output, uint64_t now_us);
+	Hx8CommandDecision update(ActuatorBackend backend, const TransformationOutput &output, uint64_t now_us,
+			bool motion_enabled = true);
 	void resetAfterFaultClear();
 	uint32_t lastMotionSequence() const { return _last_motion_sequence; }
 	bool motionCommandHealthy(uint32_t status_sequence, bool accepted, uint8_t result,
@@ -47,7 +48,8 @@ private:
 	uint32_t _sequence{0};
 	uint32_t _last_motion_sequence{0};
 	HybridTarget _last_target{HybridTarget::None};
-	uint64_t _last_hold_us{0};
+	HybridTarget _held_target{HybridTarget::None};
+	bool _motion_enabled{false};
 	uint8_t _release_attempts{0};
 	uint64_t _last_release_us{0};
 	bool _release_sent{false};
