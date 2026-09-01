@@ -320,8 +320,18 @@
 - [x] Semantically merge and validate `origin/testc2_v1.16.1` at fixed commit
       `82478dbdf26540c7b8719f44cd07dcff1fb66b83`, preserving testc1 hardware
       behavior and testc2 independent Hybrid protocol/control behavior.
-- [ ] In a second independent worktree, migrate the Differential Rover tuning
+- [x] In a second independent worktree, migrate the Differential Rover tuning
       uORB/MAVLink streams and bounded stream-configuration lifecycle from
       `fix/mini-rover-mavlink-stream-config` without importing the mini board.
-- [ ] After Rover tuning migration, rerun relevant unit tests, isolated-PATH `make tests`, `git diff --check`,
-      and serial `make zeroone_x6_hybrid`; record artifacts and residual risks.
+- [x] Publish combined MAVLink branch `feature/hybrid-rover-tuning-v1.16.1`
+      and annotated tag `qgc-hybrid-rover-tuning-v1.16.1-r1` at
+      `21922689c6fb113884df0f66582d8e602286fdc1`.
+- [x] Run protocol generation checks, the Hybrid contract test, the 22-case
+      stream-config test, and isolated-PATH full CTest (167/167 passed).
+- [x] Run the final serial `make zeroone_x6_hybrid` after all documentation
+      and source cleanup; FLASH is 1,894,168 / 1,966,080 bytes (96.34%), with
+      final `.px4`/`.bin` hashes recorded in `state/README.md`.
+- [ ] Commit and push the completed PX4 feature branch, then record its final
+      remote commit and clean status.
+- [ ] Perform powered USB/QGC validation of command 511 stream enable/disable,
+      ACK behavior, termination frames, and live tuning values.

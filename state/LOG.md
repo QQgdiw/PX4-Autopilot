@@ -900,3 +900,43 @@
   evidence is in `state/astyle_testc2_merge.log`,
   `state/build_testc2_merge_final.log`, and
   `state/test_testc2_merge_final.log`.
+- On 2026-09-01 the Rover tuning migration used a separate
+  `feature/testc4-rover-tuning` worktree. The four MAVLink messages were moved
+  into independent `rover_tuning.xml`, included by `hybrid_vehicle.xml`, and
+  published in QQgdiw/mavlink as commit `21922689c6fb113884df0f66582d8e602286fdc1`
+  with annotated tag `qgc-hybrid-rover-tuning-v1.16.1-r1`. Generated C headers
+  verified IDs 60100--60103, LEN 27/23/43/44, and CRC 147/85/217/90 for both
+  PX4 and QGC composite dialects; command 50000/message 60000 remain present.
+- Annotated tag publication alone was not treated as immutability evidence.
+  GitHub ruleset `22006870` was created and read back as active for exactly
+  `refs/tags/qgc-hybrid-rover-tuning-v1.16.1-r1`, with deletion and
+  non-fast-forward rules.
+- Generic stream configuration was three-way merged from the final
+  `c44976c572` + `c4d99f1123` state using their parent `9602c367e9` as the
+  baseline. All seven core MAVLink files and five affected existing streams
+  merged without textual conflict while retaining testc2 Hybrid handling.
+- The source branch's new `unit-MavlinkStreamConfig` omitted generated-header
+  dependencies. A clean `px4_sitl_test` build failed on missing
+  `parameters/px4_parameters.hpp`; adding explicit `parameters_header`,
+  `uorb_headers`, and both MAVLink generator dependencies fixed the root cause.
+- The first full CTest then failed two Differential Offboard cases because the
+  old fixture published zero sensor timestamps and `v_xy_valid=false`; those
+  inputs are correctly rejected by the migrated freshness checks. The fixture
+  now publishes finite, timestamped attitude/angular-velocity/local-velocity
+  samples. Focused Offboard tests pass 3/3 and final CTest passes 167/167.
+- Evidence is stored in `state/test_mavlink_combined_protocol.log`,
+  `state/test_hybrid_contract_rover_tuning.log`,
+  `state/test_mavlink_stream_config_run.log`,
+  `state/test_differential_offboard_run.log`, and
+  `state/build_tests_rover_tuning_final.log`.
+- After adding the generated-header dependencies, the first NuttX regenerate
+  failed because `unit-MavlinkStreamConfig` does not exist when
+  `BUILD_TESTING=OFF`. The dependency block is now guarded by
+  `if(BUILD_TESTING)`: the final isolated-PATH test run passes 167/167 and the
+  final hybrid build succeeds. Evidence is in
+  `state/build_tests_rover_tuning_verified.log` and
+  `state/build_rover_tuning_final_retry.log`.
+- PX4 code commits are `0f7d4aed7c` (combined MAVLink gitlink), `4bec06916e`
+  (Rover tuning uORB producers and four streams), and `f95427ab56` (bounded
+  stream configuration lifecycle). No existing Issue/PR number was supplied,
+  so no fabricated Fixes/Resolves footer was added.

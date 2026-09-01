@@ -1,0 +1,63 @@
+[0/1] Re-running CMake...
+-- PX4_GIT_TAG: v1.16.1-145-g0f7d4aed7c
+CMake Warning (dev) at CMakeLists.txt:176 (find_package):
+  Policy CMP0148 is not set: The FindPythonInterp and FindPythonLibs modules
+  are removed.  Run "cmake --help-policy CMP0148" for policy details.  Use
+  the cmake_policy command to set the policy and suppress this warning.
+
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Found PythonInterp: /usr/bin/python3 (found suitable version "3.12.3", minimum required is "3")
+-- PX4 config file: /home/crocodile/PX4-Autopilot-testc4-rover-tuning/boards/zeroone/x6/hybrid.px4board
+-- PLATFORM nuttx
+-- TOOLCHAIN arm-none-eabi
+-- ARCHITECTURE cortex-m7
+-- ROMFSROOT px4fmu_common
+-- IO px4_io-v2_default
+-- ETHERNET y
+-- SERIAL_GPS1 /dev/ttyS0
+-- SERIAL_GPS2 /dev/ttyS7
+-- SERIAL_TEL1 /dev/ttyS6
+-- SERIAL_TEL2 /dev/ttyS4
+-- SERIAL_TEL3 /dev/ttyS1
+-- SERIAL_EXT2 /dev/ttyS3
+-- ROOT_PATH /fs/microsd
+-- PARAM_FILE /fs/mtd_params
+-- UAVCAN_INTERFACES 2
+-- UAVCAN_TIMER_OVERRIDE 2
+-- PX4 config: zeroone_x6_hybrid
+-- PX4 platform: nuttx
+-- Enabling double FP precision hardware instructions
+-- cmake build type: MinSizeRel
+-- ccache enabled (export CCACHE_DISABLE=1 to disable)
+-- drivers/px4io: ROMFS including px4_io-v2_default
+CMake Warning (dev) at src/drivers/uavcan/libdronecan/libuavcan/CMakeLists.txt:24 (find_package):
+  Policy CMP0148 is not set: The FindPythonInterp and FindPythonLibs modules
+  are removed.  Run "cmake --help-policy CMP0148" for policy details.  Use
+  the cmake_policy command to set the policy and suppress this warning.
+
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Found PythonInterp: /usr/bin/python3 (found version "3.12.3")
+-- Release build type: MinSizeRel
+CMake Error at src/modules/mavlink/CMakeLists.txt:173 (add_dependencies):
+  Cannot add target-level dependencies to non-existent target
+  "unit-MavlinkStreamConfig".
+
+  The add_dependencies works for top-level logical targets created by the
+  add_executable, add_library, or add_custom_target commands.  If you want to
+  add file-level dependencies see the DEPENDS option of the add_custom_target
+  and add_custom_command commands.
+
+
+-- ROMFS: ROMFS/px4fmu_common
+-- ROMFS:  Adding platforms/nuttx/init/stm32h7/rc.board_arch_defaults -> /etc/init.d/rc.board_arch_defaults
+-- ROMFS:  Adding boards/zeroone/x6/init/rc.board_defaults -> /etc/init.d/rc.board_defaults
+-- ROMFS:  Adding boards/zeroone/x6/init/rc.board_sensors -> /etc/init.d/rc.board_sensors
+-- ROMFS:  Adding boards/zeroone/x6/init/rc.board_mavlink -> /etc/init.d/rc.board_mavlink
+-- ROMFS:  Adding boards/zeroone/x6/extras/px4_io-v2_default.bin -> /etc/extras/px4_io-v2_default.bin
+-- Configuring incomplete, errors occurred!
+FAILED: build.ninja
+/usr/bin/cmake --regenerate-during-build -S/home/crocodile/PX4-Autopilot-testc4-rover-tuning -B/home/crocodile/PX4-Autopilot-testc4-rover-tuning/build/zeroone_x6_hybrid
+ninja: error: rebuilding 'build.ninja': subcommand failed
+make: *** [Makefile:227: zeroone_x6_hybrid] Error 1

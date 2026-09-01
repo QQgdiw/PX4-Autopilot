@@ -1,0 +1,17 @@
+ERROR [px4_work_queue] not running
+ERROR [px4_work_queue] wq:lp_default not available
+ERROR [px4_work_queue] init failed
+[==========] Running 3 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 3 tests from DifferentialOffboardControlTest
+[ RUN      ] DifferentialOffboardControlTest.QuadRoverLegacyBodyRatePublishesZeroThrottleAndSteering
+[       OK ] DifferentialOffboardControlTest.QuadRoverLegacyBodyRatePublishesZeroThrottleAndSteering (0 ms)
+[ RUN      ] DifferentialOffboardControlTest.DedicatedInputMustBePostTransitionAndStatusHealthy
+[       OK ] DifferentialOffboardControlTest.DedicatedInputMustBePostTransitionAndStatusHealthy (0 ms)
+[ RUN      ] DifferentialOffboardControlTest.NonHybridLegacyVelocityAndBodyRateRemainActive
+[       OK ] DifferentialOffboardControlTest.NonHybridLegacyVelocityAndBodyRateRemainActive (0 ms)
+[----------] 3 tests from DifferentialOffboardControlTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 3 tests from 1 test suite ran. (0 ms total)
+[  PASSED  ] 3 tests.

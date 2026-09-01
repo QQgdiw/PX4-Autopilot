@@ -1,0 +1,53 @@
+Running main() from /home/crocodile/PX4-Autopilot-testc4-rover-tuning/build/px4_sitl_test/googletest-src/googletest/src/gtest_main.cc
+[==========] Running 22 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 22 tests from MavlinkStreamConfig
+[ RUN      ] MavlinkStreamConfig.TransfersExactRequestAndResult
+[       OK ] MavlinkStreamConfig.TransfersExactRequestAndResult (0 ms)
+[ RUN      ] MavlinkStreamConfig.TransfersStandardAndRoverTuningStreams
+[       OK ] MavlinkStreamConfig.TransfersStandardAndRoverTuningStreams (0 ms)
+[ RUN      ] MavlinkStreamConfig.PropagatesDefaultRestoreSuccessAndFailure
+[       OK ] MavlinkStreamConfig.PropagatesDefaultRestoreSuccessAndFailure (0 ms)
+[ RUN      ] MavlinkStreamConfig.RejectsSuccessWithoutExecutingCommit
+[       OK ] MavlinkStreamConfig.RejectsSuccessWithoutExecutingCommit (0 ms)
+[ RUN      ] MavlinkStreamConfig.ConcurrentRequestsRemainIsolated
+[       OK ] MavlinkStreamConfig.ConcurrentRequestsRemainIsolated (0 ms)
+[ RUN      ] MavlinkStreamConfig.PreservesEnableDisableRestoreOrder
+[       OK ] MavlinkStreamConfig.PreservesEnableDisableRestoreOrder (0 ms)
+[ RUN      ] MavlinkStreamConfig.TimesOutWithoutConsumerAndRemainsUsable
+[       OK ] MavlinkStreamConfig.TimesOutWithoutConsumerAndRemainsUsable (20 ms)
+[ RUN      ] MavlinkStreamConfig.WaitingForSlotUsesTheSameDeadline
+[       OK ] MavlinkStreamConfig.WaitingForSlotUsesTheSameDeadline (20 ms)
+[ RUN      ] MavlinkStreamConfig.MutexContentionUsesTheSameDeadline
+[       OK ] MavlinkStreamConfig.MutexContentionUsesTheSameDeadline (20 ms)
+[ RUN      ] MavlinkStreamConfig.ExpiredRequestCannotExecuteLate
+[       OK ] MavlinkStreamConfig.ExpiredRequestCannotExecuteLate (0 ms)
+[ RUN      ] MavlinkStreamConfig.ApplyBudgetRejectsLateCommit
+[       OK ] MavlinkStreamConfig.ApplyBudgetRejectsLateCommit (0 ms)
+[ RUN      ] MavlinkStreamConfig.ShutdownWakesPendingAndQueuedCallers
+[       OK ] MavlinkStreamConfig.ShutdownWakesPendingAndQueuedCallers (1 ms)
+[ RUN      ] MavlinkStreamConfig.CompletedResultSurvivesShutdown
+[       OK ] MavlinkStreamConfig.CompletedResultSurvivesShutdown (3 ms)
+[ RUN      ] MavlinkStreamConfig.ShutdownCompletesBeforeDestructionWithActiveCaller
+[       OK ] MavlinkStreamConfig.ShutdownCompletesBeforeDestructionWithActiveCaller (0 ms)
+[ RUN      ] MavlinkStreamConfig.ShutdownCompletesBeforeDestructionWithExecutingConsumer
+[       OK ] MavlinkStreamConfig.ShutdownCompletesBeforeDestructionWithExecutingConsumer (1 ms)
+[ RUN      ] MavlinkStreamConfig.CallbackCrossingDeadlineCannotCommitLateOrPoisonNextRequest
+[       OK ] MavlinkStreamConfig.CallbackCrossingDeadlineCannotCommitLateOrPoisonNextRequest (20 ms)
+[ RUN      ] MavlinkStreamConfig.RejectsInvalidStorageAndRate
+[       OK ] MavlinkStreamConfig.RejectsInvalidStorageAndRate (0 ms)
+[ RUN      ] MavlinkStreamConfig.ConvertsMessageIntervals
+[       OK ] MavlinkStreamConfig.ConvertsMessageIntervals (0 ms)
+[ RUN      ] MavlinkStreamConfig.SerializesOnlyTheRequestedStream
+[       OK ] MavlinkStreamConfig.SerializesOnlyTheRequestedStream (0 ms)
+[ RUN      ] MavlinkStreamConfig.DefersRetiredStreamDestructionUntilReaderReleases
+[       OK ] MavlinkStreamConfig.DefersRetiredStreamDestructionUntilReaderReleases (0 ms)
+[ RUN      ] MavlinkStreamConfig.DefersRetiredStreamDestructionUntilCleanup
+[       OK ] MavlinkStreamConfig.DefersRetiredStreamDestructionUntilCleanup (0 ms)
+[ RUN      ] MavlinkStreamConfig.ShutdownClearDefersAllStreamsForAnActiveReader
+[       OK ] MavlinkStreamConfig.ShutdownClearDefersAllStreamsForAnActiveReader (0 ms)
+[----------] 22 tests from MavlinkStreamConfig (90 ms total)
+
+[----------] Global test environment tear-down
+[==========] 22 tests from 1 test suite ran. (91 ms total)
+[  PASSED  ] 22 tests.

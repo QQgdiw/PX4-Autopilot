@@ -1,0 +1,101 @@
+Validating message_definitions/v1.0/hybrid_vehicle.xml
+Parsing message_definitions/v1.0/hybrid_vehicle.xml
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/development.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/development.xml
+MAV_CMD_NAV_FENCE_HOME_CIRCLE_INCLUSION has invalid values (bitmask must have powers of 2)
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/rover_tuning.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/rover_tuning.xml
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/common.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/common.xml
+CAMERA_TRACKING_STATUS_FLAGS_IDLE has invalid values (bitmask must have powers of 2)
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/standard.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/standard.xml
+MAV_BOOL_FALSE has invalid values (bitmask must have powers of 2)
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/minimal.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/minimal.xml
+Merged enum MAV_CMD
+Merged enum MAV_CMD
+Merged enum MAV_TYPE
+Found 249 MAVLink message types in 6 XML files
+Generating C implementation in directory /tmp/mavgen-hybrid-final/hybrid_vehicle
+Generating C implementation in directory /tmp/mavgen-hybrid-final/development
+Generating C implementation in directory /tmp/mavgen-hybrid-final/rover_tuning
+Generating C implementation in directory /tmp/mavgen-hybrid-final/common
+Generating C implementation in directory /tmp/mavgen-hybrid-final/standard
+Generating C implementation in directory /tmp/mavgen-hybrid-final/minimal
+Copying fixed headers for protocol 2.0 to /tmp/mavgen-hybrid-final
+Validating message_definitions/v1.0/qgc_hybrid.xml
+Parsing message_definitions/v1.0/qgc_hybrid.xml
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/ardupilotmega.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/ardupilotmega.xml
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/ASLUAV.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/ASLUAV.xml
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/common.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/common.xml
+CAMERA_TRACKING_STATUS_FLAGS_IDLE has invalid values (bitmask must have powers of 2)
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/development.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/development.xml
+MAV_CMD_NAV_FENCE_HOME_CIRCLE_INCLUSION has invalid values (bitmask must have powers of 2)
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/icarous.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/icarous.xml
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/minimal.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/minimal.xml
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/python_array_test.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/python_array_test.xml
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/standard.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/standard.xml
+MAV_BOOL_FALSE has invalid values (bitmask must have powers of 2)
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/test.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/test.xml
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/ualberta.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/ualberta.xml
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/uAvionix.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/uAvionix.xml
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/AVSSUAS.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/AVSSUAS.xml
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/cubepilot.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/cubepilot.xml
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/csAirLink.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/csAirLink.xml
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/marsh.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/marsh.xml
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/stemstudios.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/stemstudios.xml
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/hybrid_vehicle.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/hybrid_vehicle.xml
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/loweheiser.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/loweheiser.xml
+Validating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/rover_tuning.xml
+Parsing /home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/modules/mavlink/mavlink/message_definitions/v1.0/rover_tuning.xml
+Merged enum MAV_CMD
+Merged enum MAV_CMD
+Merged enum MAV_CMD
+Merged enum MAV_CMD
+Merged enum MAV_CMD
+Merged enum MAV_TYPE
+Merged enum MAV_CMD
+Merged enum MAV_CMD
+Found 380 MAVLink message types in 20 XML files
+Generating C implementation in directory /tmp/mavgen-qgc-final/qgc_hybrid
+Generating C implementation in directory /tmp/mavgen-qgc-final/ardupilotmega
+Generating C implementation in directory /tmp/mavgen-qgc-final/ASLUAV
+Generating C implementation in directory /tmp/mavgen-qgc-final/common
+Generating C implementation in directory /tmp/mavgen-qgc-final/development
+Generating C implementation in directory /tmp/mavgen-qgc-final/icarous
+Generating C implementation in directory /tmp/mavgen-qgc-final/minimal
+Generating C implementation in directory /tmp/mavgen-qgc-final/python_array_test
+Generating C implementation in directory /tmp/mavgen-qgc-final/standard
+Generating C implementation in directory /tmp/mavgen-qgc-final/test
+Generating C implementation in directory /tmp/mavgen-qgc-final/ualberta
+Generating C implementation in directory /tmp/mavgen-qgc-final/uAvionix
+Generating C implementation in directory /tmp/mavgen-qgc-final/AVSSUAS
+Generating C implementation in directory /tmp/mavgen-qgc-final/cubepilot
+Generating C implementation in directory /tmp/mavgen-qgc-final/csAirLink
+Generating C implementation in directory /tmp/mavgen-qgc-final/marsh
+Generating C implementation in directory /tmp/mavgen-qgc-final/stemstudios
+Generating C implementation in directory /tmp/mavgen-qgc-final/hybrid_vehicle
+Generating C implementation in directory /tmp/mavgen-qgc-final/loweheiser
+Generating C implementation in directory /tmp/mavgen-qgc-final/rover_tuning
+Copying fixed headers for protocol 2.0 to /tmp/mavgen-qgc-final
+mavgen-hybrid-final PASS: 50000, 60000, 60100-60103; Storm32 60000 excluded
+mavgen-qgc-final PASS: 50000, 60000, 60100-60103; Storm32 60000 excluded

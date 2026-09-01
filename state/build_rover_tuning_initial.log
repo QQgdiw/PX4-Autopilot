@@ -1,0 +1,336 @@
+-- PX4_GIT_TAG: v1.16.1-144-gf769a441d0
+CMake Warning (dev) at CMakeLists.txt:176 (find_package):
+  Policy CMP0148 is not set: The FindPythonInterp and FindPythonLibs modules
+  are removed.  Run "cmake --help-policy CMP0148" for policy details.  Use
+  the cmake_policy command to set the policy and suppress this warning.
+
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Found PythonInterp: /usr/bin/python3 (found suitable version "3.12.3", minimum required is "3")
+-- PX4 config file: /home/crocodile/PX4-Autopilot-testc4-rover-tuning/boards/zeroone/x6/hybrid.px4board
+-- PLATFORM nuttx
+-- TOOLCHAIN arm-none-eabi
+-- ARCHITECTURE cortex-m7
+-- ROMFSROOT px4fmu_common
+-- IO px4_io-v2_default
+-- ETHERNET y
+-- SERIAL_GPS1 /dev/ttyS0
+-- SERIAL_GPS2 /dev/ttyS7
+-- SERIAL_TEL1 /dev/ttyS6
+-- SERIAL_TEL2 /dev/ttyS4
+-- SERIAL_TEL3 /dev/ttyS1
+-- SERIAL_EXT2 /dev/ttyS3
+-- ROOT_PATH /fs/microsd
+-- PARAM_FILE /fs/mtd_params
+-- UAVCAN_INTERFACES 2
+-- UAVCAN_TIMER_OVERRIDE 2
+-- PX4 config: zeroone_x6_hybrid
+-- PX4 platform: nuttx
+-- The CXX compiler identification is GNU 9.3.1
+-- The C compiler identification is GNU 9.3.1
+-- The ASM compiler identification is GNU
+-- Found assembler: /opt/gcc-arm-none-eabi-9-2020-q2-update/bin/arm-none-eabi-gcc
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /opt/gcc-arm-none-eabi-9-2020-q2-update/bin/arm-none-eabi-g++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /opt/gcc-arm-none-eabi-9-2020-q2-update/bin/arm-none-eabi-gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Enabling double FP precision hardware instructions
+-- cmake build type: MinSizeRel
+-- ccache enabled (export CCACHE_DISABLE=1 to disable)
+-- drivers/px4io: ROMFS including px4_io-v2_default
+CMake Warning (dev) at src/drivers/uavcan/libdronecan/libuavcan/CMakeLists.txt:24 (find_package):
+  Policy CMP0148 is not set: The FindPythonInterp and FindPythonLibs modules
+  are removed.  Run "cmake --help-policy CMP0148" for policy details.  Use
+  the cmake_policy command to set the policy and suppress this warning.
+
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Found PythonInterp: /usr/bin/python3 (found version "3.12.3")
+-- Release build type: MinSizeRel
+[31mChecked src/modules/mavlink/mavlink submodule, ACTION REQUIRED:[0m
+
+Different commits:
+* src/modules/mavlink/mavlink 3b84efb9...21922689 (102):
+  > feat[rover]: add hybrid rover tuning dialect
+  > feat[dialect]: add QGC hybrid r2 release root
+  < fix[hybrid]: document transition elapsed units
+  < feat[hybrid]: correlate transition command results
+  < feat[mavlink]: add hybrid vehicle dialect
+  > common.xml: add and use ENGINE_CONTROL_OPTIONS (#2390)
+  > common.xml: revert renaming gripper actions back to grab/release (and change stop action to hold (#2393)
+  > scripts: check_api_break: Only check if message is wip (#2392)
+  > common: invert MANUAL_CONTROL.r description (#2398)
+  > COMPONENT_METADATA - no longer WIP (#2397)
+  > common.xml: correct SYS_STATUS message description (#2395)
+  > stemstudios.xml - fix formatting (#2396)
+  > Add Messages For Controlling LED Strips Over MAVLink (#2383)
+  > Rename GPS jamming and spoofing states within GNSS_INTEGRITY msg for clarity (#2385)
+  > Clarify STATUSTEXT is UTF-8 encoded
+  > ESC_EEPROM (#2381)
+  > Replace deprecated tag with superseded tag (#2376)
+  > SYSTEM_TIME - description incorrectly highlight SYSTEM_TYPE (#2382)
+  > ESC_STATS/INFO.index - is in motor order (#2377)
+  > CI check for non-wip api breaks (#2369)
+  > Move figure eight support to common (#2380)
+  > Fix mavgenerate.py (#2374)
+  > pymavlink: update submodule (#2373)
+  > Development.xml: Add WP_ARC command (#2357)
+  > MAV_RESULT_DENIED - clarify invalid (#2368)
+  > typo in units (#2372)
+  > PROTOCOL_VERSION - move to common and remove WIP (#2318)
+  > Airspeed: move from development to common (#2363)
+  > Update Pymavlink to get WIP warnings (#2367)
+  > Add MAV_CMD_NAV_FENCE_HOME_CIRCLE_INCLUSION (#2346)
+  > Standard: Typo in protocol bit for MISSION_ITEM_INT (#2362)
+  > Add MAV_PARAM_ERROR TYPE_MISMATCH, TYPE_UNSUPPORTED, READ_FAIL (#2358)
+  > Update reference to MAV_CMD_(DO_)SET_GLOBAL_ORIGIN (#2361)
+  > common.xml: Add NOT_IN_CONTROL entry to MAV_RESULT enum (#2340)
+  > common.xml: add PARAM_ERROR message (#2344)
+  > common.xml: link MANUAL_CONTROL message to its protocol (#2338)
+  > common: Add COMPUTER_STATUS_FLAGS (#2347)
+  > MAV_EVENT_CURRENT_SEQUENCE_FLAGS - mark as bitmask (#2356)
+  > ardupilotmega dialects from ArduPilot/mavlink: Sun Sep 21 01:18:43 UTC 2025 (#2354)
+  > GLOBAL_POSITION_INT - move from common to standard (#2350)
+  > Modify firmware_version calculations (#2339)
+  > common.xml: add gripper stop action (#2342)
+  > Add MAV_CMD_EXTERNAL_ATTITUDE_ESTIMATE (#2334)
+  > C example fixup (#2333)
+  > common.xml: Add COASTING flag to CAMERA_TRACKING_STATUS_FLAGS (#2326)
+  > common.xml: Add "Power On" action to MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command (#2329)
+  > Add new component IDs for multiple radios (#2327)
+  > common.xml: Add commands, capability and flag for Moving Target Indicators (MTI) (#2323)
+  > Typos: Run codespell on all files (#2328)
+  > Add GLOBAL_POSITION message (#2256)
+  > Move AUTOPILOT_VERSION to standard.xml (#2306)
+  > common: AIS update and bug fixes (#2281)
+  > common: remove wip tag from MAV_CMD_DO_ORBIT and ORBIT_EXECUTION_STATUS (#2316)
+  > ardupilotmega dialects from ArduPilot/mavlink: Wed Jul 30 02:32:07 UTC 2025 (#2322)
+  > Update Pymavlink to latest (#2321)
+  > command: MAV_CMD_ACTUATOR_GROUP_TEST (#2224)
+  > Fix ruff rules E711,E712,F841 (#2314)
+  > Rename BOOL to MAV_OPTION (#2317)
+  > ruff check --select=E713,E714,F401,F541 —fix
+  > GitHub Actions: Lint Python code with ruff
+  > Add MARSH dialect
+  > mavgenerate.py: Remove support for Python 2
+  > Add codespell of four XML files to GitHub Actions
+  > Update Pymavlink to latest 20050709
+  > useless-semicolon: ruff check --select=E703 --fix
+  > fix: spelling mistake
+  > Fix typos discovered by codespell
+  > Fix errors and some flake8 crap
+  > common.xml - fix up bad rendering of version fields
+  > Remove useless object inheritance
+  > development: remove SET_AT_S param
+  > Add BOOL enum for true/false cases
+  > GitHub Actions: Test on LTS versions of Node.js and Python (#2296)
+  > Gripper - support discovery and addressing (#2287)
+  > build(deps): bump the github-actions group with 3 updates (#2294)
+  > Fix camera information firmware version (#2295)
+  > Keep GitHub Actions up to date with GitHub's Dependabot (#2292)
+  > remove display="bitmask" (#2289)
+  > common: DO_REPOSITION: support relative yaw (#2280)
+  > Replace `MAV_MODE` with `MAV_MODE_FLAG`. (#2195)
+  > Fix incorrect field name assignment from minValue to maxValue (#2284)
+  > TRAJECTORY_REPRESENTATION_ - deprecated (#2225)
+  > Document current recommendations for MAV_COMPONENT in its description. (#2279)
+  > add: gyrocopter/helicopter hybrid vehicle type (#2273)
+  > Add Generic 4 Legged Quadruped Rover (#2274)
+  > common.xml-SYSTEM_TIME detail (#2269)
+  > MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN use of param6 (#2258)
+  > common.xml - ZOOM_TYPE, FOCUS_TYPE continuous (#2260)
+  > common: change unit of DO_REPOSITION yaw
+  > Add dummy command to all.xml to force merging in commands from lower levels (#2267)
+  > Try fix build order (#2262)
+  > Update storm32.xml, bitmask enums should only have bit values (#2270)
+  > Migrate to new bs4 API (#2266)
+  > Update storm32.xml (#2265)
+  > doc xml_to_markdown py script, fix for hex enum entries (#2268)
+  > Spacecraft Naming Convention to follow NASA / JPL (#2264)
+  > ardupilotmega dialects from ArduPilot/mavlink: Thu May  1 04:31:48 UTC 2025 (#2261)
+  > add MAV_TYPE_SATELLITE
+  > common.xml - typo MISSION_SET_CURRENT not SET_MISSION_CURRENT (#2259)
+  > development.xml - frame for setting the position in MAV_CMD_DO_SET_GLOBAL_ORIGIN (#2252)
+  > Fix typo FIRMWARE_VERSION_TYPE (#2253)
+  > common: `FENCE_TYPE` bitmask clarifications (#2216)
+
+
+ *******************************************************************************
+ *   [31mIF YOU DID NOT CHANGE THIS FILE (OR YOU DON'T KNOW WHAT A SUBMODULE IS):[0m  *
+ *   [31mHit 'u' and <ENTER> to update ALL submodules and resolve this.[0m            *
+ *   (performs [94mgit submodule sync --recursive[0m                                  *
+ *    and [94mgit submodule update --init --recursive[0m )                            *
+ *******************************************************************************
+
+
+   Only for EXPERTS:
+   src/modules/mavlink/mavlink submodule is not in the recommended version.
+   Hit 'y' and <ENTER> to continue the build with this version. Hit <ENTER> to resolve manually.
+   Use [94mgit add src/modules/mavlink/mavlink && git commit -m 'Updated src/modules/mavlink/mavlink'[0m to choose this version (careful!)
+
+Build aborted.
+-- ROMFS: ROMFS/px4fmu_common
+-- ROMFS:  Adding platforms/nuttx/init/stm32h7/rc.board_arch_defaults -> /etc/init.d/rc.board_arch_defaults
+-- ROMFS:  Adding boards/zeroone/x6/init/rc.board_defaults -> /etc/init.d/rc.board_defaults
+-- ROMFS:  Adding boards/zeroone/x6/init/rc.board_sensors -> /etc/init.d/rc.board_sensors
+-- ROMFS:  Adding boards/zeroone/x6/init/rc.board_mavlink -> /etc/init.d/rc.board_mavlink
+-- ROMFS:  Adding boards/zeroone/x6/extras/px4_io-v2_default.bin -> /etc/extras/px4_io-v2_default.bin
+-- Configuring done (140.3s)
+-- Generating done (0.5s)
+-- Build files have been written to: /home/crocodile/PX4-Autopilot-testc4-rover-tuning/build/zeroone_x6_hybrid
+[0/1212] git submodule src/modules/uxrce_dds_client/Micro-XRCE-DDS-Client
+[2/1212] Generating combined event json file
+[3/1212] git submodule platforms/nuttx/NuttX/nuttx
+[7/1212] Generating XRCE-DDS topic bridge
+[8/1212] git submodule src/drivers/gps/devices
+[9/1212] Creating airframes.xml
+[10/1212] git submodule src/drivers/uavcan/libdronecan/dsdl
+[11/1212] Generating px4 event header file
+[12/1212] git submodule src/drivers/uavcan/libdronecan/libuavcan/dsdl_compiler/pydronecan
+[13/1212] git submodule src/modules/mavlink/mavlink
+[31mChecked src/modules/mavlink/mavlink submodule, ACTION REQUIRED:[0m
+
+Different commits:
+* src/modules/mavlink/mavlink 3b84efb9...21922689 (102):
+  > feat[rover]: add hybrid rover tuning dialect
+  > feat[dialect]: add QGC hybrid r2 release root
+  < fix[hybrid]: document transition elapsed units
+  < feat[hybrid]: correlate transition command results
+  < feat[mavlink]: add hybrid vehicle dialect
+  > common.xml: add and use ENGINE_CONTROL_OPTIONS (#2390)
+  > common.xml: revert renaming gripper actions back to grab/release (and change stop action to hold (#2393)
+  > scripts: check_api_break: Only check if message is wip (#2392)
+  > common: invert MANUAL_CONTROL.r description (#2398)
+  > COMPONENT_METADATA - no longer WIP (#2397)
+  > common.xml: correct SYS_STATUS message description (#2395)
+  > stemstudios.xml - fix formatting (#2396)
+  > Add Messages For Controlling LED Strips Over MAVLink (#2383)
+  > Rename GPS jamming and spoofing states within GNSS_INTEGRITY msg for clarity (#2385)
+  > Clarify STATUSTEXT is UTF-8 encoded
+  > ESC_EEPROM (#2381)
+  > Replace deprecated tag with superseded tag (#2376)
+  > SYSTEM_TIME - description incorrectly highlight SYSTEM_TYPE (#2382)
+  > ESC_STATS/INFO.index - is in motor order (#2377)
+  > CI check for non-wip api breaks (#2369)
+  > Move figure eight support to common (#2380)
+  > Fix mavgenerate.py (#2374)
+  > pymavlink: update submodule (#2373)
+  > Development.xml: Add WP_ARC command (#2357)
+  > MAV_RESULT_DENIED - clarify invalid (#2368)
+  > typo in units (#2372)
+  > PROTOCOL_VERSION - move to common and remove WIP (#2318)
+  > Airspeed: move from development to common (#2363)
+  > Update Pymavlink to get WIP warnings (#2367)
+  > Add MAV_CMD_NAV_FENCE_HOME_CIRCLE_INCLUSION (#2346)
+  > Standard: Typo in protocol bit for MISSION_ITEM_INT (#2362)
+  > Add MAV_PARAM_ERROR TYPE_MISMATCH, TYPE_UNSUPPORTED, READ_FAIL (#2358)
+  > Update reference to MAV_CMD_(DO_)SET_GLOBAL_ORIGIN (#2361)
+  > common.xml: Add NOT_IN_CONTROL entry to MAV_RESULT enum (#2340)
+  > common.xml: add PARAM_ERROR message (#2344)
+  > common.xml: link MANUAL_CONTROL message to its protocol (#2338)
+  > common: Add COMPUTER_STATUS_FLAGS (#2347)
+  > MAV_EVENT_CURRENT_SEQUENCE_FLAGS - mark as bitmask (#2356)
+  > ardupilotmega dialects from ArduPilot/mavlink: Sun Sep 21 01:18:43 UTC 2025 (#2354)
+  > GLOBAL_POSITION_INT - move from common to standard (#2350)
+  > Modify firmware_version calculations (#2339)
+  > common.xml: add gripper stop action (#2342)
+  > Add MAV_CMD_EXTERNAL_ATTITUDE_ESTIMATE (#2334)
+  > C example fixup (#2333)
+  > common.xml: Add COASTING flag to CAMERA_TRACKING_STATUS_FLAGS (#2326)
+  > common.xml: Add "Power On" action to MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command (#2329)
+  > Add new component IDs for multiple radios (#2327)
+  > common.xml: Add commands, capability and flag for Moving Target Indicators (MTI) (#2323)
+  > Typos: Run codespell on all files (#2328)
+  > Add GLOBAL_POSITION message (#2256)
+  > Move AUTOPILOT_VERSION to standard.xml (#2306)
+  > common: AIS update and bug fixes (#2281)
+  > common: remove wip tag from MAV_CMD_DO_ORBIT and ORBIT_EXECUTION_STATUS (#2316)
+  > ardupilotmega dialects from ArduPilot/mavlink: Wed Jul 30 02:32:07 UTC 2025 (#2322)
+  > Update Pymavlink to latest (#2321)
+  > command: MAV_CMD_ACTUATOR_GROUP_TEST (#2224)
+  > Fix ruff rules E711,E712,F841 (#2314)
+  > Rename BOOL to MAV_OPTION (#2317)
+  > ruff check --select=E713,E714,F401,F541 —fix
+  > GitHub Actions: Lint Python code with ruff
+  > Add MARSH dialect
+  > mavgenerate.py: Remove support for Python 2
+  > Add codespell of four XML files to GitHub Actions
+  > Update Pymavlink to latest 20050709
+  > useless-semicolon: ruff check --select=E703 --fix
+  > fix: spelling mistake
+  > Fix typos discovered by codespell
+  > Fix errors and some flake8 crap
+  > common.xml - fix up bad rendering of version fields
+  > Remove useless object inheritance
+  > development: remove SET_AT_S param
+  > Add BOOL enum for true/false cases
+  > GitHub Actions: Test on LTS versions of Node.js and Python (#2296)
+  > Gripper - support discovery and addressing (#2287)
+  > build(deps): bump the github-actions group with 3 updates (#2294)
+  > Fix camera information firmware version (#2295)
+  > Keep GitHub Actions up to date with GitHub's Dependabot (#2292)
+  > remove display="bitmask" (#2289)
+  > common: DO_REPOSITION: support relative yaw (#2280)
+  > Replace `MAV_MODE` with `MAV_MODE_FLAG`. (#2195)
+  > Fix incorrect field name assignment from minValue to maxValue (#2284)
+  > TRAJECTORY_REPRESENTATION_ - deprecated (#2225)
+  > Document current recommendations for MAV_COMPONENT in its description. (#2279)
+  > add: gyrocopter/helicopter hybrid vehicle type (#2273)
+  > Add Generic 4 Legged Quadruped Rover (#2274)
+  > common.xml-SYSTEM_TIME detail (#2269)
+  > MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN use of param6 (#2258)
+  > common.xml - ZOOM_TYPE, FOCUS_TYPE continuous (#2260)
+  > common: change unit of DO_REPOSITION yaw
+  > Add dummy command to all.xml to force merging in commands from lower levels (#2267)
+  > Try fix build order (#2262)
+  > Update storm32.xml, bitmask enums should only have bit values (#2270)
+  > Migrate to new bs4 API (#2266)
+  > Update storm32.xml (#2265)
+  > doc xml_to_markdown py script, fix for hex enum entries (#2268)
+  > Spacecraft Naming Convention to follow NASA / JPL (#2264)
+  > ardupilotmega dialects from ArduPilot/mavlink: Thu May  1 04:31:48 UTC 2025 (#2261)
+  > add MAV_TYPE_SATELLITE
+  > common.xml - typo MISSION_SET_CURRENT not SET_MISSION_CURRENT (#2259)
+  > development.xml - frame for setting the position in MAV_CMD_DO_SET_GLOBAL_ORIGIN (#2252)
+  > Fix typo FIRMWARE_VERSION_TYPE (#2253)
+  > common: `FENCE_TYPE` bitmask clarifications (#2216)
+
+
+ *******************************************************************************
+ *   [31mIF YOU DID NOT CHANGE THIS FILE (OR YOU DON'T KNOW WHAT A SUBMODULE IS):[0m  *
+ *   [31mHit 'u' and <ENTER> to update ALL submodules and resolve this.[0m            *
+ *   (performs [94mgit submodule sync --recursive[0m                                  *
+ *    and [94mgit submodule update --init --recursive[0m )                            *
+ *******************************************************************************
+
+
+   Only for EXPERTS:
+   src/modules/mavlink/mavlink submodule is not in the recommended version.
+   Hit 'y' and <ENTER> to continue the build with this version. Hit <ENTER> to resolve manually.
+   Use [94mgit add src/modules/mavlink/mavlink && git commit -m 'Updated src/modules/mavlink/mavlink'[0m to choose this version (careful!)
+
+Build aborted.
+FAILED: src/modules/mavlink/git_init__home_crocodile_PX4-Autopilot-testc4-rover-tuning_src_modules_mavlink_mavlink.stamp /home/crocodile/PX4-Autopilot-testc4-rover-tuning/build/zeroone_x6_hybrid/src/modules/mavlink/git_init__home_crocodile_PX4-Autopilot-testc4-rover-tuning_src_modules_mavlink_mavlink.stamp
+cd /home/crocodile/PX4-Autopilot-testc4-rover-tuning && Tools/check_submodules.sh src/modules/mavlink/mavlink && /usr/bin/cmake -E touch /home/crocodile/PX4-Autopilot-testc4-rover-tuning/build/zeroone_x6_hybrid/src/modules/mavlink/git_init__home_crocodile_PX4-Autopilot-testc4-rover-tuning_src_modules_mavlink_mavlink.stamp
+[15/1212] Generating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/platforms/nuttx/NuttX/nuttx/tools/jlink-nuttx.so
+[16/1212] Generating actuators.json
+[17/1212] ROMFS: copying, generating airframes
+[18/1212] Generating serial_params.c
+[19/1212] Running dsdl compiler
+/home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/drivers/uavcan/libdronecan/libuavcan/dsdl_compiler/libuavcan_dsdl_compiler/pyratemp.py:273: SyntaxWarning: invalid escape sequence '\#'
+  """Replace special characters by their escape sequence.
+[20/1212] PX4 UAVCAN dsdl compiler
+/home/crocodile/PX4-Autopilot-testc4-rover-tuning/src/drivers/uavcan/libdronecan/libuavcan/dsdl_compiler/libuavcan_dsdl_compiler/pyratemp.py:273: SyntaxWarning: invalid escape sequence '\#'
+  """Replace special characters by their escape sequence.
+[21/1212] Generating uORB json files
+[22/1212] Generating uORB topic headers
+[23/1212] Generating /home/crocodile/PX4-Autopilot-testc4-rover-tuning/platforms/nuttx/NuttX/nuttx/.config
+[24/1212] Generating uORB topic ucdr headers
+ninja: build stopped: subcommand failed.
+make: *** [Makefile:227: zeroone_x6_hybrid] Error 1

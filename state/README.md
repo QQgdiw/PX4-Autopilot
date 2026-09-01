@@ -188,3 +188,37 @@ This directory records the status of testing for `debug/testc1-v1.16.1`.
 - All 39 affected C/C++ files were run through project AStyle and then forced
   to rebuild despite AStyle's preserved mtimes. The final incremental hybrid
   rebuild and 166/166 test run both pass.
+- Rover realtime tuning is integrated on the independent
+  `feature/testc4-rover-tuning` worktree. The PX4 MAVLink gitlink is
+  `21922689c6fb113884df0f66582d8e602286fdc1`; its published branch is
+  `feature/hybrid-rover-tuning-v1.16.1` and its annotated composite tag is
+  `qgc-hybrid-rover-tuning-v1.16.1-r1`.
+- GitHub ruleset `22006870` actively protects that new tag from deletion and
+  non-fast-forward updates; this was verified through the repository ruleset
+  API after publication.
+- The combined `hybrid_vehicle`/`qgc_hybrid` protocol retains command 50000 and
+  message 60000 and adds messages 60100--60103. QGC composite generation still
+  excludes the conflicting Storm32 message 60000.
+- Differential Rate, Attitude, Velocity, and Position controllers now publish
+  atomic tuning status with explicit `active` and validity semantics. Rover
+  controller caches are invalidated on shape/control-source epoch changes;
+  testc2 exact-one-bit `rover_velocity` and transition epoch checks remain in
+  the Rate and Velocity controllers.
+- The tuning streams are registry-only and have no default stream rate. They
+  require command 511 and emit flags-zero/NaN termination frames outside a
+  fresh, fault-free `HYBRID_STATE_DRIVING` controller sample.
+- Isolated-PATH `make tests` passes 167/167, including 22/22 bounded stream
+  configuration cases and 3/3 Differential Offboard policy cases. The first
+  clean test build exposed and fixed a missing generated parameter/uORB/MAVLink
+  header dependency in `unit-MavlinkStreamConfig`.
+- The final `zeroone_x6_hybrid` build uses 1,894,168 / 1,966,080 FLASH bytes
+  (96.34%). Artifact sizes are 1,774,812 bytes (`.px4`) and 1,894,168 bytes
+  (`.bin`). SHA-256 is
+  `9761cc02b95be3019089b6d8fc88004a155fb38de6f6419ae0e900174004ecf4`
+  for `.px4` and
+  `04624f585668ed3eaa7164819fca322831faa05cbb6ea35272b82972961c2f09`
+  for `.bin`.
+- PX4 migration is structured as protocol gitlink commit `0f7d4aed7c`, Rover
+  tuning producer/stream commit `4bec06916e`, and bounded stream lifecycle
+  commit `f95427ab56`; the final documentation/evidence commit follows them on
+  `feature/testc4-rover-tuning`.
