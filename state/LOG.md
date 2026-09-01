@@ -940,3 +940,6 @@
   (Rover tuning uORB producers and four streams), and `f95427ab56` (bounded
   stream configuration lifecycle). No existing Issue/PR number was supplied,
   so no fabricated Fixes/Resolves footer was added.
+- The completed integration was published as new PX4 branch
+  `origin/feature/testc4-rover-tuning`. No QGC repository files were changed;
+  powered USB/QGC validation remains an explicit handoff item.

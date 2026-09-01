@@ -222,3 +222,7 @@ This directory records the status of testing for `debug/testc1-v1.16.1`.
   tuning producer/stream commit `4bec06916e`, and bounded stream lifecycle
   commit `f95427ab56`; the final documentation/evidence commit follows them on
   `feature/testc4-rover-tuning`.
+- The PX4 integration is published on remote branch
+  `origin/feature/testc4-rover-tuning`; original `testc1_v1.16.1`,
+  `testc2_v1.16.1`, `testc3_v1.16.1`, and `testc4_v1.16.1` refs were not
+  rewritten by the tuning phase.

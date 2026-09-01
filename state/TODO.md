@@ -331,7 +331,8 @@
 - [x] Run the final serial `make zeroone_x6_hybrid` after all documentation
       and source cleanup; FLASH is 1,894,168 / 1,966,080 bytes (96.34%), with
       final `.px4`/`.bin` hashes recorded in `state/README.md`.
-- [ ] Commit and push the completed PX4 feature branch, then record its final
-      remote commit and clean status.
+- [x] Commit and push the completed PX4 integration to
+      `origin/feature/testc4-rover-tuning`; final clean status and remote ref
+      are verified during handoff.
 - [ ] Perform powered USB/QGC validation of command 511 stream enable/disable,
       ACK behavior, termination frames, and live tuning values.
