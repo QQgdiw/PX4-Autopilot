@@ -58,6 +58,43 @@ void DifferentialAttControl::updateParams()
 	_adjusted_yaw_setpoint.setSlewRate(_max_yaw_rate);
 }
 
+void DifferentialAttControl::resetInactiveState()
+{
+	_timestamp = hrt_absolute_time();
+	_dt = 0.f;
+	_vehicle_control_mode = {};
+	_vehicle_yaw = 0.f;
+	_vehicle_yaw_timestamp = 0;
+	_pid_yaw.resetIntegral();
+	_adjusted_yaw_setpoint.setForcedValue(0.f);
+	_stab_yaw_ctl = false;
+	_stab_yaw_setpoint = 0.f;
+	_last_rate_setpoint_update = 0;
+	_rover_attitude_setpoint = {};
+	_rover_rate_setpoint = {};
+	_offboard_control_mode = {};
+	_awaiting_trajectory_setpoint = true;
+	_awaiting_attitude_setpoint = true;
+	_awaiting_yaw_sample = true;
+
+	manual_control_setpoint_s discarded_manual_control{};
+	vehicle_control_mode_s discarded_control_mode{};
+	trajectory_setpoint_s discarded_trajectory{};
+	offboard_control_mode_s discarded_offboard_mode{};
+	rover_attitude_setpoint_s discarded_attitude_setpoint{};
+	rover_rate_setpoint_s discarded_rate_setpoint{};
+	_manual_control_setpoint_sub.update(&discarded_manual_control);
+	_vehicle_control_mode_sub.update(&discarded_control_mode);
+	_trajectory_setpoint_sub.update(&discarded_trajectory);
+	_offboard_control_mode_sub.update(&discarded_offboard_mode);
+	_rover_attitude_setpoint_sub.update(&discarded_attitude_setpoint);
+	_rover_rate_setpoint_sub.update(&discarded_rate_setpoint);
+	vehicle_attitude_s discarded_attitude{};
+	actuator_motors_s discarded_actuator_motors{};
+	_vehicle_attitude_sub.update(&discarded_attitude);
+	_actuator_motors_sub.update(&discarded_actuator_motors);
+}
+
 void DifferentialAttControl::updateAttControl()
 {
 	const hrt_abstime timestamp_prev = _timestamp;
@@ -71,17 +108,23 @@ void DifferentialAttControl::updateAttControl()
 	if (_vehicle_attitude_sub.updated()) {
 		vehicle_attitude_s vehicle_attitude{};
 		_vehicle_attitude_sub.copy(&vehicle_attitude);
+		_vehicle_yaw_timestamp = vehicle_attitude.timestamp_sample;
 		matrix::Quatf vehicle_attitude_quaternion = matrix::Quatf(vehicle_attitude.q);
 		_vehicle_yaw = matrix::Eulerf(vehicle_attitude_quaternion).psi();
+		_awaiting_yaw_sample = !PX4_ISFINITE(_vehicle_yaw);
 	}
 
-	if (_vehicle_control_mode.flag_control_attitude_enabled && _vehicle_control_mode.flag_armed && runSanityChecks()) {
+	const bool controller_enabled = _vehicle_control_mode.flag_control_attitude_enabled
+					&& _vehicle_control_mode.flag_armed && !_awaiting_yaw_sample && runSanityChecks();
+	bool controller_active{false};
+
+	if (controller_enabled) {
 
 		if (_vehicle_control_mode.flag_control_manual_enabled || _vehicle_control_mode.flag_control_offboard_enabled) {
 			generateAttitudeAndThrottleSetpoint();
 		}
 
-		generateRateSetpoint();
+		controller_active = generateRateSetpoint();
 
 	} else { // Reset pid and slew rate when attitude control is not active
 		_pid_yaw.resetIntegral();
@@ -89,10 +132,12 @@ void DifferentialAttControl::updateAttControl()
 	}
 
 	// Publish attitude controller status (logging only)
-	rover_attitude_status_s rover_attitude_status;
+	rover_attitude_status_s rover_attitude_status{};
 	rover_attitude_status.timestamp = _timestamp;
-	rover_attitude_status.measured_yaw = _vehicle_yaw;
+	rover_attitude_status.measured_yaw = _vehicle_yaw_timestamp > 0
+					     && hrt_elapsed_time(&_vehicle_yaw_timestamp) < 500_ms ? _vehicle_yaw : NAN;
 	rover_attitude_status.adjusted_yaw_setpoint = matrix::wrap_pi(_adjusted_yaw_setpoint.getState());
+	rover_attitude_status.active = controller_active;
 	_rover_attitude_status_pub.publish(rover_attitude_status);
 
 }
@@ -114,7 +159,7 @@ void DifferentialAttControl::generateAttitudeAndThrottleSetpoint()
 			_rover_throttle_setpoint_pub.publish(rover_throttle_setpoint);
 
 			const float steering_input = math::deadzone(RoverControl::manualSteeringInput(manual_control_setpoint.roll),
-					_param_ro_yaw_stick_dz.get());
+						     _param_ro_yaw_stick_dz.get());
 			const float yaw_rate_setpoint = math::interpolate<float>(steering_input, -1.f, 1.f, -_max_yaw_rate,
 							_max_yaw_rate);
 
@@ -143,7 +188,14 @@ void DifferentialAttControl::generateAttitudeAndThrottleSetpoint()
 
 	} else if (_vehicle_control_mode.flag_control_offboard_enabled) { // Offboard attitude control
 		trajectory_setpoint_s trajectory_setpoint{};
-		_trajectory_setpoint_sub.copy(&trajectory_setpoint);
+		bool trajectory_available = _trajectory_setpoint_sub.update(&trajectory_setpoint);
+
+		if (trajectory_available) {
+			_awaiting_trajectory_setpoint = false;
+
+		} else if (!_awaiting_trajectory_setpoint) {
+			trajectory_available = _trajectory_setpoint_sub.copy(&trajectory_setpoint);
+		}
 
 		if (_offboard_control_mode_sub.updated()) {
 			_offboard_control_mode_sub.copy(&_offboard_control_mode);
@@ -152,7 +204,7 @@ void DifferentialAttControl::generateAttitudeAndThrottleSetpoint()
 		const bool offboard_att_control = _offboard_control_mode.attitude && !_offboard_control_mode.position
 						  && !_offboard_control_mode.velocity;
 
-		if (offboard_att_control && PX4_ISFINITE(trajectory_setpoint.yaw)) {
+		if (trajectory_available && offboard_att_control && PX4_ISFINITE(trajectory_setpoint.yaw)) {
 			rover_attitude_setpoint_s rover_attitude_setpoint{};
 			rover_attitude_setpoint.timestamp = _timestamp;
 			rover_attitude_setpoint.yaw_setpoint = trajectory_setpoint.yaw;
@@ -161,20 +213,30 @@ void DifferentialAttControl::generateAttitudeAndThrottleSetpoint()
 	}
 }
 
-void DifferentialAttControl::generateRateSetpoint()
+bool DifferentialAttControl::generateRateSetpoint()
 {
 	if (_rover_attitude_setpoint_sub.updated()) {
 		_rover_attitude_setpoint_sub.copy(&_rover_attitude_setpoint);
+		_awaiting_attitude_setpoint = false;
 	}
 
 	if (_rover_rate_setpoint_sub.updated()) {
 		_rover_rate_setpoint_sub.copy(&_rover_rate_setpoint);
 	}
 
-	// Check if a new rate setpoint was already published from somewhere else
-	if (_rover_rate_setpoint.timestamp > _last_rate_setpoint_update
+	// Position and velocity control own the attitude-to-rate stage. Only let a
+	// direct rate setpoint take precedence when those outer loops are inactive.
+	const bool outer_loop_control_active = _vehicle_control_mode.flag_control_position_enabled
+					       || _vehicle_control_mode.flag_control_velocity_enabled;
+
+	if (!outer_loop_control_active
+	    && _rover_rate_setpoint.timestamp > _last_rate_setpoint_update
 	    && _rover_rate_setpoint.timestamp > _rover_attitude_setpoint.timestamp) {
-		return;
+		return false;
+	}
+
+	if (_awaiting_attitude_setpoint) {
+		return false;
 	}
 
 	const float yaw_rate_setpoint = RoverControl::attitudeControl(_adjusted_yaw_setpoint, _pid_yaw, _max_yaw_rate,
@@ -185,6 +247,7 @@ void DifferentialAttControl::generateRateSetpoint()
 	rover_rate_setpoint.timestamp = _timestamp;
 	rover_rate_setpoint.yaw_rate_setpoint = math::constrain(yaw_rate_setpoint, -_max_yaw_rate, _max_yaw_rate);
 	_rover_rate_setpoint_pub.publish(rover_rate_setpoint);
+	return true;
 }
 
 bool DifferentialAttControl::runSanityChecks()

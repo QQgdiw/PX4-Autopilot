@@ -71,7 +71,10 @@ void AckermannRateControl::updateRateControl()
 				    vehicle_angular_velocity.xyz[2] : 0.f;
 	}
 
-	if (_vehicle_control_mode.flag_control_rates_enabled  && _vehicle_control_mode.flag_armed && runSanityChecks()) {
+	const bool controller_active = _vehicle_control_mode.flag_control_rates_enabled
+				       && _vehicle_control_mode.flag_armed && runSanityChecks();
+
+	if (controller_active) {
 		// Estimate forward speed based on throttle
 		if (_actuator_motors_sub.updated()) {
 			actuator_motors_s actuator_motors;
@@ -93,11 +96,12 @@ void AckermannRateControl::updateRateControl()
 	}
 
 	// Publish rate controller status (logging only)
-	rover_rate_status_s rover_rate_status;
+	rover_rate_status_s rover_rate_status{};
 	rover_rate_status.timestamp = _timestamp;
 	rover_rate_status.measured_yaw_rate = _vehicle_yaw_rate;
 	rover_rate_status.adjusted_yaw_rate_setpoint = _yaw_rate_setpoint.getState();
 	rover_rate_status.pid_yaw_rate_integral = _pid_yaw_rate.getIntegral();
+	rover_rate_status.active = controller_active;
 	_rover_rate_status_pub.publish(rover_rate_status);
 
 }

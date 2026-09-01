@@ -75,7 +75,10 @@ void MecanumAttControl::updateAttControl()
 		_vehicle_yaw = matrix::Eulerf(vehicle_attitude_quaternion).psi();
 	}
 
-	if (_vehicle_control_mode.flag_control_attitude_enabled && _vehicle_control_mode.flag_armed && runSanityChecks()) {
+	const bool controller_active = _vehicle_control_mode.flag_control_attitude_enabled
+				       && _vehicle_control_mode.flag_armed && runSanityChecks();
+
+	if (controller_active) {
 
 		if (_vehicle_control_mode.flag_control_manual_enabled || _vehicle_control_mode.flag_control_offboard_enabled) {
 			generateAttitudeSetpoint();
@@ -89,10 +92,11 @@ void MecanumAttControl::updateAttControl()
 	}
 
 	// Publish attitude controller status (logging only)
-	rover_attitude_status_s rover_attitude_status;
+	rover_attitude_status_s rover_attitude_status{};
 	rover_attitude_status.timestamp = _timestamp;
 	rover_attitude_status.measured_yaw = _vehicle_yaw;
 	rover_attitude_status.adjusted_yaw_setpoint = _adjusted_yaw_setpoint.getState();
+	rover_attitude_status.active = controller_active;
 	_rover_attitude_status_pub.publish(rover_attitude_status);
 
 }

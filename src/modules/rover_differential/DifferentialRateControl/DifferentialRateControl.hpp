@@ -78,6 +78,7 @@ public:
 	 * @brief Update rate controller.
 	 */
 	void updateRateControl();
+	void resetInactiveState();
 
 protected:
 	/**
@@ -95,7 +96,7 @@ private:
 	/**
 	 * @brief Generate and publish roverSteeringSetpoint from RoverRateSetpoint.
 	 */
-	void generateSteeringSetpoint();
+	bool generateSteeringSetpoint();
 	void stopRoverVelocityControl();
 	bool roverVelocityControlActive() const;
 	bool roverVelocityInputValid() const;
@@ -132,12 +133,16 @@ private:
 
 	// Variables
 	hrt_abstime _timestamp{0};
+	hrt_abstime _vehicle_yaw_rate_timestamp{0};
 	float _max_yaw_rate{0.f};
 	float _max_yaw_accel{0.f};
 	float _max_yaw_decel{0.f};
 	float _vehicle_yaw_rate{0.f};
 	float _dt{0.f}; // Time since last update [s].
 	bool _prev_param_check_passed{true};
+	bool _awaiting_trajectory_setpoint{false};
+	bool _awaiting_rate_setpoint{false};
+	bool _awaiting_yaw_rate_sample{false};
 
 	// Controllers
 	PID _pid_yaw_rate;

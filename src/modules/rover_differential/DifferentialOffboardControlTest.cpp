@@ -57,7 +57,10 @@ protected:
 				  const vehicle_control_mode_s &control, const hybrid_vehicle_status_s &hybrid,
 				  const rover_velocity_setpoint_s &rover_setpoint, const trajectory_setpoint_s &trajectory = {})
 	{
+		const hrt_abstime sensor_timestamp = hrt_absolute_time();
 		vehicle_status_s vehicle_status{};
+		vehicle_status.timestamp = sensor_timestamp;
+		vehicle_status.vehicle_type = vehicle_status_s::VEHICLE_TYPE_ROVER;
 		vehicle_status.is_quad_rover = is_quad_rover;
 		_vehicle_status_pub.publish(vehicle_status);
 		_offboard_pub.publish(offboard);
@@ -67,10 +70,19 @@ protected:
 		_trajectory_pub.publish(trajectory);
 
 		vehicle_attitude_s attitude{};
+		attitude.timestamp = sensor_timestamp;
+		attitude.timestamp_sample = sensor_timestamp;
 		attitude.q[0] = 1.f;
 		_attitude_pub.publish(attitude);
-		_local_position_pub.publish({});
-		_angular_velocity_pub.publish({});
+		vehicle_local_position_s local_position{};
+		local_position.timestamp = sensor_timestamp;
+		local_position.timestamp_sample = sensor_timestamp;
+		local_position.v_xy_valid = true;
+		_local_position_pub.publish(local_position);
+		vehicle_angular_velocity_s angular_velocity{};
+		angular_velocity.timestamp = sensor_timestamp;
+		angular_velocity.timestamp_sample = sensor_timestamp;
+		_angular_velocity_pub.publish(angular_velocity);
 	}
 
 	uORB::Publication<vehicle_status_s> _vehicle_status_pub{ORB_ID(vehicle_status)};

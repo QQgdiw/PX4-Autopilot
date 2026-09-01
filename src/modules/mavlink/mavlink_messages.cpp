@@ -128,6 +128,12 @@
 #if defined(MAVLINK_MSG_ID_FUEL_STATUS)
 #include "streams/FUEL_STATUS.hpp"
 #endif // MAVLINK_MSG_ID_FUEL_STATUS
+#if defined(MAVLINK_MSG_ID_ROVER_RATE_TUNING_STATUS)
+#include "streams/ROVER_RATE_TUNING_STATUS.hpp"
+#include "streams/ROVER_ATTITUDE_TUNING_STATUS.hpp"
+#include "streams/ROVER_VELOCITY_TUNING_STATUS.hpp"
+#include "streams/ROVER_POSITION_TUNING_STATUS.hpp"
+#endif // MAVLINK_MSG_ID_ROVER_RATE_TUNING_STATUS
 
 #ifdef MAVLINK_MSG_ID_AVAILABLE_MODES // Only defined if development.xml is used
 #include "streams/AVAILABLE_MODES.hpp"
@@ -417,6 +423,12 @@ static const StreamListItem streams_list[] = {
 #if defined(MAVLINK_MSG_ID_HYBRID_VEHICLE_STATUS)
 	create_stream_list_item<MavlinkStreamHybridVehicleStatus>(),
 #endif
+#if defined(ROVER_RATE_TUNING_STATUS_HPP)
+	create_stream_list_item<MavlinkStreamRoverRateTuningStatus>(),
+	create_stream_list_item<MavlinkStreamRoverAttitudeTuningStatus>(),
+	create_stream_list_item<MavlinkStreamRoverVelocityTuningStatus>(),
+	create_stream_list_item<MavlinkStreamRoverPositionTuningStatus>(),
+#endif // ROVER_RATE_TUNING_STATUS_HPP
 #if defined(ALTITUDE_HPP)
 	create_stream_list_item<MavlinkStreamAltitude>(),
 #endif // ALTITUDE_HPP

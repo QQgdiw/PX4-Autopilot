@@ -49,12 +49,14 @@
 #include <uORB/Subscription.hpp>
 #include <uORB/topics/differential_velocity_setpoint.h>
 #include <uORB/topics/pure_pursuit_status.h>
+#include <uORB/topics/rover_position_status.h>
 #include <uORB/topics/rover_position_setpoint.h>
 #include <uORB/topics/rover_velocity_status.h>
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/manual_control_setpoint.h>
 #include <uORB/topics/trajectory_setpoint.h>
 #include <uORB/topics/vehicle_attitude.h>
+#include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/offboard_control_mode.h>
 #include <uORB/topics/position_setpoint.h>
 #include <uORB/topics/position_setpoint_triplet.h>
@@ -79,6 +81,7 @@ public:
 	 * @brief Update position controller.
 	 */
 	void updatePosControl();
+	void resetInactiveState();
 
 protected:
 	/**
@@ -87,6 +90,21 @@ protected:
 	void updateParams() override;
 
 private:
+	enum class PositionControlSource : uint8_t {
+		Inactive,
+		Manual,
+		Auto,
+		Offboard,
+		GoTo
+	};
+
+	PositionControlSource selectPositionControlSource() const;
+	void updatePositionControlSource(PositionControlSource source);
+	void resetSourceState();
+	void discardPendingSourceInputs(PositionControlSource active_source);
+	void publishStopSetpoint();
+	bool isSourceInputNew(uint64_t timestamp) const;
+
 	/**
 	 * @brief Update uORB subscriptions used in position controller.
 	 */
@@ -118,6 +136,10 @@ private:
 	 */
 	void goToPositionMode();
 
+	void resetPositionStatus(bool active);
+	void setPositionTarget(const Vector2f &target_ned);
+	void setPathStatus(const Vector2f &target_ned, const pure_pursuit_status_s &pure_pursuit_status);
+
 	/**
 	 * @brief Calculate the speed setpoint. During waypoint transition the speed is restricted to
 	 * Maximum_speed * (1 - normalized_transition_angle * RM_MISS_VEL_GAIN).
@@ -146,6 +168,7 @@ private:
 
 	// uORB subscriptions
 	uORB::Subscription _vehicle_control_mode_sub{ORB_ID(vehicle_control_mode)};
+	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
 	uORB::Subscription _manual_control_setpoint_sub{ORB_ID(manual_control_setpoint)};
 	uORB::Subscription _trajectory_setpoint_sub{ORB_ID(trajectory_setpoint)};
 	uORB::Subscription _offboard_control_mode_sub{ORB_ID(offboard_control_mode)};
@@ -155,7 +178,9 @@ private:
 	uORB::Subscription _differential_velocity_setpoint_sub{ORB_ID(differential_velocity_setpoint)};
 	uORB::Subscription _rover_position_setpoint_sub{ORB_ID(rover_position_setpoint)};
 	vehicle_control_mode_s _vehicle_control_mode{};
+	vehicle_status_s _vehicle_status{};
 	offboard_control_mode_s _offboard_control_mode{};
+	manual_control_setpoint_s _manual_control_setpoint{};
 	rover_position_setpoint_s _rover_position_setpoint{};
 
 
@@ -163,10 +188,15 @@ private:
 	uORB::Publication<rover_velocity_status_s>          _rover_velocity_status_pub{ORB_ID(rover_velocity_status)};
 	uORB::Publication<differential_velocity_setpoint_s> _differential_velocity_setpoint_pub{ORB_ID(differential_velocity_setpoint)};
 	uORB::Publication<pure_pursuit_status_s>	    _pure_pursuit_status_pub{ORB_ID(pure_pursuit_status)};
+	uORB::Publication<rover_position_status_s>      _rover_position_status_pub{ORB_ID(rover_position_status)};
 	uORB::Publication<rover_position_setpoint_s>	 _rover_position_setpoint_pub{ORB_ID(rover_position_setpoint)};
 
 	// Variables
 	hrt_abstime _timestamp{0};
+	hrt_abstime _local_position_timestamp{0};
+	hrt_abstime _source_epoch{0};
+	hrt_abstime _source_input_timestamp{0};
+	hrt_abstime _offboard_mode_timestamp{0};
 	Quatf _vehicle_attitude_quaternion{};
 	Vector2f _curr_pos_ned{};
 	Vector2f _pos_ctl_course_direction{};
@@ -175,9 +205,16 @@ private:
 	float _vehicle_yaw{0.f};
 	float _max_yaw_rate{0.f};
 	float _dt{0.f};
+	uint8_t _xy_reset_counter{0};
 	int _curr_wp_type{position_setpoint_s::SETPOINT_TYPE_IDLE};
 	bool _course_control{false}; // Indicates if the rover is doing course control in manual position mode.
+	bool _local_position_valid{false};
+	bool _auto_target_valid{false};
+	bool _manual_control_setpoint_valid{false};
 	bool _prev_param_check_passed{true};
+	PositionControlSource _position_control_source{PositionControlSource::Inactive};
+	uint8_t _position_control_source_id{0xff};
+	rover_position_status_s _rover_position_status{};
 
 	// Waypoint variables
 	Vector2f _curr_wp_ned{};
