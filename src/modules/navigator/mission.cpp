@@ -151,6 +151,8 @@ Mission::do_need_move_to_takeoff()
 
 void Mission::setActiveMissionItems()
 {
+	set_active_mission_item_key({_mission.mission_id, _mission.current_seq});
+
 	/* Get mission item that comes after current if available */
 	static constexpr size_t max_num_next_items{2u};
 	int32_t next_mission_items_index[max_num_next_items];
@@ -263,7 +265,8 @@ void Mission::setActiveMissionItems()
 			pos_sp_triplet->next.valid = false;
 		}
 
-	} else if (_mission_item.nav_cmd == NAV_CMD_DELAY) {
+	} else if (_mission_item.nav_cmd == NAV_CMD_DELAY
+		   || _mission_item.nav_cmd == NAV_CMD_DO_HYBRID_TRANSITION) {
 		// Invalidate next waypoint to ensure vehicle holds position and doesn't try to track ahead
 		pos_sp_triplet->next.valid = false;
 
@@ -277,7 +280,7 @@ void Mission::setActiveMissionItems()
 		pos_sp_triplet->previous = current_setpoint_copy;
 	}
 
-	issue_command(_mission_item);
+	issue_command(_mission_item, {_mission.mission_id, _mission.current_seq});
 
 	/* set current work item type */
 	_work_item_type = new_work_item_type;

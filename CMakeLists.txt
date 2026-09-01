@@ -449,6 +449,19 @@ foreach(module ${config_module_list})
 	add_subdirectory(src/${module})
 endforeach()
 
+# UAVCAN Remote ID reuses the MAVLink Open Drone ID type translation. Link the
+# configured primary dialect only after both optional module targets exist.
+if(TARGET drivers__uavcan AND TARGET mavlink_c)
+	cmake_policy(PUSH)
+	cmake_policy(SET CMP0079 NEW)
+	target_link_libraries(drivers__uavcan PRIVATE mavlink_c)
+
+	if(TARGET drivers__uavcan_original)
+		target_link_libraries(drivers__uavcan_original PRIVATE mavlink_c)
+	endif()
+	cmake_policy(POP)
+endif()
+
 # add events lib after modules and libs as it needs to know all source files (PX4_SRC_FILES)
 add_subdirectory(src/lib/events EXCLUDE_FROM_ALL)
 # metadata needs PX4_MODULE_CONFIG_FILES

@@ -74,6 +74,9 @@
 #include "streams/ESC_STATUS.hpp"
 #include "streams/ESTIMATOR_STATUS.hpp"
 #include "streams/EXTENDED_SYS_STATE.hpp"
+#if defined(MAVLINK_MSG_ID_HYBRID_VEHICLE_STATUS)
+# include "streams/HYBRID_VEHICLE_STATUS.hpp"
+#endif
 #include "streams/FLIGHT_INFORMATION.hpp"
 #include "streams/GLOBAL_POSITION_INT.hpp"
 #include "streams/GPS_GLOBAL_ORIGIN.hpp"
@@ -411,6 +414,9 @@ static const StreamListItem streams_list[] = {
 #if defined(EXTENDED_SYS_STATE_HPP)
 	create_stream_list_item<MavlinkStreamExtendedSysState>(),
 #endif // EXTENDED_SYS_STATE_HPP
+#if defined(MAVLINK_MSG_ID_HYBRID_VEHICLE_STATUS)
+	create_stream_list_item<MavlinkStreamHybridVehicleStatus>(),
+#endif
 #if defined(ALTITUDE_HPP)
 	create_stream_list_item<MavlinkStreamAltitude>(),
 #endif // ALTITUDE_HPP

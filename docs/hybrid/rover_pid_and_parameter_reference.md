@@ -107,9 +107,9 @@ pitch --------------------------------------------> normalized throttle
 | 测量死区 | `RO_YAW_RATE_TH` |
 | 日志主题 | `rover_rate_setpoint`、`rover_rate_status`、`rover_steering_setpoint` |
 
-当前源码还把小于 `RO_YAW_RATE_TH` 的目标角速度置零。项目规范要求该参数只
-用于实测角速度噪声阈值，因此调参时要注意：当前实现会同时形成目标死区，这
-属于当前分支的实现现状，不应把死区内没有响应误判为 P/I 太小。
+`RO_YAW_RATE_TH` 只用于过滤实测角速度噪声，不过滤目标角速度；低角速度外环
+或 Offboard 指令仍是有效控制量。调参时应以静止 gyro Z 噪声确定该阈值，而不
+能用它制造遥控或控制目标死区。
 
 ## 5. Stabilized：航向 P 串联偏航角速度 PI
 
@@ -202,28 +202,35 @@ Mission、Auto、RTL 等使用相同的内层：
 
 ## 8. Offboard 模式
 
-当前 `testc1` 源码仍通过标准 `offboard_control_mode` 字段选择控制层级：
+独立 Quad-Rover 在 Rover 形态只接受项目专用的 body-speed + yaw-rate 接口：
 
-| Offboard 类型 | 入口 | 使用的 Rover 控制环 |
-|---|---|---|
-| Position | `trajectory_setpoint.position[0/1]` | 位置/路径生成 → 速度 PI，并联航向 P → 角速度 PI |
-| Velocity | `trajectory_setpoint.velocity[0/1]` | 速度 PI，并联航向 P → 角速度 PI |
-| Attitude | `trajectory_setpoint.yaw` | 航向 P → 角速度 PI |
-| Body rate | `trajectory_setpoint.yawspeed` | 偏航角速度 PI |
+```text
+OffboardControlMode.rover_velocity = true（其余控制 bit 必须全为 false）
+RoverVelocitySetpoint.speed_body_x -> 车体前向速度 PI -> throttle
+RoverVelocitySetpoint.yaw_rate     -> 偏航角速度 PI -> steering
+```
 
-当前分支未发现后来设计中的 `rover_velocity` 独立 bit/epoch 门控实现，因此不能
-假定“exact-one-bit rover_velocity”安全策略已存在。后续若使用 ROS 2 `/cmd_vel`
-调参，应先核对最终使用的固件分支与 Offboard 接口版本。
+DDS 输入 topic 为 `/fmu/in/offboard_control_mode` 和
+`/fmu/in/rover_velocity_setpoint`。`speed_body_x` 是带符号的车体 X 轴速度，
+`yaw_rate` 是 PX4 FRD/NED 正方向角速度；若上游是 ROS REP-103 FLU
+`geometry_msgs/Twist`，映射为 `speed_body_x=linear.x`、
+`yaw_rate=-angular.z`。
+
+控制器仅在新鲜、无故障、稳定 `DRIVING` 状态接受该输入。mode 与 setpoint 都
+必须非零时间戳、不过期、字段有限；setpoint 时间戳还必须严格晚于最近一次
+`transition_completed_timestamp`。legacy、多个控制 bit、错误形态、变形中、
+Fault、陈旧状态和旧 epoch 输入都会安全归零。普通非混合 Rover 仍保留标准 PX4
+legacy Offboard 路径，不受该混合机型专用门控影响。
 
 ## 9. 控制环汇总
 
 | 控制环 | 串并联位置 | 设定值输入 | 反馈输入 | 输出 | 参数 | 使用模式 |
 |---|---|---|---|---|---|---|
 | M2006 左/右转子速度 PID+FF | 每轮最内层，两轮并联 | 归一化轮命令 × `M2K_MAX_RPM` | C610 rotor rpm | C610 current | `M2K_SPD_P/I/D/FF` | 所有 Rover 推进模式 |
-| 偏航角速度 PI+FF | 横向内环 | `rover_rate_setpoint.yaw_rate_setpoint` | gyro Z yaw rate | normalized speed difference | `RO_YAW_RATE_P/I`、`RD_WHEEL_TRACK`、`RD_MAX_THR_YAW_R` | Acro、Stabilized、Position、Auto/Mission、相关 Offboard |
-| 航向 P | 串联在角速度环外 | yaw/bearing setpoint | vehicle yaw | yaw-rate setpoint | `RO_YAW_P` | Stabilized 航向保持、Position、Auto/Mission、Position/Velocity/Attitude Offboard |
-| 车体前向速度 PI+FF | 与横向环并联 | body-X speed setpoint | body-X measured speed | normalized throttle | `RO_SPEED_P/I`、`RO_MAX_THR_SPEED` | Position、Auto/Mission、Position/Velocity Offboard |
-| Pure Pursuit | 最外层几何控制，非 PID | 路径/航点、当前位置、速度 | 位置和航迹 | bearing setpoint | `PP_LOOKAHD_GAIN/MIN/MAX` | Position 直线保持、Auto/Mission、Position Offboard |
+| 偏航角速度 PI+FF | 横向内环 | `rover_rate_setpoint.yaw_rate_setpoint` | gyro Z yaw rate | normalized speed difference | `RO_YAW_RATE_P/I`、`RD_WHEEL_TRACK`、`RD_MAX_THR_YAW_R` | Acro、Stabilized、Position、Auto/Mission、专用 Rover Velocity Offboard |
+| 航向 P | 串联在角速度环外 | yaw/bearing setpoint | vehicle yaw | yaw-rate setpoint | `RO_YAW_P` | Stabilized 航向保持、Position、Auto/Mission |
+| 车体前向速度 PI+FF | 与横向环并联 | body-X speed setpoint | body-X measured speed | normalized throttle | `RO_SPEED_P/I`、`RO_MAX_THR_SPEED` | Position、Auto/Mission、专用 Rover Velocity Offboard |
+| Pure Pursuit | 最外层几何控制，非 PID | 路径/航点、当前位置、速度 | 位置和航迹 | bearing setpoint | `PP_LOOKAHD_GAIN/MIN/MAX` | Position 直线保持、Auto/Mission |
 
 ## 10. Rover 专用及强相关参数表
 
@@ -257,7 +264,7 @@ Mission、Auto、RTL 等使用相同的内层：
 | `RO_YAW_RATE_LIM` | deg/s | 0 | 角速度设定上限、遥控映射范围和航向环输出上限 | 先按车辆不会侧翻、严重打滑或冲击机构的最大实测角速度设定；调内环时使用低于该上限的多个阶跃，不要一开始就满量程。 |
 | `RO_YAW_ACCEL_LIM` | deg/s² | -1 | 偏航角速度设定增大速率限制；-1 禁用 | 初调设为可重复且不打滑的保守值；若设定值本身爬升过慢，先提高该项再评价 P。过大会造成轮速/电流突变。 |
 | `RO_YAW_DECEL_LIM` | deg/s² | -1 | 偏航角速度设定减小速率限制；-1 禁用 | 用回中和正反向切换检查停车/换向。过小会拖尾，过大可能急停打滑；通常根据减速能力独立于加速限制设置。 |
-| `RO_YAW_RATE_TH` | deg/s | 3 | 偏航角速度测量死区；当前分支也错误地作用于小角速度设定值 | 静止记录 gyro Z 噪声，将阈值设在噪声包络稍上方。当前源码也会截断小设定值，因此不能为消噪而设得过大，否则小角速度指令无响应。 |
+| `RO_YAW_RATE_TH` | deg/s | 3 | 偏航角速度测量死区，不过滤目标角速度 | 静止记录 gyro Z 噪声，将阈值设在噪声包络稍上方。不能为消噪而设得过大，否则低速实测反馈被持续归零，容易掩盖小角速度动态。 |
 | `RO_YAW_RATE_P` | - | 0 | 偏航角速度 PI 的比例增益 | 先令 I 为 0，用 Acro 或隔离的角速度阶跃逐步增大 P；观察 `rover_rate_status`。响应迟缓可增加，持续摆振、轮命令交替或明显超调时减小。 |
 | `RO_YAW_RATE_I` | - | 0 | 偏航角速度 PI 的积分增益 | P 稳定后，在地面摩擦一致的持续角速度指令下增加 I 以消除稳态误差。松杆后拖尾、低频摆动或积分长期贴限说明过大。 |
 | `RO_YAW_STICK_DZ` | 归一化 | 0.1 | Stabilized/Position 的转向摇杆死区 | 查看遥控 roll 中位噪声，将死区设为能可靠回中的最小值。过大导致中位附近转向不连续，过小会使航向保持频繁退出。 |

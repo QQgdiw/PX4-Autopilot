@@ -39,6 +39,7 @@
 
 // Libraries
 #include <lib/rover_control/RoverControl.hpp>
+#include <lib/rover_control/RoverVelocityOffboardPolicy.hpp>
 #include <lib/pid/PID.hpp>
 #include <lib/slew_rate/SlewRate.hpp>
 #include <math.h>
@@ -47,6 +48,8 @@
 #include <uORB/Publication.hpp>
 #include <uORB/Subscription.hpp>
 #include <uORB/topics/rover_rate_setpoint.h>
+#include <uORB/topics/rover_velocity_setpoint.h>
+#include <uORB/topics/hybrid_vehicle_status.h>
 #include <uORB/topics/rover_throttle_setpoint.h>
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/manual_control_setpoint.h>
@@ -56,6 +59,7 @@
 #include <uORB/topics/actuator_motors.h>
 #include <uORB/topics/offboard_control_mode.h>
 #include <uORB/topics/trajectory_setpoint.h>
+#include <uORB/topics/vehicle_status.h>
 
 /**
  * @brief Class for differential rate control.
@@ -92,6 +96,9 @@ private:
 	 * @brief Generate and publish roverSteeringSetpoint from RoverRateSetpoint.
 	 */
 	void generateSteeringSetpoint();
+	void stopRoverVelocityControl();
+	bool roverVelocityControlActive() const;
+	bool roverVelocityInputValid() const;
 
 	/**
 	 * @brief Check if the necessary parameters are set.
@@ -107,9 +114,15 @@ private:
 	uORB::Subscription _rover_rate_setpoint_sub{ORB_ID(rover_rate_setpoint)};
 	uORB::Subscription _vehicle_angular_velocity_sub{ORB_ID(vehicle_angular_velocity)};
 	uORB::Subscription _actuator_motors_sub{ORB_ID(actuator_motors)};
+	uORB::Subscription _rover_velocity_setpoint_sub{ORB_ID(rover_velocity_setpoint)};
+	uORB::Subscription _hybrid_vehicle_status_sub{ORB_ID(hybrid_vehicle_status)};
+	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
 	vehicle_control_mode_s _vehicle_control_mode{};
 	offboard_control_mode_s _offboard_control_mode{};
 	rover_rate_setpoint_s _rover_rate_setpoint{};
+	rover_velocity_setpoint_s _rover_velocity_setpoint{};
+	hybrid_vehicle_status_s _hybrid_vehicle_status{};
+	vehicle_status_s _vehicle_status{};
 
 	// uORB publications
 	uORB::Publication<rover_rate_setpoint_s> _rover_rate_setpoint_pub{ORB_ID(rover_rate_setpoint)};
@@ -138,6 +151,7 @@ private:
 		(ParamFloat<px4::params::RO_YAW_RATE_P>)    _param_ro_yaw_rate_p,
 		(ParamFloat<px4::params::RO_YAW_RATE_I>)    _param_ro_yaw_rate_i,
 		(ParamFloat<px4::params::RO_YAW_ACCEL_LIM>) _param_ro_yaw_accel_limit,
-		(ParamFloat<px4::params::RO_YAW_DECEL_LIM>) _param_ro_yaw_decel_limit
+		(ParamFloat<px4::params::RO_YAW_DECEL_LIM>) _param_ro_yaw_decel_limit,
+		(ParamFloat<px4::params::COM_OF_LOSS_T>)     _param_com_of_loss_t
 	)
 };

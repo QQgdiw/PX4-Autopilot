@@ -39,3 +39,4 @@ px4_add_library(rover_control
 target_link_libraries(rover_control PUBLIC PID)
 target_link_libraries(rover_control PUBLIC geo)
 px4_add_unit_gtest(SRC RoverControlTest.cpp LINKLIBS rover_control)
+px4_add_unit_gtest(SRC RoverVelocityOffboardPolicyTest.cpp)

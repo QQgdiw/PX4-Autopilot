@@ -57,6 +57,28 @@ bool is_vtol_tailsitter(const vehicle_status_s &current_status);
 bool is_fixed_wing(const vehicle_status_s &current_status);
 bool is_ground_vehicle(const vehicle_status_s &current_status);
 
+namespace commander
+{
+
+// Must remain numerically identical to the private MAV_TYPE_QUAD_ROVER wire value.
+constexpr uint8_t VehicleTypeQuadRover{200};
+
+inline bool is_quad_rover(const vehicle_status_s &current_status)
+{
+	return current_status.system_type == VehicleTypeQuadRover;
+}
+
+inline bool is_vtol(const vehicle_status_s &current_status)
+{
+	return current_status.system_type == 19
+	       || current_status.system_type == 20
+	       || current_status.system_type == 21
+	       || current_status.system_type == 22
+	       || current_status.system_type == 23;
+}
+
+} // namespace commander
+
 int buzzer_init(void);
 void buzzer_deinit(void);
 

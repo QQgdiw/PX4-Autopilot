@@ -73,12 +73,53 @@ void DifferentialRateControl::updateRateControl()
 				    vehicle_angular_velocity.xyz[2] : 0.f;
 	}
 
-	if (_vehicle_control_mode.flag_control_rates_enabled  && _vehicle_control_mode.flag_armed && runSanityChecks()) {
-		if (_vehicle_control_mode.flag_control_manual_enabled || _vehicle_control_mode.flag_control_offboard_enabled) {
-			generateRateAndThrottleSetpoint();
+	if (_offboard_control_mode_sub.updated()) {
+		_offboard_control_mode_sub.copy(&_offboard_control_mode);
+	}
+
+	if (_rover_velocity_setpoint_sub.updated()) {
+		_rover_velocity_setpoint_sub.copy(&_rover_velocity_setpoint);
+	}
+
+	if (_hybrid_vehicle_status_sub.updated()) {
+		_hybrid_vehicle_status_sub.copy(&_hybrid_vehicle_status);
+	}
+
+	if (_vehicle_status_sub.updated()) {
+		_vehicle_status_sub.copy(&_vehicle_status);
+	}
+
+	const bool rover_velocity_control_active = roverVelocityControlActive();
+
+	if (rover_velocity_control_active && _vehicle_control_mode.flag_armed) {
+		const bool sanity_checks_passed = runSanityChecks();
+
+		if (_vehicle_control_mode.flag_control_rates_enabled && sanity_checks_passed && roverVelocityInputValid()) {
+			rover_rate_setpoint_s rover_rate_setpoint{};
+			rover_rate_setpoint.timestamp = _timestamp;
+			rover_rate_setpoint.yaw_rate_setpoint = _rover_velocity_setpoint.yaw_rate;
+			_rover_rate_setpoint = rover_rate_setpoint;
+			_rover_rate_setpoint_pub.publish(rover_rate_setpoint);
+			generateSteeringSetpoint();
+
+		} else {
+			stopRoverVelocityControl();
 		}
 
-		generateSteeringSetpoint();
+	} else if (_vehicle_control_mode.flag_control_rates_enabled && _vehicle_control_mode.flag_armed) {
+		const bool sanity_checks_passed = runSanityChecks();
+
+		if (sanity_checks_passed) {
+			if (_vehicle_control_mode.flag_control_manual_enabled || _vehicle_control_mode.flag_control_offboard_enabled) {
+				generateRateAndThrottleSetpoint();
+			}
+
+			generateSteeringSetpoint();
+
+		} else {
+			_pid_yaw_rate.resetIntegral();
+			_adjusted_yaw_rate_setpoint.setForcedValue(0.f);
+		}
 
 	} else { // Reset controller and slew rate when rate control is not active
 		_pid_yaw_rate.resetIntegral();
@@ -111,7 +152,8 @@ void DifferentialRateControl::generateRateAndThrottleSetpoint()
 			_rover_throttle_setpoint_pub.publish(rover_throttle_setpoint);
 			rover_rate_setpoint_s rover_rate_setpoint{};
 			rover_rate_setpoint.timestamp = _timestamp;
-			rover_rate_setpoint.yaw_rate_setpoint = math::interpolate<float> (RoverControl::manualSteeringInput(manual_control_setpoint.roll), -1.f, 1.f,
+			rover_rate_setpoint.yaw_rate_setpoint = math::interpolate<float> (RoverControl::manualSteeringInput(
+					manual_control_setpoint.roll), -1.f, 1.f,
 								-_max_yaw_rate, _max_yaw_rate);
 			_rover_rate_setpoint_pub.publish(rover_rate_setpoint);
 		}
@@ -119,10 +161,6 @@ void DifferentialRateControl::generateRateAndThrottleSetpoint()
 	} else if (_vehicle_control_mode.flag_control_offboard_enabled) { // Offboard rate control
 		trajectory_setpoint_s trajectory_setpoint{};
 		_trajectory_setpoint_sub.copy(&trajectory_setpoint);
-
-		if (_offboard_control_mode_sub.updated()) {
-			_offboard_control_mode_sub.copy(&_offboard_control_mode);
-		}
 
 		const bool offboard_rate_control = _offboard_control_mode.body_rate && !_offboard_control_mode.position
 						   && !_offboard_control_mode.velocity && !_offboard_control_mode.attitude;
@@ -146,11 +184,8 @@ void DifferentialRateControl::generateSteeringSetpoint()
 	float speed_diff_normalized{0.f};
 
 	if (PX4_ISFINITE(_rover_rate_setpoint.yaw_rate_setpoint) && PX4_ISFINITE(_vehicle_yaw_rate)) {
-		const float yaw_rate_setpoint = fabsf(_rover_rate_setpoint.yaw_rate_setpoint) > _param_ro_yaw_rate_th.get() *
-						M_DEG_TO_RAD_F ?
-						_rover_rate_setpoint.yaw_rate_setpoint : 0.f;
 		speed_diff_normalized = RoverControl::rateControl(_adjusted_yaw_rate_setpoint, _pid_yaw_rate,
-					yaw_rate_setpoint, _vehicle_yaw_rate, _param_rd_max_thr_yaw_r.get(), _max_yaw_accel,
+					_rover_rate_setpoint.yaw_rate_setpoint, _vehicle_yaw_rate, _param_rd_max_thr_yaw_r.get(), _max_yaw_accel,
 					_max_yaw_decel, _param_rd_wheel_track.get(), _dt);
 	}
 
@@ -173,6 +208,58 @@ void DifferentialRateControl::generateSteeringSetpoint()
 	rover_steering_setpoint.timestamp = _timestamp;
 	rover_steering_setpoint.normalized_speed_diff = speed_diff_normalized;
 	_rover_steering_setpoint_pub.publish(rover_steering_setpoint);
+}
+
+void DifferentialRateControl::stopRoverVelocityControl()
+{
+	_pid_yaw_rate.resetIntegral();
+	_adjusted_yaw_rate_setpoint.setForcedValue(0.f);
+	_rover_rate_setpoint = {};
+	_rover_rate_setpoint.timestamp = _timestamp;
+	_rover_rate_setpoint.yaw_rate_setpoint = 0.f;
+	_rover_rate_setpoint_pub.publish(_rover_rate_setpoint);
+
+	rover_steering_setpoint_s rover_steering_setpoint{};
+	rover_steering_setpoint.timestamp = _timestamp;
+	rover_steering_setpoint.normalized_speed_diff = 0.f;
+	_rover_steering_setpoint_pub.publish(rover_steering_setpoint);
+}
+
+bool DifferentialRateControl::roverVelocityControlActive() const
+{
+	const bool legacy_velocity_control_active = _vehicle_control_mode.flag_control_velocity_enabled
+			&& !_vehicle_control_mode.flag_control_position_enabled
+			&& !_vehicle_control_mode.flag_control_altitude_enabled
+			&& !_vehicle_control_mode.flag_control_climb_rate_enabled
+			&& !_vehicle_control_mode.flag_control_acceleration_enabled
+			&& !_vehicle_control_mode.flag_control_attitude_enabled
+			&& _vehicle_control_mode.flag_control_rates_enabled
+			&& _vehicle_control_mode.flag_control_allocation_enabled;
+
+	return roverVelocityDedicatedControlRequired(_vehicle_status.is_quad_rover,
+			_vehicle_control_mode.flag_control_offboard_enabled, _offboard_control_mode.rover_velocity,
+			legacy_velocity_control_active);
+}
+
+bool DifferentialRateControl::roverVelocityInputValid() const
+{
+	const hrt_abstime maximum_age = static_cast<hrt_abstime>(_param_com_of_loss_t.get() * 1_s);
+	const RoverVelocityOffboardMode mode{_offboard_control_mode.timestamp,
+					     _offboard_control_mode.position, _offboard_control_mode.velocity, _offboard_control_mode.acceleration,
+					     _offboard_control_mode.attitude, _offboard_control_mode.body_rate,
+					     _offboard_control_mode.thrust_and_torque, _offboard_control_mode.direct_actuator,
+					     _offboard_control_mode.rover_velocity};
+	const RoverVelocityDrivingStatus status{_hybrid_vehicle_status.timestamp,
+						_hybrid_vehicle_status.transition_completed_timestamp,
+						_hybrid_vehicle_status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING,
+						_hybrid_vehicle_status.fault_reason == hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE};
+	const RoverVelocityOffboardInput input{_rover_velocity_setpoint.timestamp,
+					       _rover_velocity_setpoint.speed_body_x, _rover_velocity_setpoint.yaw_rate};
+	const bool driving_healthy = roverDrivingStatusUsable(status, _timestamp, 1_s);
+
+	return roverVelocityModeUsable(mode, _timestamp, maximum_age)
+	       && roverVelocityInputUsable(input, status.transition_completed_timestamp, _timestamp, maximum_age,
+					   driving_healthy);
 }
 
 bool DifferentialRateControl::runSanityChecks()

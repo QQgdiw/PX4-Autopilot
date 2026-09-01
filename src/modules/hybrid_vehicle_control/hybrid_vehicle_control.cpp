@@ -67,6 +67,11 @@ float clamp_servo(float value)
 {
 	return fmaxf(-1.f, fminf(value, 1.f));
 }
+
+bool reserved_parameter_valid(double value)
+{
+	return fpclassify(value) == FP_ZERO || std::isnan(value);
+}
 } // namespace
 
 HybridVehicleControl::HybridVehicleControl() :
@@ -375,7 +380,8 @@ void HybridVehicleControl::Run()
 	}
 
 	const TransformationConfig requested_config = transformation_config();
-	const bool safe_to_apply = !_actuator_armed.armed && !_actuator_armed.prearmed;
+	const bool safe_to_apply = hybrid_control::configurationUpdatePermitted(_actuator_armed.armed,
+				   _actuator_armed.prearmed, _transformation_output.state);
 	const bool configuration_applied = _transformation_config_tracker.update(requested_config, safe_to_apply);
 	TransformationInput input{now, false, 0.f, false, false, false, false};
 
@@ -454,28 +460,45 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 	if (airborne_quad_feedback_degraded) {
 		return;
 	}
-
-	bool request_rover = false;
-	bool request_quad = false;
-
 	vehicle_command_s command{};
 
 	while (_vehicle_command_sub.update(&command)) {
-		if (command.command != vehicle_command_s::VEHICLE_CMD_DO_VTOL_TRANSITION) {
+		if (command.command != vehicle_command_s::VEHICLE_CMD_DO_HYBRID_TRANSITION) {
 			continue;
 		}
 
-		const int target = static_cast<int>(command.param1 + 0.5f);
-		request_rover = target == 4;
-		request_quad = target == 3;
+		HybridTarget target = HybridTarget::None;
 
-		vehicle_command_ack_s ack{};
-		ack.timestamp = input.now_us;
-		ack.command = command.command;
-		ack.result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
-		ack.target_system = command.source_system;
-		ack.target_component = command.source_component;
-		_vehicle_command_ack_pub.publish(ack);
+		if (fabsf(command.param1 - 1.f) <= FLT_EPSILON) {
+			target = HybridTarget::Flying;
+
+		} else if (fabsf(command.param1 - 2.f) <= FLT_EPSILON) {
+			target = HybridTarget::Driving;
+		}
+
+		const bool reserved_valid = reserved_parameter_valid(command.param2)
+					    && reserved_parameter_valid(command.param3)
+					    && reserved_parameter_valid(command.param4)
+					    && reserved_parameter_valid(command.param5)
+					    && reserved_parameter_valid(command.param6)
+					    && reserved_parameter_valid(command.param7);
+
+		if (target == HybridTarget::None || !reserved_valid) {
+			_last_command_result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_DENIED;
+			_last_command_reject_reason = target == HybridTarget::None
+						      ? hybrid_vehicle_status_s::REJECT_INVALID_TARGET
+						      : hybrid_vehicle_status_s::REJECT_RESERVED_PARAMETER;
+			_last_command_timestamp = command.timestamp;
+
+			if (command.from_external) {
+				publish_transition_ack(command.command, command.source_system, command.source_component,
+						       _last_command_result, input.now_us);
+			}
+
+			continue;
+		}
+
+		request_transition(target, input.now_us, &command);
 	}
 
 	manual_control_setpoint_s manual{};
@@ -543,12 +566,10 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 			}
 
 			if (switches.transition_switch == manual_control_switches_s::SWITCH_POS_ON) {
-				request_rover = true;
-				request_quad = false;
+				request_transition(HybridTarget::Driving, input.now_us);
 
 			} else {
-				request_quad = true;
-				request_rover = false;
+				request_transition(HybridTarget::Flying, input.now_us);
 			}
 		}
 
@@ -574,39 +595,6 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 		_manual_commissioning_active = false;
 	}
 
-	HybridTarget requested_target = HybridTarget::None;
-
-	if (request_rover) {
-		const bool rover_safe = check_safe_to_transform(true);
-		PX4_INFO("HYBDBG transition-request target=rover safe=%d armed=%d prearmed=%d state=%u fault=%u",
-			 (int)rover_safe, (int)_actuator_armed.armed, (int)_actuator_armed.prearmed,
-			 (unsigned)_transformation_output.state, (unsigned)_transformation_output.fault);
-
-		if (rover_safe) {
-			requested_target = HybridTarget::Driving;
-		}
-
-	} else if (request_quad) {
-		PX4_INFO("HYBDBG transition-request target=quad armed=%d prearmed=%d state=%u fault=%u",
-			 (int)_actuator_armed.armed, (int)_actuator_armed.prearmed,
-			 (unsigned)_transformation_output.state, (unsigned)_transformation_output.fault);
-		requested_target = HybridTarget::Flying;
-	}
-
-	if (requested_target != HybridTarget::None) {
-		_manual_commissioning_active = false;
-
-		const HybridState previous_state = _transformation_output.state;
-		_transformation_output = _transformation.request(requested_target, input.now_us);
-
-		if (_transformation_output.state != previous_state
-		    && (_transformation_output.state == HybridState::TransitionToQuad
-			|| _transformation_output.state == HybridState::TransitionToRover)) {
-			_transition_start_time = input.now_us;
-			_transition_timing_active = true;
-		}
-	}
-
 	TransformationInput state_input = input;
 	state_input.actuator_command_effective = _transformation_config_tracker.active().backend == hybrid_control::ActuatorBackend::Hx8
 		? _hx8_command_policy.motionAcknowledged(_hx8_status.command_sequence, _hx8_status.command_accepted,
@@ -615,6 +603,7 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 	const HybridState previous_state = _transformation_output.state;
 	const TransformFault previous_fault = _transformation_output.fault;
 	_transformation_output = _transformation.update(state_input);
+	update_transition_lifecycle(previous_state, input.now_us);
 
 	const bool first_fault = previous_fault == TransformFault::None
 				 && _transformation_output.fault != TransformFault::None
@@ -641,23 +630,117 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 	}
 }
 
-bool HybridVehicleControl::check_safe_to_transform(bool to_rover)
+void HybridVehicleControl::request_transition(HybridTarget target, hrt_abstime now,
+		const vehicle_command_s *command_context)
 {
-	if (to_rover) {
-		const bool land_detection_fresh = timestamp_fresh(_vehicle_land_detected.timestamp,
-									      hrt_absolute_time(), LAND_DETECTION_TIMEOUT);
-		const bool landed = land_detection_fresh && _vehicle_land_detected.landed;
-		PX4_INFO("HYBDBG land-gate fresh=%d landed=%d maybe=%d timestamp=%llu",
-			 (int)land_detection_fresh, (int)_vehicle_land_detected.landed,
-			 (int)_vehicle_land_detected.maybe_landed,
-			 (unsigned long long)_vehicle_land_detected.timestamp);
+	const bool land_detection_fresh = timestamp_fresh(_vehicle_land_detected.timestamp, now,
+						 LAND_DETECTION_TIMEOUT);
+	PX4_INFO("HYBDBG land-gate target=%s fresh=%d landed=%d maybe=%d timestamp=%llu",
+		 target == HybridTarget::Driving ? "rover" : "quad", (int)land_detection_fresh,
+		 (int)_vehicle_land_detected.landed, (int)_vehicle_land_detected.maybe_landed,
+		 (unsigned long long)_vehicle_land_detected.timestamp);
 
-		if (!landed) {
-			return false;
+	const auto decision = hybrid_control::decideTransition({
+		land_detection_fresh,
+		_vehicle_land_detected.landed,
+		hybrid_control::isTransformationFaulted(_transformation_output),
+		_transformation_output.state,
+		target,
+		_transformation_output.target
+	});
+	_last_command_result = static_cast<uint8_t>(decision.ack_result);
+	_last_command_reject_reason = static_cast<uint8_t>(decision.reject_reason);
+	_last_command_timestamp = command_context != nullptr ? command_context->timestamp : 0;
+
+	if (!decision.start) {
+		if (command_context != nullptr && command_context->from_external) {
+			publish_transition_ack(command_context->command, command_context->source_system,
+					       command_context->source_component, _last_command_result, now);
 		}
+
+		return;
 	}
 
-	return true;
+	const HybridState previous_state = _transformation_output.state;
+	_transformation_output = _transformation.request(decision.target, now);
+	const bool transition_started = _transformation_output.state != previous_state
+					&& (_transformation_output.state == HybridState::TransitionToQuad
+					    || _transformation_output.state == HybridState::TransitionToRover);
+
+	if (!transition_started) {
+		_last_command_result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_FAILED;
+		_last_command_reject_reason = hybrid_vehicle_status_s::REJECT_UNKNOWN_STATE;
+
+		if (command_context != nullptr && command_context->from_external) {
+			publish_transition_ack(command_context->command, command_context->source_system,
+					       command_context->source_component, _last_command_result, now);
+		}
+
+		return;
+	}
+
+	_manual_commissioning_active = false;
+	_transition_start_time = now;
+	_transition_timing_active = true;
+	++_transition_sequence;
+	_transition_command_timestamp = _last_command_timestamp;
+
+	if (command_context != nullptr && command_context->from_external) {
+		_pending_transition_ack = {true, _transition_sequence, command_context->command,
+					   command_context->source_system, command_context->source_component};
+		publish_transition_ack(_pending_transition_ack.command, _pending_transition_ack.target_system,
+				       _pending_transition_ack.target_component,
+				       vehicle_command_ack_s::VEHICLE_CMD_RESULT_IN_PROGRESS, now);
+	}
+}
+
+void HybridVehicleControl::publish_transition_ack(uint32_t command, uint8_t target_system, uint16_t target_component,
+		uint8_t result, hrt_abstime now)
+{
+	vehicle_command_ack_s ack{};
+	ack.timestamp = now;
+	ack.command = command;
+	ack.result = result;
+	ack.result_param2 = _transition_sequence;
+	ack.target_system = target_system;
+	ack.target_component = target_component;
+	_vehicle_command_ack_pub.publish(ack);
+}
+
+void HybridVehicleControl::update_transition_lifecycle(HybridState previous_state, hrt_abstime now)
+{
+	const bool was_transitioning = previous_state == HybridState::TransitionToQuad
+				     || previous_state == HybridState::TransitionToRover;
+
+	if (!was_transitioning) {
+		return;
+	}
+
+	const bool completed = (previous_state == HybridState::TransitionToQuad
+				&& _transformation_output.state == HybridState::Flying)
+			       || (previous_state == HybridState::TransitionToRover
+				   && _transformation_output.state == HybridState::Driving);
+	const bool failed = hybrid_control::isTransformationFaulted(_transformation_output);
+
+	if (!completed && !failed) {
+		return;
+	}
+
+	_last_command_result = completed ? vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED
+			       : vehicle_command_ack_s::VEHICLE_CMD_RESULT_FAILED;
+	_last_command_reject_reason = completed ? hybrid_vehicle_status_s::REJECT_NONE
+				      : hybrid_vehicle_status_s::REJECT_TRANSFORMATION_FAULT;
+	_last_command_timestamp = _transition_command_timestamp;
+
+	if (completed) {
+		_transition_complete_time = now;
+	}
+
+	if (_pending_transition_ack.active && _pending_transition_ack.sequence == _transition_sequence) {
+		publish_transition_ack(_pending_transition_ack.command, _pending_transition_ack.target_system,
+				       _pending_transition_ack.target_component, _last_command_result, now);
+		_pending_transition_ack.active = false;
+	}
 }
 
 void HybridVehicleControl::publish_status(const TransformationInput &input, hrt_abstime now)
@@ -678,6 +761,13 @@ void HybridVehicleControl::publish_status(const TransformationInput &input, hrt_
 	status.actuator_config_verified = input.actuator.config_verified;
 	status.actuator_protection_flags = input.actuator.protection_flags;
 	status.no_progress_elapsed = _transformation_output.no_progress_elapsed_us;
+	status.transition_sequence = _transition_sequence;
+	status.transition_completed_timestamp = _transition_complete_time;
+	status.command_result = _last_command_result;
+	status.command_reject_reason = _last_command_reject_reason;
+	status.command_timestamp = _last_command_timestamp;
+	status.landed = _vehicle_land_detected.landed;
+	status.land_detection_fresh = timestamp_fresh(_vehicle_land_detected.timestamp, now, LAND_DETECTION_TIMEOUT);
 	const bool transformation_faulted = hybrid_control::isTransformationFaulted(_transformation_output);
 
 	if (_manual_commissioning_active && !transformation_faulted) {
@@ -837,8 +927,10 @@ void HybridVehicleControl::publish_motor_outputs(hrt_abstime now)
 	const bool transformation_faulted = hybrid_control::isTransformationFaulted(_transformation_output);
 	const bool position_safe = hybrid_control::stablePositionSafe(_transformation_output,
 				  _transformation_config_tracker.active().sensors_enabled);
-	const bool mc_fresh = hybrid_control::commandTimestampFresh(_mc_motors.timestamp, now, 100_ms);
-	const bool rover_fresh = hybrid_control::commandTimestampFresh(_rover_motors.timestamp, now, 100_ms);
+	const bool mc_fresh = hybrid_control::commandTimestampFresh(_mc_motors.timestamp, now, 100_ms)
+			      && hybrid_control::offboardInputFreshAfter(_mc_motors.timestamp, _transition_complete_time, now);
+	const bool rover_fresh = hybrid_control::commandTimestampFresh(_rover_motors.timestamp, now, 100_ms)
+				 && hybrid_control::offboardInputFreshAfter(_rover_motors.timestamp, _transition_complete_time, now);
 
 	if (!transformation_faulted && position_safe && !_manual_commissioning_active && mc_fresh
 	    && _transformation_output.state == HybridState::Flying) {

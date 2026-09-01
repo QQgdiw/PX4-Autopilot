@@ -170,3 +170,21 @@ This directory records the status of testing for `debug/testc1-v1.16.1`.
   `d0c8642d51886f13f75a07f0f911e1943a4a96dbe51b92befd16bc786cecc981` and
   the `.bin` SHA-256 is
   `88ce13b7eaf91f111e70f551336169d7b4145cf1c73f6512f7c5d507de4d7708`.
+- The testc2 integration preserves the testc1 CAN/M2006/HX8 implementation and
+  uses the tested `manual_control_switches` transition edge path. It adds the
+  independent MAV type 200, command 50000, message 60000, Mission lifecycle,
+  shape-specific mode routing, and exact-one-bit `rover_velocity` DDS input.
+- The testc2-stage MAVLink gitlink is
+  `3b84efb97a7c0b4767868e8725bd6902c0d884e8`. The merged hybrid target uses
+  `hybrid_vehicle`, builds at 1,879,496 / 1,966,080 FLASH bytes (95.60%), and
+  has `.px4` SHA-256
+  `eccfb72fcabbb0b7aa56f115d8a83f1fd16d2282dd49922903d3faa29fb40c4a`;
+  the `.bin` SHA-256 is
+  `7c53292714b73184fd305f3e780cafd457e9b7560d1bd652e6966c763da1ff06`.
+- All 166 CTest cases pass after correcting a pre-existing near-pi test
+  expectation to the continuous normalized value `0.1 / 180`; the production
+  normalization algorithm was unchanged. The Rover yaw-rate target is no
+  longer filtered by `RO_YAW_RATE_TH`; only measured gyro noise is filtered.
+- All 39 affected C/C++ files were run through project AStyle and then forced
+  to rebuild despite AStyle's preserved mtimes. The final incremental hybrid
+  rebuild and 166/166 test run both pass.

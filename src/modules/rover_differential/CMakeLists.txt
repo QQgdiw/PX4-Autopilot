@@ -36,6 +36,9 @@ add_subdirectory(DifferentialAttControl)
 add_subdirectory(DifferentialVelControl)
 add_subdirectory(DifferentialPosControl)
 
+px4_add_functional_gtest(SRC DifferentialOffboardControlTest.cpp
+	LINKLIBS DifferentialVelControl DifferentialRateControl rover_control)
+
 px4_add_module(
 	MODULE modules__rover_differential
 	MAIN rover_differential

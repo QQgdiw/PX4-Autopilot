@@ -77,20 +77,27 @@ private:
 		if (_status_sub.copy(&status)) {
 			updated = true;
 
-			if (status.is_vtol) {
-				if (!status.in_transition_mode && status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING) {
-					_msg.vtol_state = MAV_VTOL_STATE_MC;
+#if defined(MAVLINK_MSG_ID_HYBRID_VEHICLE_STATUS)
 
-				} else if (!status.in_transition_mode) {
-					_msg.vtol_state = MAV_VTOL_STATE_FW;
+			if (_mavlink->get_system_type() == MAV_TYPE_QUAD_ROVER) {
+				_msg.vtol_state = MAV_VTOL_STATE_UNDEFINED;
 
-				} else if (status.in_transition_mode && status.in_transition_to_fw) {
-					_msg.vtol_state = MAV_VTOL_STATE_TRANSITION_TO_FW;
+			} else
+#endif
+				if (status.is_vtol) {
+					if (!status.in_transition_mode && status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING) {
+						_msg.vtol_state = MAV_VTOL_STATE_MC;
 
-				} else if (status.in_transition_mode) {
-					_msg.vtol_state = MAV_VTOL_STATE_TRANSITION_TO_MC;
+					} else if (!status.in_transition_mode) {
+						_msg.vtol_state = MAV_VTOL_STATE_FW;
+
+					} else if (status.in_transition_mode && status.in_transition_to_fw) {
+						_msg.vtol_state = MAV_VTOL_STATE_TRANSITION_TO_FW;
+
+					} else if (status.in_transition_mode) {
+						_msg.vtol_state = MAV_VTOL_STATE_TRANSITION_TO_MC;
+					}
 				}
-			}
 		}
 
 		vehicle_land_detected_s land_detected;

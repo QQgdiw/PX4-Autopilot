@@ -48,3 +48,21 @@ bool actuator_healthy
 bool actuator_config_verified
 uint8 actuator_protection_flags
 uint64 no_progress_elapsed
+
+uint8 COMMAND_RESULT_NONE = 255
+uint8 REJECT_NONE = 0
+uint8 REJECT_INVALID_TARGET = 1
+uint8 REJECT_RESERVED_PARAMETER = 2
+uint8 REJECT_NOT_LANDED = 3
+uint8 REJECT_LAND_DETECTOR_STALE = 4
+uint8 REJECT_OPPOSITE_TRANSITION = 5
+uint8 REJECT_TRANSFORMATION_FAULT = 6
+uint8 REJECT_UNKNOWN_STATE = 7
+
+uint32 transition_sequence
+uint64 transition_completed_timestamp
+uint8 command_result
+uint8 command_reject_reason
+bool landed
+bool land_detection_fresh
+uint64 command_timestamp # timestamp of the vehicle_command whose result is reported

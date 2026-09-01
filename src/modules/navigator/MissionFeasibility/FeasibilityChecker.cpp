@@ -36,6 +36,7 @@
 #include <px4_platform_common/events.h>
 #include <drivers/drv_pwm_output.h>
 #include "../mission_block.h"
+#include "../HybridTransitionMission.hpp"
 #include <lib/mathlib/mathlib.h>
 #include <lib/geo/geo.h>
 
@@ -228,6 +229,16 @@ void FeasibilityChecker::doMulticopterChecks(mission_item_s &mission_item, const
 
 bool FeasibilityChecker::checkMissionItemValidity(mission_item_s &mission_item, const int current_index)
 {
+	if (mission_item.nav_cmd == NAV_CMD_DO_HYBRID_TRANSITION
+	    && !hybridTransitionMissionParametersValid(mission_item.params)) {
+		mavlink_log_critical(_mavlink_log_pub, "Mission rejected: item %i: invalid hybrid transition parameters\t",
+				     current_index + 1);
+		events::send<uint16_t>(events::ID("navigator_mis_invalid_hybrid_transition"),
+		{events::Log::Error, events::LogInternal::Warning},
+		"Mission rejected: item {1}: invalid hybrid transition parameters", current_index + 1);
+		return false;
+	}
+
 	/* reject relative alt without home set */
 	if (mission_item.altitude_is_relative && !PX4_ISFINITE(_home_alt_msl)
 	    && MissionBlock::item_contains_position(mission_item)) {
@@ -284,7 +295,8 @@ bool FeasibilityChecker::checkMissionItemValidity(mission_item_s &mission_item, 
 	    mission_item.nav_cmd != NAV_CMD_SET_CAMERA_SOURCE &&
 	    mission_item.nav_cmd != NAV_CMD_SET_CAMERA_ZOOM &&
 	    mission_item.nav_cmd != NAV_CMD_SET_CAMERA_FOCUS &&
-	    mission_item.nav_cmd != NAV_CMD_DO_VTOL_TRANSITION) {
+	    mission_item.nav_cmd != NAV_CMD_DO_VTOL_TRANSITION &&
+	    mission_item.nav_cmd != NAV_CMD_DO_HYBRID_TRANSITION) {
 
 		mavlink_log_critical(_mavlink_log_pub, "Mission rejected: item %i: unsupported cmd: %d\t",
 				     (int)(current_index + 1),
@@ -370,7 +382,8 @@ bool FeasibilityChecker::checkTakeoff(mission_item_s &mission_item)
 					     mission_item.nav_cmd != NAV_CMD_SET_CAMERA_SOURCE &&
 					     mission_item.nav_cmd != NAV_CMD_SET_CAMERA_ZOOM &&
 					     mission_item.nav_cmd != NAV_CMD_SET_CAMERA_FOCUS &&
-					     mission_item.nav_cmd != NAV_CMD_DO_VTOL_TRANSITION);
+					     mission_item.nav_cmd != NAV_CMD_DO_VTOL_TRANSITION &&
+					     mission_item.nav_cmd != NAV_CMD_DO_HYBRID_TRANSITION);
 	}
 
 	return true;

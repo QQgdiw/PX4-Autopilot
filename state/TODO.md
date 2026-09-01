@@ -315,13 +315,13 @@
       `debug/testc1-v1.16.1` working state on a
       new `testc3_v1.16.1` checkpoint branch and push it without modifying the
       original remote `testc1_v1.16.1`.
-- [ ] Create an independent `debug/testc4_v1.16.1` worktree from the identical
+- [x] Create an independent `debug/testc4_v1.16.1` worktree from the identical
       checkpoint and publish remote `testc4_v1.16.1`.
-- [ ] Semantically merge `origin/testc2_v1.16.1` at fixed commit
+- [x] Semantically merge and validate `origin/testc2_v1.16.1` at fixed commit
       `82478dbdf26540c7b8719f44cd07dcff1fb66b83`, preserving testc1 hardware
       behavior and testc2 independent Hybrid protocol/control behavior.
 - [ ] In a second independent worktree, migrate the Differential Rover tuning
       uORB/MAVLink streams and bounded stream-configuration lifecycle from
       `fix/mini-rover-mavlink-stream-config` without importing the mini board.
-- [ ] Run relevant unit tests, isolated-PATH `make tests`, `git diff --check`,
+- [ ] After Rover tuning migration, rerun relevant unit tests, isolated-PATH `make tests`, `git diff --check`,
       and serial `make zeroone_x6_hybrid`; record artifacts and residual risks.

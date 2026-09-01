@@ -71,6 +71,7 @@ px4_add_module(
 		geo
 		health_and_arming_checks
 		hysteresis
+		hybrid_control
 		mode_util
 		MulticopterThrowLaunch
 		sensor_calibration
@@ -79,8 +80,8 @@ px4_add_module(
 	)
 
 px4_add_unit_gtest(SRC mag_calibration_test.cpp LINKLIBS modules__commander)
-px4_add_functional_gtest(SRC ModeManagementTest.cpp LINKLIBS modules__commander)
-px4_add_unit_gtest(SRC CommanderHybridStatusTest.cpp)
+px4_add_functional_gtest(SRC ModeManagementTest.cpp LINKLIBS modules__commander hybrid_control)
+px4_add_unit_gtest(SRC CommanderHybridStatusTest.cpp LINKLIBS hybrid_control)
 
 if(BUILD_TESTING)
 	add_dependencies(unit-CommanderHybridStatus uorb_headers)

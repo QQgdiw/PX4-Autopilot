@@ -875,3 +875,28 @@
   `git diff --check`, `python3 -m py_compile rover_ulog_plot.py`, and
   `make zeroone_x6_hybrid` passed. Build output is recorded in
   `state/build_testc3_checkpoint.log`.
+- The testc2 merge had four textual conflicts. Hybrid/Commander CMake keeps
+  both testc1 hardware tests and testc2 policy links/tests. Hybrid control keeps
+  testc1 airborne-HX8 hold, startup probes, and `manual_control_switches`, while
+  all RC/Mission/MAVLink requests now enter testc2's single landed-policy and
+  ACK/sequence/epoch lifecycle. The header keeps both diagnostic and protocol
+  state with one land-detection cache.
+- The merge-generated UAVCAN-to-`mavlink_c` cross-directory link exposed a
+  CMake configuration failure because generated headers were propagated as
+  `INTERFACE_SOURCES`. `mavlink_c` now explicitly depends on both generator
+  targets and exports only options/definitions/include paths; message 60000 is
+  generated and the hybrid target links successfully.
+- `test/hybrid_quad_rover_contract.sh` passed. Isolated-Linux-PATH `make tests`
+  initially passed 165/166; the sole failure expected exact zero for a position
+  0.1 degrees into a 180-degree span. After correcting the test expectation to
+  `0.1 / 180`, the focused test and all 166 CTest cases passed. Build and test
+  evidence is in `state/build_testc2_merge.log`,
+  `state/test_testc2_merge.log`, `state/test_transformation_position_fix.log`,
+  and `state/ctest_testc2_merge_rerun.log`.
+- Project AStyle formatted the affected source set. Because AStyle preserves
+  mtimes, a first Ninja invocation only rebuilt the version header and was not
+  accepted as evidence; all affected source mtimes were explicitly refreshed,
+  producing a 353-step hybrid rebuild and a rebuilt 166/166 test run. Final
+  evidence is in `state/astyle_testc2_merge.log`,
+  `state/build_testc2_merge_final.log`, and
+  `state/test_testc2_merge_final.log`.

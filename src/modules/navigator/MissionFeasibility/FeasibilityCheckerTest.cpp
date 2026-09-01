@@ -35,6 +35,8 @@
 #include "FeasibilityChecker.hpp"
 #include <lib/geo/geo.h>
 
+#include <limits>
+
 
 // to run: make tests TESTFILTER=FeasibilityChecker
 class FeasibilityCheckerTest : public ::testing::Test
@@ -141,6 +143,37 @@ TEST_F(FeasibilityCheckerTest, mission_item_validity)
 
 	// home alt is not valid but we have a relative mission item, should fail immediately
 	ASSERT_EQ(ret, false);
+}
+
+TEST_F(FeasibilityCheckerTest, hybrid_transition_requires_exact_target_and_zero_reserved_parameters)
+{
+	TestFeasibilityChecker checker;
+	mission_item_s mission_item{};
+	mission_item.nav_cmd = NAV_CMD_DO_HYBRID_TRANSITION;
+	mission_item.params[0] = 1.;
+
+	EXPECT_TRUE(checker.processNextItem(mission_item, 0, 1));
+
+	for (const double target : {
+		     0., 1.5, 3., std::numeric_limits<double>::quiet_NaN(),
+		     std::numeric_limits<double>::infinity()
+	     }) {
+		mission_item.params[0] = target;
+		EXPECT_FALSE(checker.processNextItem(mission_item, 0, 1));
+	}
+
+	mission_item.params[0] = 2.;
+
+	for (size_t index = 1; index < 7; ++index) {
+		for (const double reserved : {
+			     0.25, -1., std::numeric_limits<double>::quiet_NaN(),
+			     std::numeric_limits<double>::infinity()
+		     }) {
+			mission_item.params[index] = reserved;
+			EXPECT_FALSE(checker.processNextItem(mission_item, 0, 1));
+			mission_item.params[index] = 0.;
+		}
+	}
 }
 
 TEST_F(FeasibilityCheckerTest, check_dist_first_waypoint)

@@ -1,0 +1,10 @@
+[1/2] Building CXX object src/lib/hybrid_control/CMakeFiles/unit-TransformationPosition.dir/TransformationPositionTest.cpp.o
+[2/2] Linking CXX executable unit-TransformationPosition
+Internal ctest changing into directory: /home/crocodile/PX4-Autopilot-debug-testc4-v1.16.1/build/px4_sitl_test
+Test project /home/crocodile/PX4-Autopilot-debug-testc4-v1.16.1/build/px4_sitl_test
+    Start 15: unit-TransformationPosition
+1/1 Test #15: unit-TransformationPosition ......   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.01 sec

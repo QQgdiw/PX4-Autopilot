@@ -53,6 +53,8 @@
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/vtol_vehicle_status.h>
 
+#include "HybridTransitionMission.hpp"
+
 using matrix::wrap_pi;
 
 MissionBlock::MissionBlock(Navigator *navigator, uint8_t navigator_state_id) :
@@ -120,6 +122,44 @@ MissionBlock::is_mission_item_reached_or_completed()
 		} else {
 			// invalid vtol transition request
 			return false;
+		}
+
+	case NAV_CMD_DO_HYBRID_TRANSITION: {
+			_hybrid_status_sub.update();
+			const hybrid_vehicle_status_s &status = _hybrid_status_sub.get();
+			const uint8_t target = hybridTransitionMissionTarget(_mission_item.params[0]);
+			const bool status_fresh = hybridTransitionMissionStatusFresh(status, now);
+
+			if (status_fresh && status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT) {
+				if (!_navigator->get_mission_result()->failure) {
+					_navigator->get_mission_result()->failure = true;
+					_navigator->set_mission_result_updated();
+					mavlink_log_critical(_navigator->get_mavlink_log_pub(), "Hybrid transition mission item failed\t");
+				}
+
+				return false;
+			}
+
+			const HybridTransitionMissionOutcome outcome = hybridTransitionMissionOutcome(
+						_hybrid_transition_activation.commandTimestamp(), status);
+
+			if (status_fresh && outcome == HybridTransitionMissionOutcome::Failed) {
+				if (!_navigator->get_mission_result()->failure) {
+					_navigator->get_mission_result()->failure = true;
+					_navigator->set_mission_result_updated();
+					mavlink_log_critical(_navigator->get_mavlink_log_pub(), "Hybrid transition command rejected\t");
+				}
+
+				return false;
+			}
+
+			if (!status_fresh || outcome != HybridTransitionMissionOutcome::AwaitStableState) {
+				return false;
+			}
+
+			const bool fresh_transition = status.transition_sequence > _hybrid_transition_activation.sequenceSnapshot();
+			return (_hybrid_transition_activation.alreadyStable() || fresh_transition)
+			       && hybridTransitionMissionReached(_hybrid_transition_activation.sequenceSnapshot(), target, status);
 		}
 
 	case NAV_CMD_VTOL_TAKEOFF:
@@ -514,8 +554,11 @@ MissionBlock::reset_mission_item_reached()
 }
 
 void
-MissionBlock::issue_command(const mission_item_s &item)
+MissionBlock::issue_command(const mission_item_s &item, HybridTransitionMissionItemKey key)
 {
+	uint32_t sequence_snapshot = 0;
+	bool already_stable = false;
+
 	if (item_contains_position(item)
 	    || item_contains_gate(item)
 	    || item_contains_marker(item)) {
@@ -525,6 +568,19 @@ MissionBlock::issue_command(const mission_item_s &item)
 	// This is to support legacy DO_MOUNT_CONTROL as part of a mission.
 	if (item.nav_cmd == NAV_CMD_DO_MOUNT_CONTROL) {
 		_navigator->acquire_gimbal_control();
+	}
+
+	if (item.nav_cmd == NAV_CMD_DO_HYBRID_TRANSITION) {
+		if (!_hybrid_transition_activation.shouldIssue(key)) {
+			return;
+		}
+
+		_hybrid_status_sub.update();
+		const hybrid_vehicle_status_s &status = _hybrid_status_sub.get();
+		const uint8_t target = hybridTransitionMissionTarget(item.params[0]);
+		already_stable = hybridTransitionMissionStatusFresh(status, hrt_absolute_time())
+				 && hybridTransitionMissionReached(status.transition_sequence, target, status);
+		sequence_snapshot = status.transition_sequence;
 	}
 
 	// Mission item's NAV_CMD enums directly map to the according vehicle command
@@ -538,6 +594,7 @@ MissionBlock::issue_command(const mission_item_s &item)
 	vehicle_command.param5 = static_cast<double>(item.params[4]);
 	vehicle_command.param6 = static_cast<double>(item.params[5]);
 	vehicle_command.param7 = item.params[6];
+	vehicle_command.from_external = false;
 
 	if (item.nav_cmd == NAV_CMD_DO_SET_ROI_LOCATION) {
 		// We need to send out the ROI location that was parsed potentially with double precision to lat/lon because mission item parameters 5 and 6 only have float precision
@@ -550,6 +607,10 @@ MissionBlock::issue_command(const mission_item_s &item)
 	}
 
 	_navigator->publish_vehicle_command(vehicle_command);
+
+	if (item.nav_cmd == NAV_CMD_DO_HYBRID_TRANSITION) {
+		_hybrid_transition_activation.recordIssued(sequence_snapshot, already_stable, vehicle_command.timestamp);
+	}
 
 	if (item_has_timeout(item)) {
 		_timestamp_command_timeout = hrt_absolute_time();
@@ -998,6 +1059,7 @@ void MissionBlock::updateAltToAvoidTerrainCollisionAndRepublishTriplet(mission_i
 
 	if (_navigator->get_nav_min_gnd_dist_param() > FLT_EPSILON && _mission_item.nav_cmd != NAV_CMD_LAND
 	    && _mission_item.nav_cmd != NAV_CMD_VTOL_LAND && _mission_item.nav_cmd != NAV_CMD_DO_VTOL_TRANSITION
+	    && _mission_item.nav_cmd != NAV_CMD_DO_HYBRID_TRANSITION
 	    && _mission_item.nav_cmd != NAV_CMD_IDLE
 	    && _navigator->get_local_position()->dist_bottom_valid
 	    && _navigator->get_local_position()->dist_bottom < _navigator->get_nav_min_gnd_dist_param()

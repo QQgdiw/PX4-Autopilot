@@ -48,6 +48,7 @@
 #include <lib/hybrid_control/TransformationStateMachine.hpp>
 #include <lib/hybrid_control/M2006DriveGate.hpp>
 #include <lib/hybrid_control/Hx8BackendPolicy.hpp>
+#include <lib/hybrid_control/HybridTransitionPolicy.hpp>
 #include <uORB/SubscriptionMultiArray.hpp>
 
 // uORB 发布与订阅
@@ -105,12 +106,11 @@ private:
 	int clear_fault();
 	bool selected_feedback_fresh(hrt_abstime now, const hybrid_control::TransformationConfig &config) const;
 	bool transformation_pwm_command_effective() const;
-
-	/**
-	 * 检查变形条件是否安全 (例如: 必须贴地才能变形为车)
-	 * @return true 如果允许变形
-	 */
-	bool check_safe_to_transform(bool to_rover);
+	void request_transition(hybrid_control::HybridTarget target, hrt_abstime now,
+				const vehicle_command_s *command_context = nullptr);
+	void publish_transition_ack(uint32_t command, uint8_t target_system, uint16_t target_component,
+				    uint8_t result, hrt_abstime now);
+	void update_transition_lifecycle(hybrid_control::HybridState previous_state, hrt_abstime now);
 
 	// === uORB 订阅 (获取系统状态与遥控器输入) ===
 	uORB::Subscription _actuator_armed_sub{ORB_ID(actuator_armed)};
@@ -166,8 +166,21 @@ private:
 	uint32_t _startup_probe_hx8_sequence{0};
 	bool _startup_probe_first_rc_logged{false};
 	bool _startup_probe_fault_logged{false};
-	actuator_armed_s _actuator_armed{};
+	uint32_t _transition_sequence{0};
+	hrt_abstime _transition_complete_time{0};
+	uint8_t _last_command_result{hybrid_vehicle_status_s::COMMAND_RESULT_NONE};
+	uint8_t _last_command_reject_reason{hybrid_vehicle_status_s::REJECT_NONE};
+	uint64_t _last_command_timestamp{0};
+	uint64_t _transition_command_timestamp{0};
 	vehicle_land_detected_s _vehicle_land_detected{};
+	struct PendingTransitionAck {
+		bool active{false};
+		uint32_t sequence{0};
+		uint32_t command{0};
+		uint8_t target_system{0};
+		uint16_t target_component{0};
+	} _pending_transition_ack{};
+	actuator_armed_s _actuator_armed{};
 	hx8_servo_status_s _hx8_status{};
 	uint32_t _hx8_sequence{0};
 	hybrid_control::HybridTarget _hx8_last_target{hybrid_control::HybridTarget::None};
@@ -208,16 +221,16 @@ private:
 		(ParamInt<px4::params::HYB_MAG_ID_ROV>) 	_param_hyb_mag_id_rov,
 		(ParamFloat<px4::params::HYB_MAG_THR_QUD>) 	_param_hyb_mag_thr_qud,
 		(ParamFloat<px4::params::HYB_MAG_THR_ROV>) 	_param_hyb_mag_thr_rov
-		,(ParamInt<px4::params::HYB_ACT_TYPE>) _param_hyb_act_type
-		,(ParamFloat<px4::params::HYB_STALL_T>) _param_hyb_stall_t
-		,(ParamFloat<px4::params::HYB_STALL_D>) _param_hyb_stall_d
-		,(ParamInt<px4::params::HX8_ID>) _param_hx8_id
-		,(ParamFloat<px4::params::HX8_ANG_QUD>) _param_hx8_ang_qud
-		,(ParamFloat<px4::params::HX8_ANG_ROV>) _param_hx8_ang_rov
-		,(ParamInt<px4::params::HX8_MOVE_T>) _param_hx8_move_t
-		,(ParamInt<px4::params::HX8_ACC_T>) _param_hx8_acc_t
-		,(ParamInt<px4::params::HX8_DEC_T>) _param_hx8_dec_t
-		,(ParamInt<px4::params::HX8_PWR_LIM>) _param_hx8_pwr_lim
+		, (ParamInt<px4::params::HYB_ACT_TYPE>) _param_hyb_act_type
+		, (ParamFloat<px4::params::HYB_STALL_T>) _param_hyb_stall_t
+		, (ParamFloat<px4::params::HYB_STALL_D>) _param_hyb_stall_d
+		, (ParamInt<px4::params::HX8_ID>) _param_hx8_id
+		, (ParamFloat<px4::params::HX8_ANG_QUD>) _param_hx8_ang_qud
+		, (ParamFloat<px4::params::HX8_ANG_ROV>) _param_hx8_ang_rov
+		, (ParamInt<px4::params::HX8_MOVE_T>) _param_hx8_move_t
+		, (ParamInt<px4::params::HX8_ACC_T>) _param_hx8_acc_t
+		, (ParamInt<px4::params::HX8_DEC_T>) _param_hx8_dec_t
+		, (ParamInt<px4::params::HX8_PWR_LIM>) _param_hx8_pwr_lim
 	)
 };
 

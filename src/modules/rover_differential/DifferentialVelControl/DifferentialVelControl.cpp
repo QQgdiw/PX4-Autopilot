@@ -63,13 +63,32 @@ void DifferentialVelControl::updateVelControl()
 	_dt = math::constrain(_timestamp - timestamp_prev, 1_ms, 5000_ms) * 1e-6f;
 
 	updateSubscriptions();
+	const bool rover_velocity_control_active = roverVelocityControlActive();
 
-	if ((_vehicle_control_mode.flag_control_velocity_enabled) && _vehicle_control_mode.flag_armed && runSanityChecks()) {
-		if (_vehicle_control_mode.flag_control_offboard_enabled) { // Offboard Velocity Control
-			generateVelocitySetpoint();
+	if (rover_velocity_control_active && _vehicle_control_mode.flag_armed) {
+		const bool sanity_checks_passed = runSanityChecks();
+
+		if (_vehicle_control_mode.flag_control_velocity_enabled && sanity_checks_passed && roverVelocityInputValid()) {
+			generateThrottleSetpoint(_rover_velocity_setpoint.speed_body_x);
+
+		} else {
+			stopRoverVelocityControl();
 		}
 
-		generateAttitudeAndThrottleSetpoint();
+	} else if (_vehicle_control_mode.flag_control_velocity_enabled && _vehicle_control_mode.flag_armed) {
+		const bool sanity_checks_passed = runSanityChecks();
+
+		if (sanity_checks_passed) {
+			if (_vehicle_control_mode.flag_control_offboard_enabled) { // Offboard Velocity Control
+				generateVelocitySetpoint();
+			}
+
+			generateAttitudeAndThrottleSetpoint();
+
+		} else {
+			_pid_speed.resetIntegral();
+			_speed_setpoint.setForcedValue(0.f);
+		}
 
 	} else { // Reset controller and slew rate when velocity control is not active
 		_pid_speed.resetIntegral();
@@ -109,16 +128,28 @@ void DifferentialVelControl::updateSubscriptions()
 		_vehicle_speed_body_y = fabsf(velocity_in_body_frame(1)) > _param_ro_speed_th.get() ? velocity_in_body_frame(1) : 0.f;
 	}
 
+	if (_offboard_control_mode_sub.updated()) {
+		_offboard_control_mode_sub.copy(&_offboard_control_mode);
+	}
+
+	if (_rover_velocity_setpoint_sub.updated()) {
+		_rover_velocity_setpoint_sub.copy(&_rover_velocity_setpoint);
+	}
+
+	if (_hybrid_vehicle_status_sub.updated()) {
+		_hybrid_vehicle_status_sub.copy(&_hybrid_vehicle_status);
+	}
+
+	if (_vehicle_status_sub.updated()) {
+		_vehicle_status_sub.copy(&_vehicle_status);
+	}
+
 }
 
 void DifferentialVelControl::generateVelocitySetpoint()
 {
 	trajectory_setpoint_s trajectory_setpoint{};
 	_trajectory_setpoint_sub.copy(&trajectory_setpoint);
-
-	if (_offboard_control_mode_sub.updated()) {
-		_offboard_control_mode_sub.copy(&_offboard_control_mode);
-	}
 
 	const bool offboard_vel_control = _offboard_control_mode.velocity && !_offboard_control_mode.position;
 
@@ -161,19 +192,27 @@ void DifferentialVelControl::generateAttitudeAndThrottleSetpoint()
 		speed_body_x_setpoint = math::constrain(_differential_velocity_setpoint.speed, -_param_ro_speed_limit.get(),
 							_param_ro_speed_limit.get());
 
-		const float speed_body_x_setpoint_normalized = math::interpolate<float>(speed_body_x_setpoint,
-				-_param_ro_max_thr_speed.get(), _param_ro_max_thr_speed.get(), -1.f, 1.f);
+	}
 
-		if (_rover_steering_setpoint_sub.updated()) {
-			_rover_steering_setpoint_sub.copy(&_rover_steering_setpoint);
-		}
+	generateThrottleSetpoint(speed_body_x_setpoint);
+}
 
-		if (fabsf(speed_body_x_setpoint_normalized) > 1.f - fabsf(
-			    _rover_steering_setpoint.normalized_speed_diff)) { // Adjust speed setpoint if it is infeasible due to the desired speed difference of the left/right wheels
-			speed_body_x_setpoint = math::interpolate<float>(sign(speed_body_x_setpoint_normalized) * (1.f - fabsf(
-							_rover_steering_setpoint.normalized_speed_diff)), -1.f, 1.f,
-						- _param_ro_max_thr_speed.get(), _param_ro_max_thr_speed.get());
-		}
+void DifferentialVelControl::generateThrottleSetpoint(float speed_body_x_setpoint)
+{
+	speed_body_x_setpoint = math::constrain(speed_body_x_setpoint, -_param_ro_speed_limit.get(),
+						_param_ro_speed_limit.get());
+	const float speed_body_x_setpoint_normalized = math::interpolate<float>(speed_body_x_setpoint,
+			-_param_ro_max_thr_speed.get(), _param_ro_max_thr_speed.get(), -1.f, 1.f);
+
+	if (_rover_steering_setpoint_sub.updated()) {
+		_rover_steering_setpoint_sub.copy(&_rover_steering_setpoint);
+	}
+
+	if (fabsf(speed_body_x_setpoint_normalized) > 1.f - fabsf(
+		    _rover_steering_setpoint.normalized_speed_diff)) { // Adjust an infeasible speed demand for the steering demand.
+		speed_body_x_setpoint = math::interpolate<float>(sign(speed_body_x_setpoint_normalized) * (1.f - fabsf(
+						_rover_steering_setpoint.normalized_speed_diff)), -1.f, 1.f,
+					- _param_ro_max_thr_speed.get(), _param_ro_max_thr_speed.get());
 	}
 
 	rover_throttle_setpoint_s rover_throttle_setpoint{};
@@ -183,6 +222,56 @@ void DifferentialVelControl::generateAttitudeAndThrottleSetpoint()
 			_param_ro_max_thr_speed.get(), _dt);
 	rover_throttle_setpoint.throttle_body_y = 0.f;
 	_rover_throttle_setpoint_pub.publish(rover_throttle_setpoint);
+
+}
+
+void DifferentialVelControl::stopRoverVelocityControl()
+{
+	_pid_speed.resetIntegral();
+	_speed_setpoint.setForcedValue(0.f);
+
+	rover_throttle_setpoint_s rover_throttle_setpoint{};
+	rover_throttle_setpoint.timestamp = _timestamp;
+	rover_throttle_setpoint.throttle_body_x = 0.f;
+	rover_throttle_setpoint.throttle_body_y = 0.f;
+	_rover_throttle_setpoint_pub.publish(rover_throttle_setpoint);
+}
+
+bool DifferentialVelControl::roverVelocityControlActive() const
+{
+	const bool legacy_velocity_control_active = _vehicle_control_mode.flag_control_velocity_enabled
+			&& !_vehicle_control_mode.flag_control_position_enabled
+			&& !_vehicle_control_mode.flag_control_altitude_enabled
+			&& !_vehicle_control_mode.flag_control_climb_rate_enabled
+			&& !_vehicle_control_mode.flag_control_acceleration_enabled
+			&& !_vehicle_control_mode.flag_control_attitude_enabled
+			&& _vehicle_control_mode.flag_control_rates_enabled
+			&& _vehicle_control_mode.flag_control_allocation_enabled;
+
+	return roverVelocityDedicatedControlRequired(_vehicle_status.is_quad_rover,
+			_vehicle_control_mode.flag_control_offboard_enabled, _offboard_control_mode.rover_velocity,
+			legacy_velocity_control_active);
+}
+
+bool DifferentialVelControl::roverVelocityInputValid() const
+{
+	const hrt_abstime maximum_age = static_cast<hrt_abstime>(_param_com_of_loss_t.get() * 1_s);
+	const RoverVelocityOffboardMode mode{_offboard_control_mode.timestamp,
+					     _offboard_control_mode.position, _offboard_control_mode.velocity, _offboard_control_mode.acceleration,
+					     _offboard_control_mode.attitude, _offboard_control_mode.body_rate,
+					     _offboard_control_mode.thrust_and_torque, _offboard_control_mode.direct_actuator,
+					     _offboard_control_mode.rover_velocity};
+	const RoverVelocityDrivingStatus status{_hybrid_vehicle_status.timestamp,
+						_hybrid_vehicle_status.transition_completed_timestamp,
+						_hybrid_vehicle_status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING,
+						_hybrid_vehicle_status.fault_reason == hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE};
+	const RoverVelocityOffboardInput input{_rover_velocity_setpoint.timestamp,
+					       _rover_velocity_setpoint.speed_body_x, _rover_velocity_setpoint.yaw_rate};
+	const bool driving_healthy = roverDrivingStatusUsable(status, _timestamp, 1_s);
+
+	return roverVelocityModeUsable(mode, _timestamp, maximum_age)
+	       && roverVelocityInputUsable(input, status.transition_completed_timestamp, _timestamp, maximum_age,
+					   driving_healthy);
 
 }
 

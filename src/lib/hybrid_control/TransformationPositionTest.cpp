@@ -65,7 +65,7 @@ TEST(TransformationPosition, TmagCacheRejectsEveryNonFiniteAxis)
 TEST(TransformationPosition, PwmCommandEffectiveMatchesServoPublicationEligibility)
 {
 	TransformationOutput output{HybridState::TransitionToRover, HybridTarget::Driving, SensorSource::None,
-		TransformFault::None, false, true, 0.8f};
+				    TransformFault::None, false, true, 0.8f};
 
 	EXPECT_TRUE(transformationPwmCommandEffective(ActuatorBackend::Pwm, output,
 			false, true, false, false, false, false));
@@ -136,7 +136,7 @@ TEST(TransformationPosition, PreservesDirectedSideOfNearPiEndpoint)
 
 	// The Rover endpoint is +180 degrees along the configured direction.
 	EXPECT_NEAR(normalizeAs5600(95.1f * deg, -85.f * deg, 95.f * deg), 1.f, 1e-5f);
-	EXPECT_NEAR(normalizeAs5600(-84.9f * deg, -85.f * deg, 95.f * deg), 0.f, 1e-5f);
+	EXPECT_NEAR(normalizeAs5600(-84.9f * deg, -85.f * deg, 95.f * deg), 0.1f / 180.f, 1e-5f);
 
 	// Preserve the opposite direction as well.
 	EXPECT_NEAR(normalizeAs5600(-95.1f * deg, 85.f * deg, -95.f * deg), 1.f, 1e-5f);
@@ -175,7 +175,7 @@ TEST(TransformationPosition, TmagRatioRejectsInvalidInput)
 	EXPECT_TRUE(std::isnan(zero.normalized));
 
 	auto nonfinite = filter.update({std::numeric_limits<float>::infinity(), 0.f, 0.f}, {1.f, 0.f, 0.f},
-					true, true, false, 2);
+				       true, true, false, 2);
 	EXPECT_FALSE(nonfinite.valid);
 	EXPECT_TRUE(std::isnan(nonfinite.normalized));
 }

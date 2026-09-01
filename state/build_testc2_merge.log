@@ -1,0 +1,197 @@
+-- PX4_GIT_TAG: v1.16.1-111-g285a9d5716
+CMake Warning (dev) at CMakeLists.txt:176 (find_package):
+  Policy CMP0148 is not set: The FindPythonInterp and FindPythonLibs modules
+  are removed.  Run "cmake --help-policy CMP0148" for policy details.  Use
+  the cmake_policy command to set the policy and suppress this warning.
+
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Found PythonInterp: /usr/bin/python3 (found suitable version "3.12.3", minimum required is "3")
+-- PX4 config file: /home/crocodile/PX4-Autopilot-debug-testc4-v1.16.1/boards/zeroone/x6/hybrid.px4board
+-- PLATFORM nuttx
+-- TOOLCHAIN arm-none-eabi
+-- ARCHITECTURE cortex-m7
+-- ROMFSROOT px4fmu_common
+-- IO px4_io-v2_default
+-- ETHERNET y
+-- SERIAL_GPS1 /dev/ttyS0
+-- SERIAL_GPS2 /dev/ttyS7
+-- SERIAL_TEL1 /dev/ttyS6
+-- SERIAL_TEL2 /dev/ttyS4
+-- SERIAL_TEL3 /dev/ttyS1
+-- SERIAL_EXT2 /dev/ttyS3
+-- ROOT_PATH /fs/microsd
+-- PARAM_FILE /fs/mtd_params
+-- UAVCAN_INTERFACES 2
+-- UAVCAN_TIMER_OVERRIDE 2
+-- PX4 config: zeroone_x6_hybrid
+-- PX4 platform: nuttx
+-- The CXX compiler identification is GNU 9.3.1
+-- The C compiler identification is GNU 9.3.1
+-- The ASM compiler identification is GNU
+-- Found assembler: /opt/gcc-arm-none-eabi-9-2020-q2-update/bin/arm-none-eabi-gcc
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /opt/gcc-arm-none-eabi-9-2020-q2-update/bin/arm-none-eabi-g++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /opt/gcc-arm-none-eabi-9-2020-q2-update/bin/arm-none-eabi-gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Enabling double FP precision hardware instructions
+-- cmake build type: MinSizeRel
+-- ccache enabled (export CCACHE_DISABLE=1 to disable)
+-- drivers/px4io: ROMFS including px4_io-v2_default
+CMake Warning (dev) at src/drivers/uavcan/libdronecan/libuavcan/CMakeLists.txt:24 (find_package):
+  Policy CMP0148 is not set: The FindPythonInterp and FindPythonLibs modules
+  are removed.  Run "cmake --help-policy CMP0148" for policy details.  Use
+  the cmake_policy command to set the policy and suppress this warning.
+
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Found PythonInterp: /usr/bin/python3 (found version "3.12.3")
+-- Release build type: MinSizeRel
+[31mChecked src/modules/mavlink/mavlink submodule, ACTION REQUIRED:[0m
+
+Different commits:
+* src/modules/mavlink/mavlink 5bfd76d8...3b84efb9 (3):
+  > fix[hybrid]: document transition elapsed units
+  > feat[hybrid]: correlate transition command results
+  > feat[mavlink]: add hybrid vehicle dialect
+
+
+ *******************************************************************************
+ *   [31mIF YOU DID NOT CHANGE THIS FILE (OR YOU DON'T KNOW WHAT A SUBMODULE IS):[0m  *
+ *   [31mHit 'u' and <ENTER> to update ALL submodules and resolve this.[0m            *
+ *   (performs [94mgit submodule sync --recursive[0m                                  *
+ *    and [94mgit submodule update --init --recursive[0m )                            *
+ *******************************************************************************
+
+
+   Only for EXPERTS:
+   src/modules/mavlink/mavlink submodule is not in the recommended version.
+   Hit 'y' and <ENTER> to continue the build with this version. Hit <ENTER> to resolve manually.
+   Use [94mgit add src/modules/mavlink/mavlink && git commit -m 'Updated src/modules/mavlink/mavlink'[0m to choose this version (careful!)
+
+Continuing build with manually overridden submodule..
+-- ROMFS: ROMFS/px4fmu_common
+-- ROMFS:  Adding platforms/nuttx/init/stm32h7/rc.board_arch_defaults -> /etc/init.d/rc.board_arch_defaults
+-- ROMFS:  Adding boards/zeroone/x6/init/rc.board_defaults -> /etc/init.d/rc.board_defaults
+-- ROMFS:  Adding boards/zeroone/x6/init/rc.board_sensors -> /etc/init.d/rc.board_sensors
+-- ROMFS:  Adding boards/zeroone/x6/init/rc.board_mavlink -> /etc/init.d/rc.board_mavlink
+-- ROMFS:  Adding boards/zeroone/x6/extras/px4_io-v2_default.bin -> /etc/extras/px4_io-v2_default.bin
+-- Configuring done (46.9s)
+-- Generating done (0.4s)
+-- Build files have been written to: /home/crocodile/PX4-Autopilot-debug-testc4-v1.16.1/build/zeroone_x6_hybrid
+[0/1210] git submodule src/modules/uxrce_dds_client/Micro-XRCE-DDS-Client
+[4/1210] Generating output_functions.hpp
+[5/1210] git submodule platforms/nuttx/NuttX/nuttx
+[7/1210] Generating ../romfs_files.tar
+[8/1210] git submodule src/drivers/gps/devices
+[10/1210] Generating px4 event header file
+[11/1210] git submodule src/drivers/uavcan/libdronecan/dsdl
+[12/1210] git submodule src/drivers/uavcan/libdronecan/libuavcan/dsdl_compiler/pydronecan
+[13/1210] git submodule src/modules/mavlink/mavlink
+[31mChecked src/modules/mavlink/mavlink submodule, ACTION REQUIRED:[0m
+
+Different commits:
+* src/modules/mavlink/mavlink 5bfd76d8...3b84efb9 (3):
+  > fix[hybrid]: document transition elapsed units
+  > feat[hybrid]: correlate transition command results
+  > feat[mavlink]: add hybrid vehicle dialect
+
+
+ *******************************************************************************
+ *   [31mIF YOU DID NOT CHANGE THIS FILE (OR YOU DON'T KNOW WHAT A SUBMODULE IS):[0m  *
+ *   [31mHit 'u' and <ENTER> to update ALL submodules and resolve this.[0m            *
+ *   (performs [94mgit submodule sync --recursive[0m                                  *
+ *    and [94mgit submodule update --init --recursive[0m )                            *
+ *******************************************************************************
+
+
+   Only for EXPERTS:
+   src/modules/mavlink/mavlink submodule is not in the recommended version.
+   Hit 'y' and <ENTER> to continue the build with this version. Hit <ENTER> to resolve manually.
+   Use [94mgit add src/modules/mavlink/mavlink && git commit -m 'Updated src/modules/mavlink/mavlink'[0m to choose this version (careful!)
+
+Continuing build with manually overridden submodule..
+[18/1210] Running dsdl compiler
+/home/crocodile/PX4-Autopilot-debug-testc4-v1.16.1/src/drivers/uavcan/libdronecan/libuavcan/dsdl_compiler/libuavcan_dsdl_compiler/pyratemp.py:273: SyntaxWarning: invalid escape sequence '\#'
+  """Replace special characters by their escape sequence.
+[19/1210] PX4 UAVCAN dsdl compiler
+/home/crocodile/PX4-Autopilot-debug-testc4-v1.16.1/src/drivers/uavcan/libdronecan/libuavcan/dsdl_compiler/libuavcan_dsdl_compiler/pyratemp.py:273: SyntaxWarning: invalid escape sequence '\#'
+  """Replace special characters by their escape sequence.
+[405/1210] Generating nuttx/arch/arm/src/libarch.a
+chip/stm32_gpio.c:47:11: note: #pragma message: CONFIG_STM32H7_USE_LEGACY_PINMAP will be deprecated migrate board.h see tools/stm32_pinmap_tool.py
+   47 | #  pragma message "CONFIG_STM32H7_USE_LEGACY_PINMAP will be deprecated migrate board.h see tools/stm32_pinmap_tool.py"
+      |           ^~~~~~~
+[1153/1210] Linking CXX static library src/modules/ekf2/libmodules__ekf2.a
+[1155/1210] Generating Mavlink uAvionix: src/modules/mavlink/mavlink/message_definitions/v1.0/uAvionix.xml
+[1156/1210] Generating Mavlink hybrid_vehicle: src/modules/mavlink/mavlink/message_definitions/v1.0/hybrid_vehicle.xml
+[1157/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/actuators/hardpoint.cpp.obj
+[1158/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/arming_status.cpp.obj
+[1159/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/differential_pressure.cpp.obj
+[1160/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/safety_state.cpp.obj
+[1161/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/beep.cpp.obj
+[1162/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/baro.cpp.obj
+[1163/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/actuators/servo.cpp.obj
+[1164/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/actuators/esc.cpp.obj
+[1165/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/rgbled.cpp.obj
+[1166/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/battery.cpp.obj
+[1167/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/flow.cpp.obj
+[1168/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/gnss_relative.cpp.obj
+[1169/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/airspeed.cpp.obj
+[1170/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/fuel_tank_status.cpp.obj
+[1171/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/sensor_bridge.cpp.obj
+[1172/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/mag.cpp.obj
+[1173/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/gyro.cpp.obj
+[1174/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/accel.cpp.obj
+[1175/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/rangefinder.cpp.obj
+[1176/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/hygrometer.cpp.obj
+[1177/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/safety_button.cpp.obj
+[1178/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/ice_status.cpp.obj
+[1179/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/remoteid.cpp.obj
+[1180/1210] Building C object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink.c.obj
+[1181/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_rate_limiter.cpp.obj
+[1182/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/gnss.cpp.obj
+[1183/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_simple_analyzer.cpp.obj
+[1184/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_shell.cpp.obj
+[1185/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_command_sender.cpp.obj
+[1186/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_events.cpp.obj
+[1187/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_ftp.cpp.obj
+[1188/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/uavcan_servers.cpp.obj
+[1189/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_stream.cpp.obj
+[1190/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/tune_publisher.cpp.obj
+[1191/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_timesync.cpp.obj
+[1192/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_log_handler.cpp.obj
+[1193/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_ulog.cpp.obj
+[1194/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_mission.cpp.obj
+[1195/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/open_drone_id_translations.cpp.obj
+[1196/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_parameters.cpp.obj
+[1197/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_main.cpp.obj
+[1198/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/MavlinkStatustextHandler.cpp.obj
+[1199/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_receiver.cpp.obj
+[1200/1210] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/uavcan_main.cpp.obj
+[1201/1210] Linking CXX static library src/drivers/uavcan/libdrivers__uavcan.a
+[1202/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_messages.cpp.obj
+[1203/1210] Linking CXX static library src/modules/mavlink/libmodules__mavlink_original.a
+[1204/1210] modules__mavlink merging source
+[1205/1210] Building C object platforms/nuttx/CMakeFiles/px4.dir/__/common/empty.c.obj
+[1206/1210] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/modules__mavlink_unity.cpp.obj
+[1207/1210] Linking CXX static library src/modules/mavlink/libmodules__mavlink.a
+[1208/1210] Linking CXX executable zeroone_x6_hybrid.elf
+Memory region         Used Size  Region Size  %age Used
+        ITCM_RAM:          0 GB        64 KB      0.00%
+           FLASH:     1879496 B      1920 KB     95.60%
+       DTCM1_RAM:          0 GB        64 KB      0.00%
+       DTCM2_RAM:          0 GB        64 KB      0.00%
+        AXI_SRAM:       99844 B       512 KB     19.04%
+           SRAM1:          0 GB       128 KB      0.00%
+           SRAM2:          0 GB       128 KB      0.00%
+           SRAM3:          0 GB        32 KB      0.00%
+           SRAM4:          2 KB        64 KB      3.12%
+          BKPRAM:          0 GB         4 KB      0.00%
+[1209/1210] Generating ../../zeroone_x6_hybrid.bin
+[1210/1210] Creating /home/crocodile/PX4-Autopilot-debug-testc4-v1.16.1/build/zeroone_x6_hybrid/zeroone_x6_hybrid.px4

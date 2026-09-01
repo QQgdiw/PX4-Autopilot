@@ -98,6 +98,7 @@ uint16 VEHICLE_CMD_LOGGING_START = 2510			# start streaming ULog data
 uint16 VEHICLE_CMD_LOGGING_STOP = 2511			# stop streaming ULog data
 uint16 VEHICLE_CMD_CONTROL_HIGH_LATENCY = 2600		# control starting/stopping transmitting data over the high latency link
 uint16 VEHICLE_CMD_DO_VTOL_TRANSITION = 3000    	# Command VTOL transition
+uint16 VEHICLE_CMD_DO_HYBRID_TRANSITION = 50000 # Quad-Rover shape transition
 uint16 VEHICLE_CMD_ARM_AUTHORIZATION_REQUEST = 3001	# Request arm authorization
 uint16 VEHICLE_CMD_PAYLOAD_PREPARE_DEPLOY = 30001	# Prepare a payload deployment in the flight plan
 uint16 VEHICLE_CMD_PAYLOAD_CONTROL_DEPLOY = 30002	# Control a pre-programmed payload deployment

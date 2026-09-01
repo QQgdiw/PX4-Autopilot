@@ -1,0 +1,794 @@
+[1/457] Building CXX object src/modules/commander/ModeUtil/CMakeFiles/mode_util.dir/control_mode.cpp.o
+[2/457] Linking CXX static library src/modules/commander/ModeUtil/libmode_util.a
+[3/457] Generating git version header
+[4/455] Generating px4 event json file from source
+[5/455] Generating combined event json file
+[6/455] Building CXX object src/lib/rover_control/CMakeFiles/unit-RoverVelocityOffboardPolicy.dir/RoverVelocityOffboardPolicyTest.cpp.o
+[7/455] Linking CXX executable unit-RoverVelocityOffboardPolicy
+[8/455] Building CXX object src/modules/navigator/CMakeFiles/unit-HybridTransitionMission.dir/HybridTransitionMissionTest.cpp.o
+[9/455] Generating parameters.xml
+[10/455] Linking CXX executable unit-HybridTransitionMission
+[11/455] Generating px4_parameters.hpp
+[12/455] Generating component_general.json and checksums.h
+[13/455] Building CXX object src/lib/battery/CMakeFiles/battery.dir/battery.cpp.o
+[14/455] Building CXX object src/lib/dataman_client/CMakeFiles/dataman_client.dir/DatamanClient.cpp.o
+[15/455] Building CXX object src/lib/collision_prevention/CMakeFiles/CollisionPrevention.dir/CollisionPrevention.cpp.o
+[16/455] Building CXX object src/lib/fw_performance_model/CMakeFiles/performance_model.dir/PerformanceModel.cpp.o
+[17/455] Building CXX object src/lib/pure_pursuit/CMakeFiles/pure_pursuit.dir/PurePursuit.cpp.o
+[18/455] Building CXX object src/lib/control_allocation/control_allocation/CMakeFiles/functional-ControlAllocationSequentialDesaturation.dir/ControlAllocationSequentialDesaturationTest.cpp.o
+[19/455] Building CXX object src/lib/hybrid_control/CMakeFiles/unit-HybridTransitionPolicy.dir/HybridTransitionPolicyTest.cpp.o
+[20/455] Building CXX object src/lib/mixer_module/CMakeFiles/mixer_module.dir/mixer_module.cpp.o
+[21/455] Building CXX object src/lib/control_allocation/control_allocation/CMakeFiles/ControlAllocation.dir/ControlAllocationSequentialDesaturation.cpp.o
+[22/455] Building CXX object src/lib/mixer_module/CMakeFiles/functional-mixer_module_tests.dir/mixer_module_tests.cpp.o
+[23/455] Building CXX object src/lib/pure_pursuit/CMakeFiles/unit-PurePursuit.dir/PurePursuitTest.cpp.o
+[24/455] Building CXX object src/lib/collision_prevention/CMakeFiles/functional-CollisionPrevention.dir/CollisionPreventionTest.cpp.o
+[25/455] Building CXX object src/lib/rtl/CMakeFiles/rtl_time_estimator.dir/rtl_time_estimator.cpp.o
+[26/455] Building CXX object src/lib/stick_yaw/CMakeFiles/StickYaw.dir/StickYaw.cpp.o
+[27/455] Building CXX object src/lib/weather_vane/CMakeFiles/WeatherVane.dir/WeatherVane.cpp.o
+[28/455] Building CXX object src/drivers/osd/msp_osd/CMakeFiles/drivers__osd__msp_osd.dir/msp_osd.cpp.o
+[29/455] Building CXX object platforms/common/uORB/test/CMakeFiles/functional-uORBMessageFields.dir/uORBMessageFieldsTest.cpp.o
+[30/455] Building CXX object src/modules/airship_att_control/CMakeFiles/modules__airship_att_control.dir/airship_att_control_main.cpp.o
+[31/455] Building CXX object src/modules/airspeed_selector/CMakeFiles/modules__airspeed_selector.dir/airspeed_selector_main.cpp.o
+[32/455] Building CXX object src/modules/attitude_estimator_q/CMakeFiles/modules__attitude_estimator_q.dir/attitude_estimator_q_main.cpp.o
+[33/455] Building CXX object src/modules/camera_feedback/CMakeFiles/modules__camera_feedback.dir/CameraFeedback.cpp.o
+[34/455] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/accelerometer_calibration.cpp.o
+[35/455] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/commander_helper.cpp.o
+[36/455] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/airspeed_calibration.cpp.o
+[37/455] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/baro_calibration.cpp.o
+[38/455] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/calibration_routines.cpp.o
+[39/455] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/gyro_calibration.cpp.o
+[40/455] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/HomePosition.cpp.o
+[41/455] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/level_calibration.cpp.o
+[42/455] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/mag_calibration.cpp.o
+[43/455] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/rc_calibration.cpp.o
+[44/455] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/UserModeIntention.cpp.o
+[45/455] Building CXX object src/modules/commander/failsafe/CMakeFiles/failsafe.dir/failsafe.cpp.o
+[46/455] Building CXX object src/modules/commander/failsafe/CMakeFiles/failsafe.dir/framework.cpp.o
+[47/455] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/ModeManagement.cpp.o
+[48/455] Building CXX object src/modules/commander/failure_detector/CMakeFiles/failure_detector.dir/FailureDetector.cpp.o
+[49/455] Building CXX object src/modules/commander/failsafe/CMakeFiles/functional-failsafe_test.dir/failsafe_test.cpp.o
+[50/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/Common.cpp.o
+[51/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/airspeedCheck.cpp.o
+[52/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/HealthAndArmingChecks.cpp.o
+[53/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/accelerometerCheck.cpp.o
+[54/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/armPermissionCheck.cpp.o
+[55/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/baroCheck.cpp.o
+[56/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/batteryCheck.cpp.o
+[57/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/cpuResourceCheck.cpp.o
+[58/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/distanceSensorChecks.cpp.o
+[59/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/opticalFlowCheck.cpp.o
+[60/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/escCheck.cpp.o
+[61/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/failureDetectorCheck.cpp.o
+[62/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/gyroCheck.cpp.o
+[63/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/flightTimeCheck.cpp.o
+[64/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/estimatorCheck.cpp.o
+[65/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/geofenceCheck.cpp.o
+[66/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/magnetometerCheck.cpp.o
+[67/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/homePositionCheck.cpp.o
+[68/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/manualControlCheck.cpp.o
+[69/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/imuConsistencyCheck.cpp.o
+[70/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/loggerCheck.cpp.o
+[71/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/missionCheck.cpp.o
+[72/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/openDroneIDCheck.cpp.o
+[73/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/modeCheck.cpp.o
+[74/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/navigatorCheck.cpp.o
+[75/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/parachuteCheck.cpp.o
+[76/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/powerCheck.cpp.o
+[77/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/rcCalibrationCheck.cpp.o
+[78/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/rcAndDataLinkCheck.cpp.o
+[79/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/systemCheck.cpp.o
+[80/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/sdcardCheck.cpp.o
+[81/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/vtolCheck.cpp.o
+[82/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/windCheck.cpp.o
+[83/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/externalChecks.cpp.o
+[84/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/hybridCheck.cpp.o
+[85/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/functional-HealthAndArmingChecks.dir/HealthAndArmingChecksTest.cpp.o
+[86/455] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessUUV.cpp.o
+[87/455] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessControlSurfaces.cpp.o
+[88/455] Building CXX object src/modules/commander/MulticopterThrowLaunch/CMakeFiles/MulticopterThrowLaunch.dir/MulticopterThrowLaunch.cpp.o
+[89/455] Building CXX object src/modules/control_allocator/CMakeFiles/modules__control_allocator.dir/ControlAllocator.cpp.o
+[90/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/functional-hybridCheck.dir/checks/hybridCheckTest.cpp.o
+[91/455] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessCustom.cpp.o
+[92/455] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessFixedWing.cpp.o
+[93/455] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessHelicopterCoaxial.cpp.o
+[94/455] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessHelicopter.cpp.o
+[95/455] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessMultirotor.cpp.o
+[96/455] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessMCTilt.cpp.o
+[97/455] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessRotors.cpp.o
+[98/455] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessTilts.cpp.o
+[99/455] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessStandardVTOL.cpp.o
+[100/455] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessTailsitterVTOL.cpp.o
+[101/455] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/RpmControl.cpp.o
+[102/455] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/functional-ActuatorEffectivenessHelicopter.dir/ActuatorEffectivenessHelicopterTest.cpp.o
+[103/455] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessTiltrotorVTOL.cpp.o
+[104/455] Building CXX object src/modules/dataman/CMakeFiles/modules__dataman.dir/dataman.cpp.o
+[105/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/control.cpp.o
+[106/455] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/functional-ActuatorEffectivenessRotors.dir/ActuatorEffectivenessRotorsTest.cpp.o
+[107/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/covariance.cpp.o
+[108/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/height_control.cpp.o
+[109/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/ekf.cpp.o
+[110/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/ekf_helper.cpp.o
+[111/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/velocity_fusion.cpp.o
+[112/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/yaw_fusion.cpp.o
+[113/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/fake_height_control.cpp.o
+[114/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/position_fusion.cpp.o
+[115/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/ZeroGyroUpdate.cpp.o
+[116/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/fake_pos_control.cpp.o
+[117/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/ZeroVelocityUpdate.cpp.o
+[118/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/airspeed/airspeed_fusion.cpp.o
+[119/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/zero_innovation_heading_update.cpp.o
+[120/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/aux_global_position/aux_global_position.cpp.o
+[121/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/auxvel/auxvel_fusion.cpp.o
+[122/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/barometer/baro_height_control.cpp.o
+[123/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/external_vision/ev_control.cpp.o
+[124/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/external_vision/ev_height_control.cpp.o
+[125/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/drag/drag_fusion.cpp.o
+[126/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/external_vision/ev_vel_control.cpp.o
+[127/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/external_vision/ev_pos_control.cpp.o
+[128/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/external_vision/ev_yaw_control.cpp.o
+[129/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/gnss/gnss_height_control.cpp.o
+[130/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/gnss/gps_checks.cpp.o
+[131/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/gnss/gps_control.cpp.o
+[132/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/gnss/gnss_yaw_control.cpp.o
+[133/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/gravity/gravity_fusion.cpp.o
+[134/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/magnetometer/mag_fusion.cpp.o
+[135/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/optical_flow/optical_flow_control.cpp.o
+[136/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/optical_flow/optical_flow_fusion.cpp.o
+[137/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/magnetometer/mag_control.cpp.o
+[138/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/range_finder/range_height_control.cpp.o
+[139/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/range_finder/range_height_fusion.cpp.o
+[140/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/sideslip/sideslip_fusion.cpp.o
+[141/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/terrain_control.cpp.o
+[142/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/wind.cpp.o
+[143/455] Building CXX object src/modules/events/CMakeFiles/modules__events.dir/send_event.cpp.o
+[144/455] Building CXX object src/modules/flight_mode_manager/CMakeFiles/modules__flight_mode_manager.dir/FlightTasks_generated.cpp.o
+[145/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF2Selector.cpp.o
+[146/455] Building CXX object src/modules/flight_mode_manager/CMakeFiles/modules__flight_mode_manager.dir/FlightModeManager.cpp.o
+[147/455] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF2.cpp.o
+[148/455] Building CXX object src/modules/flight_mode_manager/tasks/FlightTask/CMakeFiles/FlightTask.dir/FlightTask.cpp.o
+[149/455] Building CXX object src/modules/flight_mode_manager/tasks/Utility/CMakeFiles/FlightTaskUtility.dir/StickTiltXY.cpp.o
+[150/455] Building CXX object src/modules/flight_mode_manager/tasks/Utility/CMakeFiles/FlightTaskUtility.dir/StickAccelerationXY.cpp.o
+[151/455] Building CXX object src/modules/flight_mode_manager/tasks/Utility/CMakeFiles/FlightTaskUtility.dir/Sticks.cpp.o
+[152/455] Building CXX object src/modules/flight_mode_manager/tasks/Utility/CMakeFiles/FlightTaskUtility.dir/Gimbal.cpp.o
+[153/455] Building CXX object src/modules/flight_mode_manager/tasks/Descend/CMakeFiles/FlightTaskDescend.dir/FlightTaskDescend.cpp.o
+[154/455] Building CXX object src/modules/flight_mode_manager/tasks/Failsafe/CMakeFiles/FlightTaskFailsafe.dir/FlightTaskFailsafe.cpp.o
+[155/455] Building CXX object src/modules/flight_mode_manager/tasks/Utility/CMakeFiles/functional-StickTiltXY.dir/StickTiltXYTest.cpp.o
+[156/455] Building CXX object src/modules/flight_mode_manager/tasks/ManualAcceleration/CMakeFiles/FlightTaskManualAcceleration.dir/FlightTaskManualAcceleration.cpp.o
+[157/455] Building CXX object src/modules/flight_mode_manager/tasks/ManualAltitude/CMakeFiles/FlightTaskManualAltitude.dir/FlightTaskManualAltitude.cpp.o
+[158/455] Building CXX object src/modules/flight_mode_manager/tasks/Auto/CMakeFiles/FlightTaskAuto.dir/FlightTaskAuto.cpp.o
+[159/455] Building CXX object src/modules/flight_mode_manager/tasks/ManualAccelerationSlow/CMakeFiles/FlightTaskManualAccelerationSlow.dir/FlightTaskManualAccelerationSlow.cpp.o
+[160/455] Building CXX object src/modules/flight_mode_manager/tasks/ManualAltitudeSmoothVel/CMakeFiles/FlightTaskManualAltitudeSmoothVel.dir/FlightTaskManualAltitudeSmoothVel.cpp.o
+[161/455] Building CXX object src/modules/flight_mode_manager/tasks/Transition/CMakeFiles/FlightTaskTransition.dir/FlightTaskTransition.cpp.o
+[162/455] Building CXX object src/lib/hybrid_control/CMakeFiles/hybrid_control.dir/HybridTransitionPolicy.cpp.o
+[163/455] Building CXX object src/modules/flight_mode_manager/tasks/ManualPosition/CMakeFiles/FlightTaskManualPosition.dir/FlightTaskManualPosition.cpp.o
+[164/455] Building CXX object src/modules/flight_mode_manager/tasks/AutoFollowTarget/CMakeFiles/FlightTaskAutoFollowTarget.dir/FlightTaskAutoFollowTarget.cpp.o
+[165/455] Building CXX object src/modules/flight_mode_manager/tasks/AutoFollowTarget/follow_target_estimator/CMakeFiles/follow_target_estimator.dir/TargetEstimator.cpp.o
+[166/455] Building CXX object src/modules/fw_att_control/CMakeFiles/modules__fw_att_control.dir/FixedwingAttitudeControl.cpp.o
+[167/455] Building CXX object src/modules/flight_mode_manager/tasks/Orbit/CMakeFiles/FlightTaskOrbit.dir/FlightTaskOrbit.cpp.o
+[168/455] Building CXX object src/modules/fw_pos_control/launchdetection/CMakeFiles/launchdetection.dir/LaunchDetector.cpp.o
+[169/455] Building CXX object src/modules/fw_autotune_attitude_control/CMakeFiles/fw_autotune_attitude_control.dir/fw_autotune_attitude_control.cpp.o
+[170/455] Building CXX object src/modules/fw_pos_control/runway_takeoff/CMakeFiles/runway_takeoff.dir/RunwayTakeoff.cpp.o
+[171/455] Building CXX object src/modules/gyro_fft/CMakeFiles/modules__gyro_fft.dir/GyroFFT.cpp.o
+[172/455] Building CXX object src/modules/fw_pos_control/figure_eight/CMakeFiles/figure_eight.dir/FigureEight.cpp.o
+[173/455] Building CXX object src/modules/fw_rate_control/CMakeFiles/modules__fw_rate_control.dir/FixedwingRateControl.cpp.o
+[174/455] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/LandDetector.cpp.o
+[175/455] Building CXX object src/modules/fw_pos_control/CMakeFiles/modules__fw_pos_control.dir/FixedwingPositionControl.cpp.o
+[176/455] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/land_detector_main.cpp.o
+[177/455] Building CXX object src/modules/gyro_calibration/CMakeFiles/modules__gyro_calibration.dir/GyroCalibration.cpp.o
+[178/455] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/MulticopterLandDetector.cpp.o
+[179/455] Building CXX object src/modules/load_mon/CMakeFiles/modules__load_mon.dir/LoadMon.cpp.o
+[180/455] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/FixedwingLandDetector.cpp.o
+[181/455] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/RoverLandDetector.cpp.o
+[182/455] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/AirshipLandDetector.cpp.o
+[183/455] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/VtolLandDetector.cpp.o
+[184/455] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/sensors/flow.cpp.o
+[185/455] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/sensors/lidar.cpp.o
+[186/455] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/BlockLocalPositionEstimator.cpp.o
+[187/455] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/sensors/gps.cpp.o
+[188/455] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/sensors/baro.cpp.o
+[189/455] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/sensors/sonar.cpp.o
+[190/455] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/sensors/vision.cpp.o
+[191/455] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/sensors/mocap.cpp.o
+[192/455] Building CXX object src/modules/logger/CMakeFiles/modules__logger.dir/logger.cpp.o
+[193/455] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/sensors/landing_target.cpp.o
+[194/455] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/sensors/land.cpp.o
+[195/455] Building CXX object src/modules/mag_bias_estimator/CMakeFiles/modules__mag_bias_estimator.dir/MagBiasEstimator.cpp.o
+[196/455] Building CXX object src/modules/manual_control/CMakeFiles/modules__manual_control.dir/ManualControl.cpp.o
+[197/455] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_events.cpp.o
+[198/455] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_ftp.cpp.o
+[199/455] Building CXX object src/modules/manual_control/CMakeFiles/functional-ManualControl.dir/ManualControlTest.cpp.o
+[200/455] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_log_handler.cpp.o
+[201/455] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_main.cpp.o
+[202/455] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_parameters.cpp.o
+[203/455] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_stream.cpp.o
+[204/455] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/open_drone_id_translations.cpp.o
+[205/455] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_timesync.cpp.o
+[206/455] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_receiver.cpp.o
+[207/455] Building CXX object src/modules/mavlink/mavlink_tests/CMakeFiles/modules__mavlink__mavlink_tests.dir/mavlink_tests.cpp.o
+[208/455] Building CXX object src/modules/mavlink/mavlink_tests/CMakeFiles/modules__mavlink__mavlink_tests.dir/mavlink_ftp_test.cpp.o
+[209/455] Building CXX object src/modules/mavlink/mavlink_tests/CMakeFiles/modules__mavlink__mavlink_tests.dir/__/mavlink_stream.cpp.o
+[210/455] Building CXX object src/modules/mavlink/mavlink_tests/CMakeFiles/modules__mavlink__mavlink_tests.dir/__/mavlink_ftp.cpp.o
+[211/455] Building CXX object src/modules/mc_att_control/CMakeFiles/modules__mc_att_control.dir/mc_att_control_main.cpp.o
+[212/455] Building CXX object src/modules/mc_autotune_attitude_control/CMakeFiles/mc_autotune_attitude_control.dir/mc_autotune_attitude_control.cpp.o
+[213/455] Building CXX object src/modules/mc_rate_control/CMakeFiles/modules__mc_rate_control.dir/MulticopterRateControl.cpp.o
+[214/455] Building CXX object src/modules/mc_hover_thrust_estimator/CMakeFiles/modules__mc_hover_thrust_estimator.dir/MulticopterHoverThrustEstimator.cpp.o
+[215/455] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/navigator_main.cpp.o
+[216/455] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/navigator_mode.cpp.o
+[217/455] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/mission_base.cpp.o
+[218/455] Building CXX object src/modules/mc_pos_control/CMakeFiles/modules__mc_pos_control.dir/MulticopterPositionControl.cpp.o
+[219/455] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/rtl.cpp.o
+[220/455] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/rtl_direct_mission_land.cpp.o
+[221/455] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/mission.cpp.o
+[222/455] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/loiter.cpp.o
+[223/455] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/rtl_direct.cpp.o
+[224/455] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/rtl_mission_fast.cpp.o
+[225/455] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/takeoff.cpp.o
+[226/455] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/rtl_mission_fast_reverse.cpp.o
+[227/455] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/land.cpp.o
+[228/455] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/precland.cpp.o
+[229/455] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/geofence.cpp.o
+[230/455] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/mission_feasibility_checker.cpp.o
+[231/455] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/vtol_takeoff.cpp.o
+[232/455] Building CXX object src/modules/navigator/GeofenceBreachAvoidance/CMakeFiles/geofence_breach_avoidance.dir/geofence_breach_avoidance.cpp.o
+[233/455] Building CXX object src/modules/rc_update/CMakeFiles/modules__rc_update.dir/rc_update.cpp.o
+[234/455] Building CXX object src/modules/payload_deliverer/CMakeFiles/modules__payload_deliverer.dir/payload_deliverer.cpp.o
+[235/455] Building CXX object src/modules/rc_update/CMakeFiles/functional-RCUpdate.dir/RCUpdateTest.cpp.o
+[236/455] Building CXX object src/modules/navigator/GeofenceBreachAvoidance/CMakeFiles/functional-GeofenceBreachAvoidance.dir/GeofenceBreachAvoidanceTest.cpp.o
+[237/455] Building CXX object src/modules/rover_ackermann/CMakeFiles/modules__rover_ackermann.dir/RoverAckermann.cpp.o
+[238/455] Building CXX object src/modules/rover_ackermann/AckermannRateControl/CMakeFiles/AckermannRateControl.dir/AckermannRateControl.cpp.o
+[239/455] Building CXX object src/modules/rover_ackermann/AckermannVelControl/CMakeFiles/AckermannVelControl.dir/AckermannVelControl.cpp.o
+[240/455] Building CXX object src/modules/rover_ackermann/AckermannAttControl/CMakeFiles/AckermannAttControl.dir/AckermannAttControl.cpp.o
+[241/455] Building CXX object src/modules/rover_ackermann/AckermannPosControl/CMakeFiles/AckermannPosControl.dir/AckermannPosControl.cpp.o
+[242/455] Building CXX object src/modules/rover_differential/DifferentialAttControl/CMakeFiles/DifferentialAttControl.dir/DifferentialAttControl.cpp.o
+[243/455] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/offboardCheck.cpp.o
+[244/455] Building CXX object src/modules/rover_differential/DifferentialPosControl/CMakeFiles/DifferentialPosControl.dir/DifferentialPosControl.cpp.o
+[245/455] Building CXX object src/modules/rover_mecanum/CMakeFiles/modules__rover_mecanum.dir/RoverMecanum.cpp.o
+[246/455] Building CXX object src/modules/rover_mecanum/MecanumRateControl/CMakeFiles/MecanumRateControl.dir/MecanumRateControl.cpp.o
+[247/455] Building CXX object src/modules/rover_mecanum/MecanumAttControl/CMakeFiles/MecanumAttControl.dir/MecanumAttControl.cpp.o
+[248/455] Building CXX object src/modules/rover_mecanum/MecanumPosVelControl/CMakeFiles/MecanumPosVelControl.dir/MecanumPosVelControl.cpp.o
+[249/455] Building CXX object src/modules/rover_pos_control/CMakeFiles/modules__rover_pos_control.dir/RoverPositionControl.cpp.o
+[250/455] Building CXX object src/modules/sensors/CMakeFiles/modules__sensors.dir/sensors.cpp.o
+[251/455] Building CXX object src/modules/sensors/CMakeFiles/modules__sensors.dir/voted_sensors_update.cpp.o
+[252/455] Building CXX object src/modules/sensors/vehicle_acceleration/CMakeFiles/vehicle_acceleration.dir/VehicleAcceleration.cpp.o
+[253/455] Building CXX object src/modules/sensors/vehicle_imu/CMakeFiles/vehicle_imu.dir/VehicleIMU.cpp.o
+[254/455] Building CXX object src/modules/sensors/vehicle_air_data/CMakeFiles/vehicle_air_data.dir/VehicleAirData.cpp.o
+[255/455] Building CXX object src/modules/sensors/vehicle_angular_velocity/CMakeFiles/vehicle_angular_velocity.dir/VehicleAngularVelocity.cpp.o
+[256/455] Building CXX object src/modules/sensors/vehicle_gps_position/CMakeFiles/vehicle_gps_position.dir/VehicleGPSPosition.cpp.o
+[257/455] Building CXX object src/modules/sensors/vehicle_magnetometer/CMakeFiles/vehicle_magnetometer.dir/VehicleMagnetometer.cpp.o
+[258/455] Building CXX object src/modules/sensors/vehicle_optical_flow/CMakeFiles/vehicle_optical_flow.dir/VehicleOpticalFlow.cpp.o
+[259/455] Building CXX object src/modules/rover_differential/DifferentialRateControl/CMakeFiles/DifferentialRateControl.dir/DifferentialRateControl.cpp.o
+[260/455] Building CXX object src/modules/simulation/battery_simulator/CMakeFiles/modules__simulation__battery_simulator.dir/BatterySimulator.cpp.o
+[261/455] Building CXX object src/modules/sensors/vehicle_optical_flow/test/CMakeFiles/functional-VehicleOpticalFlow.dir/VehicleOpticalFlowTest.cpp.o
+[262/455] Building CXX object src/modules/simulation/gz_bridge/CMakeFiles/modules__simulation__gz_bridge.dir/GZBridge.cpp.o
+[263/455] Building CXX object src/modules/simulation/gz_bridge/CMakeFiles/modules__simulation__gz_bridge.dir/GZMixingInterfaceESC.cpp.o
+[264/455] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/mission_block.cpp.o
+[265/455] Building CXX object src/modules/simulation/gz_bridge/CMakeFiles/modules__simulation__gz_bridge.dir/GZMixingInterfaceServo.cpp.o
+[266/455] Building CXX object src/modules/simulation/gz_bridge/CMakeFiles/modules__simulation__gz_bridge.dir/GZMixingInterfaceWheel.cpp.o
+[267/455] Building CXX object src/modules/simulation/pwm_out_sim/CMakeFiles/modules__simulation__pwm_out_sim.dir/PWMSim.cpp.o
+[268/455] Building CXX object src/modules/simulation/gz_bridge/CMakeFiles/modules__simulation__gz_bridge.dir/GZGimbal.cpp.o
+[269/455] Building CXX object src/modules/simulation/sensor_airspeed_sim/CMakeFiles/modules__simulation__sensor_airspeed_sim.dir/SensorAirspeedSim.cpp.o
+[270/455] Building CXX object src/modules/simulation/sensor_baro_sim/CMakeFiles/modules__simulation__sensor_baro_sim.dir/SensorBaroSim.cpp.o
+[271/455] Building CXX object src/modules/simulation/sensor_agp_sim/CMakeFiles/modules__simulation__sensor_agp_sim.dir/SensorAgpSim.cpp.o
+[272/455] Building CXX object src/modules/simulation/sensor_gps_sim/CMakeFiles/modules__simulation__sensor_gps_sim.dir/SensorGpsSim.cpp.o
+[273/455] Building CXX object src/modules/simulation/sensor_mag_sim/CMakeFiles/modules__simulation__senosr_mag_sim.dir/SensorMagSim.cpp.o
+[274/455] Building CXX object src/modules/simulation/simulator_sih/CMakeFiles/modules__simulation__simulator_sih.dir/sih.cpp.o
+[275/455] Building CXX object src/modules/simulation/simulator_mavlink/CMakeFiles/modules__simulation__simulator_mavlink.dir/SimulatorMavlink.cpp.o
+[276/455] Building CXX object src/modules/temperature_compensation/CMakeFiles/modules__temperature_compensation.dir/TemperatureCompensationModule.cpp.o
+[277/455] Building CXX object src/modules/uuv_att_control/CMakeFiles/modules__uuv_att_control.dir/uuv_att_control.cpp.o
+[278/455] Building CXX object src/modules/uuv_pos_control/CMakeFiles/modules__uuv_pos_control.dir/uuv_pos_control.cpp.o
+[279/455] Building CXX object src/modules/uxrce_dds_client/CMakeFiles/modules__uxrce_dds_client.dir/uxrce_dds_client.cpp.o
+[280/455] Building CXX object src/modules/vtol_att_control/CMakeFiles/modules__vtol_att_control.dir/vtol_att_control_main.cpp.o
+[281/455] Building CXX object src/modules/vtol_att_control/CMakeFiles/modules__vtol_att_control.dir/tiltrotor.cpp.o
+[282/455] Building CXX object src/modules/vtol_att_control/CMakeFiles/modules__vtol_att_control.dir/vtol_type.cpp.o
+[283/455] Building CXX object src/modules/vtol_att_control/CMakeFiles/modules__vtol_att_control.dir/tailsitter.cpp.o
+[284/455] Building CXX object src/modules/rover_differential/DifferentialVelControl/CMakeFiles/DifferentialVelControl.dir/DifferentialVelControl.cpp.o
+[285/455] Building CXX object src/systemcmds/tests/CMakeFiles/systemcmds__tests.dir/test_dataman.cpp.o
+[286/455] Building CXX object src/examples/fake_gps/CMakeFiles/modules__fake_gps.dir/FakeGps.cpp.o
+[287/455] Building CXX object src/examples/fake_imu/CMakeFiles/modules__fake_imu.dir/FakeImu.cpp.o
+[288/455] Building CXX object src/modules/vtol_att_control/CMakeFiles/modules__vtol_att_control.dir/standard.cpp.o
+[289/455] Building CXX object src/examples/fake_magnetometer/CMakeFiles/examples__fake_magnetometer.dir/FakeMagnetometer.cpp.o
+[290/455] Building CXX object src/lib/parameters/CMakeFiles/parameters.dir/parameters.cpp.o
+[291/455] Building CXX object src/examples/work_item/CMakeFiles/examples__work_item.dir/WorkItemExample.cpp.o
+[292/455] Building CXX object src/lib/parameters/CMakeFiles/functional-Parameter.dir/ParameterTest.cpp.o
+[293/455] Building CXX object src/modules/navigator/MissionFeasibility/CMakeFiles/mission_feasibility_checker.dir/FeasibilityChecker.cpp.o
+[294/455] Linking CXX static library src/lib/parameters/libparameters.a
+[295/455] ROMFS: copying extras
+[296/455] Linking CXX static library src/lib/battery/libbattery.a
+[297/455] Linking CXX static library src/lib/collision_prevention/libCollisionPrevention.a
+[298/455] Linking CXX static library src/lib/control_allocation/control_allocation/libControlAllocation.a
+[299/455] Linking CXX static library src/lib/dataman_client/libdataman_client.a
+[300/455] Linking CXX static library src/lib/hybrid_control/libhybrid_control.a
+[301/455] Linking CXX executable unit-ObstacleMath
+[302/455] Building CXX object src/modules/rover_differential/CMakeFiles/modules__rover_differential.dir/RoverDifferential.cpp.o
+[303/455] Linking CXX executable unit-ControlAllocationPseudoInverse
+[304/455] Linking CXX executable functional-AdsbConflict
+[305/455] Linking CXX executable unit-C610Protocol
+[306/455] Linking CXX executable unit-M2006CommandAdapter
+[307/455] Linking CXX executable functional-CollisionPrevention
+[308/455] Linking CXX executable unit-M2006SpeedController
+[309/455] Linking CXX executable unit-M2006DriveGate
+[310/455] Linking CXX executable functional-ControlAllocationSequentialDesaturation
+[311/455] Linking CXX executable unit-TransformationStateMachine
+[312/455] Linking CXX static library src/lib/mixer_module/libmixer_module.a
+[313/455] Linking CXX executable unit-M2006TxPolicy
+[314/455] Linking CXX static library src/lib/fw_performance_model/libperformance_model.a
+[315/455] Linking CXX static library src/lib/pure_pursuit/libpure_pursuit.a
+[316/455] Linking CXX executable unit-Hx8BackendPolicy
+[317/455] Linking CXX static library src/lib/rtl/librtl_time_estimator.a
+[318/455] Linking CXX executable unit-HybridTransitionPolicy
+[319/455] Linking CXX static library src/lib/stick_yaw/libStickYaw.a
+[320/455] Linking CXX static library src/lib/weather_vane/libWeatherVane.a
+[321/455] Linking CXX static library src/drivers/osd/msp_osd/libdrivers__osd__msp_osd.a
+[322/455] Linking CXX static library src/modules/airship_att_control/libmodules__airship_att_control.a
+[323/455] Linking CXX executable unit-PurePursuit
+[324/455] Linking CXX static library src/modules/airspeed_selector/libmodules__airspeed_selector.a
+[325/455] Linking CXX static library src/modules/attitude_estimator_q/libmodules__attitude_estimator_q.a
+[326/455] Linking CXX static library src/modules/camera_feedback/libmodules__camera_feedback.a
+[327/455] Linking CXX static library src/modules/commander/failsafe/libfailsafe.a
+[328/455] Linking CXX static library src/modules/commander/failure_detector/libfailure_detector.a
+[329/455] Linking CXX executable functional-lockstep_scheduler_test
+[330/455] Linking CXX executable functional-uORBSubscription
+[331/455] Linking CXX static library src/modules/commander/MulticopterThrowLaunch/libMulticopterThrowLaunch.a
+[332/455] Linking CXX executable functional-mixer_module_tests
+[333/455] Linking CXX static library src/modules/dataman/libmodules__dataman.a
+[334/455] Linking CXX executable functional-uORBMessageFields
+[335/455] Linking CXX static library src/modules/events/libmodules__events.a
+[336/455] Linking CXX static library src/modules/control_allocator/VehicleActuatorEffectiveness/libVehicleActuatorEffectiveness.a
+[337/455] Linking CXX static library src/modules/flight_mode_manager/tasks/FlightTask/libFlightTask.a
+[338/455] Linking CXX static library src/modules/control_allocator/libmodules__control_allocator.a
+[339/455] Linking CXX static library src/modules/commander/HealthAndArmingChecks/libhealth_and_arming_checks.a
+[340/455] Linking CXX static library src/modules/flight_mode_manager/tasks/AutoFollowTarget/follow_target_estimator/libfollow_target_estimator.a
+[341/455] Linking CXX static library src/modules/ekf2/libmodules__ekf2.a
+[342/455] Linking CXX static library src/modules/flight_mode_manager/tasks/Utility/libFlightTaskUtility.a
+[343/455] Linking CXX executable functional-failsafe_test
+[344/455] Linking CXX static library src/modules/flight_mode_manager/tasks/Auto/libFlightTaskAuto.a
+[345/455] Linking CXX executable functional-ActuatorEffectivenessHelicopter
+[346/455] Linking CXX static library src/modules/flight_mode_manager/tasks/Descend/libFlightTaskDescend.a
+[347/455] Linking CXX static library src/modules/flight_mode_manager/tasks/Failsafe/libFlightTaskFailsafe.a
+[348/455] Linking CXX executable functional-ActuatorEffectivenessRotors
+[349/455] Linking CXX static library src/modules/flight_mode_manager/tasks/ManualAltitude/libFlightTaskManualAltitude.a
+[350/455] Linking CXX static library src/modules/flight_mode_manager/tasks/Transition/libFlightTaskTransition.a
+[351/455] Linking CXX static library src/modules/flight_mode_manager/tasks/AutoFollowTarget/libFlightTaskAutoFollowTarget.a
+[352/455] Linking CXX static library src/modules/flight_mode_manager/tasks/ManualPosition/libFlightTaskManualPosition.a
+[353/455] Linking CXX executable functional-hybridCheck
+[354/455] Linking CXX static library src/modules/flight_mode_manager/tasks/ManualAltitudeSmoothVel/libFlightTaskManualAltitudeSmoothVel.a
+[355/455] Linking CXX executable functional-HealthAndArmingChecks
+[356/455] Linking CXX static library src/modules/fw_pos_control/launchdetection/liblaunchdetection.a
+[357/455] Linking CXX static library src/modules/fw_autotune_attitude_control/libfw_autotune_attitude_control.a
+[358/455] Linking CXX static library src/modules/flight_mode_manager/tasks/ManualAcceleration/libFlightTaskManualAcceleration.a
+[359/455] Linking CXX static library src/modules/fw_att_control/libmodules__fw_att_control.a
+[360/455] Linking CXX static library src/modules/flight_mode_manager/tasks/Orbit/libFlightTaskOrbit.a
+[361/455] Linking CXX static library src/modules/fw_pos_control/runway_takeoff/librunway_takeoff.a
+[362/455] Linking CXX static library src/modules/gyro_calibration/libmodules__gyro_calibration.a
+[363/455] Linking CXX static library src/modules/fw_pos_control/figure_eight/libfigure_eight.a
+[364/455] Linking CXX static library src/modules/flight_mode_manager/tasks/ManualAccelerationSlow/libFlightTaskManualAccelerationSlow.a
+[365/455] Linking CXX static library src/modules/fw_rate_control/libmodules__fw_rate_control.a
+[366/455] Linking CXX static library src/modules/gyro_fft/libmodules__gyro_fft.a
+[367/455] Linking CXX static library src/modules/fw_pos_control/libmodules__fw_pos_control.a
+[368/455] Linking CXX static library src/modules/flight_mode_manager/libmodules__flight_mode_manager.a
+[369/455] Linking CXX static library src/modules/land_detector/libmodules__land_detector.a
+[370/455] Linking CXX static library src/modules/load_mon/libmodules__load_mon.a
+[371/455] Linking CXX static library src/modules/logger/libmodules__logger.a
+[372/455] Linking CXX static library src/modules/manual_control/libmodules__manual_control.a
+[373/455] Linking CXX static library src/modules/mag_bias_estimator/libmodules__mag_bias_estimator.a
+[374/455] Linking CXX static library src/modules/mavlink/mavlink_tests/libmodules__mavlink__mavlink_tests.a
+[375/455] Linking CXX static library src/modules/local_position_estimator/libmodules__local_position_estimator.a
+[376/455] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/Commander.cpp.o
+[377/455] Linking CXX static library src/modules/mc_att_control/libmodules__mc_att_control.a
+[378/455] Linking CXX executable functional-StickTiltXY
+[379/455] Linking CXX static library src/modules/mc_hover_thrust_estimator/libmodules__mc_hover_thrust_estimator.a
+[380/455] Linking CXX static library src/modules/mc_autotune_attitude_control/libmc_autotune_attitude_control.a
+[381/455] Building CXX object src/modules/commander/CMakeFiles/unit-CommanderHybridStatus.dir/CommanderHybridStatusTest.cpp.o
+[382/455] Linking CXX static library src/modules/mc_rate_control/libmodules__mc_rate_control.a
+[383/455] Linking CXX static library src/modules/mc_pos_control/libmodules__mc_pos_control.a
+[384/455] Linking CXX static library src/modules/navigator/GeofenceBreachAvoidance/libgeofence_breach_avoidance.a
+[385/455] Linking CXX executable unit-ManualControlSelector
+[386/455] Linking CXX static library src/modules/payload_deliverer/libmodules__payload_deliverer.a
+[387/455] Linking CXX static library src/modules/commander/libmodules__commander.a
+[388/455] Linking CXX static library src/modules/rover_ackermann/AckermannRateControl/libAckermannRateControl.a
+[389/455] Linking CXX static library src/modules/rc_update/libmodules__rc_update.a
+[390/455] Linking CXX static library src/modules/navigator/MissionFeasibility/libmission_feasibility_checker.a
+[391/455] Linking CXX static library src/modules/rover_ackermann/AckermannAttControl/libAckermannAttControl.a
+[392/455] Linking CXX static library src/modules/rover_ackermann/AckermannVelControl/libAckermannVelControl.a
+[393/455] Linking CXX static library src/modules/rover_ackermann/AckermannPosControl/libAckermannPosControl.a
+[394/455] Linking CXX executable unit-CommanderHybridStatus
+[395/455] Linking CXX static library src/modules/rover_differential/DifferentialRateControl/libDifferentialRateControl.a
+[396/455] Linking CXX static library src/modules/rover_differential/DifferentialAttControl/libDifferentialAttControl.a
+[397/455] Linking CXX static library src/modules/rover_ackermann/libmodules__rover_ackermann.a
+[398/455] Linking CXX static library src/modules/rover_mecanum/MecanumRateControl/libMecanumRateControl.a
+[399/455] Linking CXX static library src/modules/rover_differential/DifferentialVelControl/libDifferentialVelControl.a
+[400/455] Linking CXX static library src/modules/rover_differential/DifferentialPosControl/libDifferentialPosControl.a
+[401/455] Linking CXX static library src/modules/rover_mecanum/MecanumAttControl/libMecanumAttControl.a
+[402/455] Linking CXX static library src/modules/navigator/libmodules__navigator.a
+[403/455] Linking CXX executable unit-mag_calibration_test
+[404/455] Linking CXX static library src/modules/rover_mecanum/MecanumPosVelControl/libMecanumPosVelControl.a
+[405/455] Linking CXX static library src/modules/rover_pos_control/libmodules__rover_pos_control.a
+[406/455] Linking CXX static library src/modules/rover_differential/libmodules__rover_differential.a
+[407/455] Building CXX object src/modules/commander/CMakeFiles/functional-ModeManagement.dir/ModeManagementTest.cpp.o
+[408/455] Linking CXX static library src/modules/sensors/vehicle_acceleration/libvehicle_acceleration.a
+[409/455] Linking CXX static library src/modules/rover_mecanum/libmodules__rover_mecanum.a
+[410/455] Linking CXX static library src/modules/sensors/vehicle_imu/libvehicle_imu.a
+[411/455] Linking CXX static library src/modules/sensors/vehicle_air_data/libvehicle_air_data.a
+[412/455] Linking CXX static library src/modules/sensors/vehicle_gps_position/libvehicle_gps_position.a
+[413/455] Linking CXX static library src/modules/sensors/vehicle_angular_velocity/libvehicle_angular_velocity.a
+[414/455] Linking CXX static library src/modules/sensors/vehicle_magnetometer/libvehicle_magnetometer.a
+[415/455] Linking CXX executable functional-ManualControl
+[416/455] Linking CXX static library src/modules/simulation/battery_simulator/libmodules__simulation__battery_simulator.a
+[417/455] Linking CXX static library src/modules/sensors/vehicle_optical_flow/libvehicle_optical_flow.a
+[418/455] Linking CXX static library src/modules/simulation/sensor_agp_sim/libmodules__simulation__sensor_agp_sim.a
+[419/455] Linking CXX static library src/modules/simulation/sensor_airspeed_sim/libmodules__simulation__sensor_airspeed_sim.a
+[420/455] Linking CXX static library src/modules/simulation/pwm_out_sim/libmodules__simulation__pwm_out_sim.a
+[421/455] Linking CXX static library src/modules/sensors/libmodules__sensors.a
+[422/455] Linking CXX static library src/modules/simulation/sensor_gps_sim/libmodules__simulation__sensor_gps_sim.a
+[423/455] Linking CXX static library src/modules/simulation/sensor_baro_sim/libmodules__simulation__sensor_baro_sim.a
+[424/455] Linking CXX static library src/modules/simulation/gz_bridge/libmodules__simulation__gz_bridge.a
+[425/455] Linking CXX static library src/modules/simulation/sensor_mag_sim/libmodules__simulation__senosr_mag_sim.a
+[426/455] Linking CXX executable unit-gps_blending_test
+[427/455] Linking CXX executable functional-RCUpdate
+[428/455] Linking CXX static library src/modules/simulation/simulator_mavlink/libmodules__simulation__simulator_mavlink.a
+[429/455] Linking CXX static library src/modules/uuv_att_control/libmodules__uuv_att_control.a
+[430/455] Linking CXX static library src/modules/simulation/simulator_sih/libmodules__simulation__simulator_sih.a
+[431/455] Linking CXX static library src/modules/uxrce_dds_client/libmodules__uxrce_dds_client.a
+[432/455] Linking CXX static library src/modules/temperature_compensation/libmodules__temperature_compensation.a
+[433/455] Linking CXX static library src/modules/uuv_pos_control/libmodules__uuv_pos_control.a
+[434/455] Linking CXX executable functional-GeofenceBreachAvoidance
+[435/455] Linking CXX static library src/modules/vtol_att_control/libmodules__vtol_att_control.a
+[436/455] Linking CXX static library src/examples/work_item/libexamples__work_item.a
+[437/455] Linking CXX static library src/examples/fake_magnetometer/libexamples__fake_magnetometer.a
+[438/455] Linking CXX static library src/examples/fake_gps/libmodules__fake_gps.a
+[439/455] Linking CXX static library src/examples/fake_imu/libmodules__fake_imu.a
+[440/455] Linking CXX static library src/systemcmds/tests/libsystemcmds__tests.a
+[441/455] Linking CXX executable functional-ModeManagement
+[442/455] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_mission.cpp.o
+[443/455] Linking CXX executable functional-VehicleOpticalFlow
+[444/455] Building CXX object src/modules/navigator/MissionFeasibility/CMakeFiles/functional-FeasibilityChecker.dir/FeasibilityCheckerTest.cpp.o
+[445/455] Linking CXX executable functional-Parameter
+[446/455] Linking CXX executable functional-FeasibilityChecker
+[447/455] Building CXX object src/lib/hybrid_control/CMakeFiles/unit-TransformationPosition.dir/TransformationPositionTest.cpp.o
+[448/455] Linking CXX executable unit-TransformationPosition
+[449/455] Building CXX object src/modules/rover_differential/CMakeFiles/functional-DifferentialOffboardControl.dir/DifferentialOffboardControlTest.cpp.o
+[450/455] Linking CXX executable functional-DifferentialOffboardControl
+[451/455] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_messages.cpp.o
+[452/455] Linking CXX static library src/modules/mavlink/libmodules__mavlink.a
+[453/455] Linking CXX executable unit-MavlinkStatustextHandler
+[454/455] Linking CXX executable bin/px4
+[454/455] Running tests
+   Site: crocodile
+   Build name: Linux-c++
+Test project /home/crocodile/PX4-Autopilot-debug-testc4-v1.16.1/build/px4_sitl_test
+        Start   1: functional-AdsbConflict
+  1/166 Test   #1: functional-AdsbConflict ..............................   Passed    0.00 sec
+        Start   2: unit-test_atmosphere
+  2/166 Test   #2: unit-test_atmosphere .................................   Passed    0.00 sec
+        Start   3: functional-CollisionPrevention
+  3/166 Test   #3: functional-CollisionPrevention .......................   Passed    0.01 sec
+        Start   4: unit-ObstacleMath
+  4/166 Test   #4: unit-ObstacleMath ....................................   Passed    0.00 sec
+        Start   5: unit-ControlAllocationPseudoInverse
+  5/166 Test   #5: unit-ControlAllocationPseudoInverse ..................   Passed    0.00 sec
+        Start   6: functional-ControlAllocationSequentialDesaturation
+  6/166 Test   #6: functional-ControlAllocationSequentialDesaturation ...   Passed    0.00 sec
+        Start   7: unit-Rotation
+  7/166 Test   #7: unit-Rotation ........................................   Passed    0.00 sec
+        Start   8: unit-FieldSensorBiasEstimator
+  8/166 Test   #8: unit-FieldSensorBiasEstimator ........................   Passed    0.00 sec
+        Start   9: unit-test_geo
+  9/166 Test   #9: unit-test_geo ........................................   Passed    0.00 sec
+        Start  10: unit-C610Protocol
+ 10/166 Test  #10: unit-C610Protocol ....................................   Passed    0.00 sec
+        Start  11: unit-M2006CommandAdapter
+ 11/166 Test  #11: unit-M2006CommandAdapter .............................   Passed    0.00 sec
+        Start  12: unit-M2006SpeedController
+ 12/166 Test  #12: unit-M2006SpeedController ............................   Passed    0.00 sec
+        Start  13: unit-M2006DriveGate
+ 13/166 Test  #13: unit-M2006DriveGate ..................................   Passed    0.00 sec
+        Start  14: unit-TransformationStateMachine
+ 14/166 Test  #14: unit-TransformationStateMachine ......................   Passed    0.00 sec
+        Start  15: unit-TransformationPosition
+ 15/166 Test  #15: unit-TransformationPosition ..........................   Passed    0.00 sec
+        Start  16: unit-Hx8BackendPolicy
+ 16/166 Test  #16: unit-Hx8BackendPolicy ................................   Passed    0.00 sec
+        Start  17: unit-M2006TxPolicy
+ 17/166 Test  #17: unit-M2006TxPolicy ...................................   Passed    0.00 sec
+        Start  18: unit-HybridTransitionPolicy
+ 18/166 Test  #18: unit-HybridTransitionPolicy ..........................   Passed    0.00 sec
+        Start  19: unit-CanOwnership
+ 19/166 Test  #19: unit-CanOwnership ....................................   Passed    0.00 sec
+        Start  20: unit-BusOffCleanup
+ 20/166 Test  #20: unit-BusOffCleanup ...................................   Passed    0.00 sec
+        Start  21: unit-CanInterfaceMap
+ 21/166 Test  #21: unit-CanInterfaceMap .................................   Passed    0.00 sec
+        Start  22: unit-Hx8Protocol
+ 22/166 Test  #22: unit-Hx8Protocol .....................................   Passed    0.00 sec
+        Start  23: unit-Hx8Controller
+ 23/166 Test  #23: unit-Hx8Controller ...................................   Passed    0.00 sec
+        Start  24: unit-Hx8CliPolicy
+ 24/166 Test  #24: unit-Hx8CliPolicy ....................................   Passed    0.00 sec
+        Start  25: unit-Hysteresis
+ 25/166 Test  #25: unit-Hysteresis ......................................   Passed    0.00 sec
+        Start  26: unit-test_lat_lon_alt
+ 26/166 Test  #26: unit-test_lat_lon_alt ................................   Passed    0.00 sec
+        Start  27: unit-MatrixAssignment
+ 27/166 Test  #27: unit-MatrixAssignment ................................   Passed    0.00 sec
+        Start  28: unit-MatrixAttitude
+ 28/166 Test  #28: unit-MatrixAttitude ..................................   Passed    0.00 sec
+        Start  29: unit-MatrixCopyTo
+ 29/166 Test  #29: unit-MatrixCopyTo ....................................   Passed    0.00 sec
+        Start  30: unit-MatrixDcm2
+ 30/166 Test  #30: unit-MatrixDcm2 ......................................   Passed    0.00 sec
+        Start  31: unit-MatrixDual
+ 31/166 Test  #31: unit-MatrixDual ......................................   Passed    0.00 sec
+        Start  32: unit-MatrixFilter
+ 32/166 Test  #32: unit-MatrixFilter ....................................   Passed    0.00 sec
+        Start  33: unit-MatrixHatvee
+ 33/166 Test  #33: unit-MatrixHatvee ....................................   Passed    0.00 sec
+        Start  34: unit-MatrixHelper
+ 34/166 Test  #34: unit-MatrixHelper ....................................   Passed    0.00 sec
+        Start  35: unit-MatrixIntegral
+ 35/166 Test  #35: unit-MatrixIntegral ..................................   Passed    0.00 sec
+        Start  36: unit-MatrixInverse
+ 36/166 Test  #36: unit-MatrixInverse ...................................   Passed    0.01 sec
+        Start  37: unit-MatrixLeastSquares
+ 37/166 Test  #37: unit-MatrixLeastSquares ..............................   Passed    0.00 sec
+        Start  38: unit-MatrixMultiplication
+ 38/166 Test  #38: unit-MatrixMultiplication ............................   Passed    0.00 sec
+        Start  39: unit-MatrixPseudoInverse
+ 39/166 Test  #39: unit-MatrixPseudoInverse .............................   Passed    0.00 sec
+        Start  40: unit-MatrixScalarMultiplication
+ 40/166 Test  #40: unit-MatrixScalarMultiplication ......................   Passed    0.00 sec
+        Start  41: unit-MatrixSetIdentity
+ 41/166 Test  #41: unit-MatrixSetIdentity ...............................   Passed    0.00 sec
+        Start  42: unit-MatrixSlice
+ 42/166 Test  #42: unit-MatrixSlice .....................................   Passed    0.00 sec
+        Start  43: unit-MatrixSparseVector
+ 43/166 Test  #43: unit-MatrixSparseVector ..............................   Passed    0.00 sec
+        Start  44: unit-MatrixSquare
+ 44/166 Test  #44: unit-MatrixSquare ....................................   Passed    0.00 sec
+        Start  45: unit-MatrixTranspose
+ 45/166 Test  #45: unit-MatrixTranspose .................................   Passed    0.00 sec
+        Start  46: unit-MatrixVector
+ 46/166 Test  #46: unit-MatrixVector ....................................   Passed    0.00 sec
+        Start  47: unit-MatrixUnwrap
+ 47/166 Test  #47: unit-MatrixUnwrap ....................................   Passed    0.00 sec
+        Start  48: unit-MatrixUpperRightTriangle
+ 48/166 Test  #48: unit-MatrixUpperRightTriangle ........................   Passed    0.00 sec
+        Start  49: unit-MatrixVector2
+ 49/166 Test  #49: unit-MatrixVector2 ...................................   Passed    0.00 sec
+        Start  50: unit-MatrixVector3
+ 50/166 Test  #50: unit-MatrixVector3 ...................................   Passed    0.00 sec
+        Start  51: unit-MatrixVectorAssignment
+ 51/166 Test  #51: unit-MatrixVectorAssignment ..........................   Passed    0.00 sec
+        Start  52: unit-LowPassFilter2pVector3f
+ 52/166 Test  #52: unit-LowPassFilter2pVector3f .........................   Passed    0.00 sec
+        Start  53: unit-AlphaFilter
+ 53/166 Test  #53: unit-AlphaFilter .....................................   Passed    0.00 sec
+        Start  54: unit-MedianFilter
+ 54/166 Test  #54: unit-MedianFilter ....................................   Passed    0.00 sec
+        Start  55: unit-NotchFilter
+ 55/166 Test  #55: unit-NotchFilter .....................................   Passed    0.00 sec
+        Start  56: unit-second_order_reference_model_test
+ 56/166 Test  #56: unit-second_order_reference_model_test ...............   Passed    0.00 sec
+        Start  57: unit-Functions
+ 57/166 Test  #57: unit-Functions .......................................   Passed    0.00 sec
+        Start  58: unit-Utilities
+ 58/166 Test  #58: unit-Utilities .......................................   Passed    0.00 sec
+        Start  59: unit-WelfordMean
+ 59/166 Test  #59: unit-WelfordMean .....................................   Passed    0.00 sec
+        Start  60: unit-WelfordMeanVector
+ 60/166 Test  #60: unit-WelfordMeanVector ...............................   Passed    0.00 sec
+        Start  61: unit-MaxDistanceToCircle
+ 61/166 Test  #61: unit-MaxDistanceToCircle .............................   Passed    0.00 sec
+        Start  62: functional-mixer_module_tests
+ 62/166 Test  #62: functional-mixer_module_tests ........................   Passed    0.70 sec
+        Start  63: unit-VelocitySmoothing
+ 63/166 Test  #63: unit-VelocitySmoothing ...............................   Passed    0.00 sec
+        Start  64: unit-PositionSmoothing
+ 64/166 Test  #64: unit-PositionSmoothing ...............................   Passed    0.00 sec
+        Start  65: unit-HeadingSmoothing
+ 65/166 Test  #65: unit-HeadingSmoothing ................................   Passed    0.00 sec
+        Start  66: unit-PID
+ 66/166 Test  #66: unit-PID .............................................   Passed    0.00 sec
+        Start  67: unit-pid_design_test
+ 67/166 Test  #67: unit-pid_design_test .................................   Passed    0.00 sec
+        Start  68: unit-PurePursuit
+ 68/166 Test  #68: unit-PurePursuit .....................................   Passed    0.00 sec
+        Start  69: unit-rate_control_test
+ 69/166 Test  #69: unit-rate_control_test ...............................   Passed    0.00 sec
+        Start  70: unit-Ringbuffer
+ 70/166 Test  #70: unit-Ringbuffer ......................................   Passed    0.00 sec
+        Start  71: unit-RoverControl
+ 71/166 Test  #71: unit-RoverControl ....................................   Passed    0.00 sec
+        Start  72: unit-RoverVelocityOffboardPolicy
+ 72/166 Test  #72: unit-RoverVelocityOffboardPolicy .....................   Passed    0.00 sec
+        Start  73: unit-SlewRate
+ 73/166 Test  #73: unit-SlewRate ........................................   Passed    0.00 sec
+        Start  74: unit-SlewRateYaw
+ 74/166 Test  #74: unit-SlewRateYaw .....................................   Passed    0.00 sec
+        Start  75: unit-arx_rls_test
+ 75/166 Test  #75: unit-arx_rls_test ....................................   Passed    0.00 sec
+        Start  76: unit-system_identification_test
+ 76/166 Test  #76: unit-system_identification_test ......................   Passed    0.00 sec
+        Start  77: unit-VariableLengthRingbuffer
+ 77/166 Test  #77: unit-VariableLengthRingbuffer ........................   Passed    0.00 sec
+        Start  78: unit-test_airspeed_fusion
+ 78/166 Test  #78: unit-test_airspeed_fusion ............................   Passed    0.00 sec
+        Start  79: unit-test_geo_lookup
+ 79/166 Test  #79: unit-test_geo_lookup .................................   Passed    0.00 sec
+        Start  80: functional-lockstep_scheduler_test
+ 80/166 Test  #80: functional-lockstep_scheduler_test ...................   Passed    0.59 sec
+        Start  81: unit-board_identity_test
+ 81/166 Test  #81: unit-board_identity_test .............................   Passed    0.00 sec
+        Start  82: functional-uORBMessageFields
+ 82/166 Test  #82: functional-uORBMessageFields .........................   Passed    0.00 sec
+        Start  83: functional-uORBSubscription
+ 83/166 Test  #83: functional-uORBSubscription ..........................   Passed    0.00 sec
+        Start  84: unit-MessageDisplay
+ 84/166 Test  #84: unit-MessageDisplay ..................................   Passed    0.00 sec
+        Start  85: unit-mag_calibration_test
+ 85/166 Test  #85: unit-mag_calibration_test ............................   Passed    0.00 sec
+        Start  86: functional-ModeManagement
+ 86/166 Test  #86: functional-ModeManagement ............................   Passed    0.00 sec
+        Start  87: unit-CommanderHybridStatus
+ 87/166 Test  #87: unit-CommanderHybridStatus ...........................   Passed    0.00 sec
+        Start  88: functional-failsafe_test
+ 88/166 Test  #88: functional-failsafe_test .............................   Passed    0.00 sec
+        Start  89: functional-HealthAndArmingChecks
+ 89/166 Test  #89: functional-HealthAndArmingChecks .....................   Passed    0.00 sec
+        Start  90: functional-hybridCheck
+ 90/166 Test  #90: functional-hybridCheck ...............................   Passed    0.00 sec
+        Start  91: functional-ActuatorEffectivenessHelicopter
+ 91/166 Test  #91: functional-ActuatorEffectivenessHelicopter ...........   Passed    0.00 sec
+        Start  92: functional-ActuatorEffectivenessRotors
+ 92/166 Test  #92: functional-ActuatorEffectivenessRotors ...............   Passed    0.00 sec
+        Start  93: unit-test_EKF_accelerometer
+ 93/166 Test  #93: unit-test_EKF_accelerometer ..........................   Passed    0.33 sec
+        Start  94: unit-test_EKF_airspeed
+ 94/166 Test  #94: unit-test_EKF_airspeed ...............................   Passed    0.07 sec
+        Start  95: unit-test_EKF_basics
+ 95/166 Test  #95: unit-test_EKF_basics .................................   Passed    0.07 sec
+        Start  96: unit-test_EKF_externalVision
+ 96/166 Test  #96: unit-test_EKF_externalVision .........................   Passed    0.05 sec
+        Start  97: unit-test_EKF_fake_pos
+ 97/166 Test  #97: unit-test_EKF_fake_pos ...............................   Passed    0.05 sec
+        Start  98: unit-test_EKF_flow
+ 98/166 Test  #98: unit-test_EKF_flow ...................................   Passed    0.07 sec
+        Start  99: unit-test_EKF_flow_generated
+ 99/166 Test  #99: unit-test_EKF_flow_generated .........................   Passed    0.00 sec
+        Start 100: unit-test_EKF_gyroscope
+100/166 Test #100: unit-test_EKF_gyroscope ..............................   Passed    0.14 sec
+        Start 101: unit-test_EKF_fusionLogic
+101/166 Test #101: unit-test_EKF_fusionLogic ............................   Passed    0.18 sec
+        Start 102: unit-test_EKF_gps
+102/166 Test #102: unit-test_EKF_gps ....................................   Passed    0.13 sec
+        Start 103: unit-test_EKF_gnss_yaw
+103/166 Test #103: unit-test_EKF_gnss_yaw ...............................   Passed    0.18 sec
+        Start 104: unit-test_EKF_gnss_yaw_generated
+104/166 Test #104: unit-test_EKF_gnss_yaw_generated .....................   Passed    0.00 sec
+        Start 105: unit-test_EKF_height_fusion
+105/166 Test #105: unit-test_EKF_height_fusion ..........................   Passed    0.30 sec
+        Start 106: unit-test_EKF_imuSampling
+106/166 Test #106: unit-test_EKF_imuSampling ............................   Passed    0.00 sec
+        Start 107: unit-test_EKF_initialization
+107/166 Test #107: unit-test_EKF_initialization .........................   Passed    0.06 sec
+        Start 108: unit-test_EKF_mag
+108/166 Test #108: unit-test_EKF_mag ....................................   Passed    0.03 sec
+        Start 109: unit-test_EKF_mag_declination_generated
+109/166 Test #109: unit-test_EKF_mag_declination_generated ..............   Passed    0.00 sec
+        Start 110: unit-test_EKF_measurementSampling
+110/166 Test #110: unit-test_EKF_measurementSampling ....................   Passed    0.00 sec
+        Start 111: unit-test_EKF_ringbuffer
+111/166 Test #111: unit-test_EKF_ringbuffer .............................   Passed    0.00 sec
+        Start 112: unit-test_EKF_terrain
+112/166 Test #112: unit-test_EKF_terrain ................................   Passed    0.05 sec
+        Start 113: unit-test_EKF_utils
+113/166 Test #113: unit-test_EKF_utils ..................................   Passed    0.00 sec
+        Start 114: unit-test_EKF_withReplayData
+114/166 Test #114: unit-test_EKF_withReplayData .........................   Passed    0.07 sec
+        Start 115: unit-test_EKF_yaw_estimator
+115/166 Test #115: unit-test_EKF_yaw_estimator ..........................   Passed    0.01 sec
+        Start 116: unit-test_EKF_yaw_fusion_generated
+116/166 Test #116: unit-test_EKF_yaw_fusion_generated ...................   Passed    0.00 sec
+        Start 117: unit-test_SensorRangeFinder
+117/166 Test #117: unit-test_SensorRangeFinder ..........................   Passed    0.00 sec
+        Start 118: unit-test_EKF_drag_fusion
+118/166 Test #118: unit-test_EKF_drag_fusion ............................   Passed    0.26 sec
+        Start 119: unit-test_EKF_grounded
+119/166 Test #119: unit-test_EKF_grounded ...............................   Passed    0.05 sec
+        Start 120: functional-StickTiltXY
+120/166 Test #120: functional-StickTiltXY ...............................   Passed    0.00 sec
+        Start 121: functional-ManualControl
+121/166 Test #121: functional-ManualControl .............................   Passed    0.00 sec
+        Start 122: unit-ManualControlSelector
+122/166 Test #122: unit-ManualControlSelector ...........................   Passed    0.00 sec
+        Start 123: unit-MavlinkStatustextHandler
+123/166 Test #123: unit-MavlinkStatustextHandler ........................   Passed    0.00 sec
+        Start 124: unit-AttitudeControl
+124/166 Test #124: unit-AttitudeControl .................................   Passed    0.00 sec
+        Start 125: unit-AttitudeControlMath
+125/166 Test #125: unit-AttitudeControlMath .............................   Passed    0.00 sec
+        Start 126: unit-zero_order_hover_thrust_ekf_test
+126/166 Test #126: unit-zero_order_hover_thrust_ekf_test ................   Passed    0.00 sec
+        Start 127: unit-ControlMath
+127/166 Test #127: unit-ControlMath .....................................   Passed    0.00 sec
+        Start 128: unit-PositionControl
+128/166 Test #128: unit-PositionControl .................................   Passed    0.00 sec
+        Start 129: unit-Takeoff
+129/166 Test #129: unit-Takeoff .........................................   Passed    0.00 sec
+        Start 130: unit-HybridTransitionMission
+130/166 Test #130: unit-HybridTransitionMission .........................   Passed    0.00 sec
+        Start 131: functional-GeofenceBreachAvoidance
+131/166 Test #131: functional-GeofenceBreachAvoidance ...................   Passed    4.01 sec
+        Start 132: functional-FeasibilityChecker
+132/166 Test #132: functional-FeasibilityChecker ........................   Passed    0.00 sec
+        Start 133: functional-RCUpdate
+133/166 Test #133: functional-RCUpdate ..................................   Passed    0.00 sec
+        Start 134: functional-DifferentialOffboardControl
+134/166 Test #134: functional-DifferentialOffboardControl ...............   Passed    0.00 sec
+        Start 135: unit-gps_blending_test
+135/166 Test #135: unit-gps_blending_test ...............................   Passed    0.00 sec
+        Start 136: functional-VehicleOpticalFlow
+136/166 Test #136: functional-VehicleOpticalFlow ........................   Passed    0.00 sec
+        Start 137: functional-Parameter
+137/166 Test #137: functional-Parameter .................................   Passed    0.00 sec
+        Start 138: sitl-atomic_bitset
+138/166 Test #138: sitl-atomic_bitset ...................................   Passed    0.08 sec
+        Start 139: sitl-bitset
+139/166 Test #139: sitl-bitset ..........................................   Passed    0.09 sec
+        Start 140: sitl-bson
+140/166 Test #140: sitl-bson ............................................   Passed    0.08 sec
+        Start 141: sitl-dataman
+141/166 Test #141: sitl-dataman .........................................   Passed    8.71 sec
+        Start 142: sitl-file2
+142/166 Test #142: sitl-file2 ...........................................   Passed    0.13 sec
+        Start 143: sitl-float
+143/166 Test #143: sitl-float ...........................................   Passed    0.08 sec
+        Start 144: sitl-hrt
+144/166 Test #144: sitl-hrt .............................................   Passed    5.09 sec
+        Start 145: sitl-int
+145/166 Test #145: sitl-int .............................................   Passed    0.07 sec
+        Start 146: sitl-IntrusiveQueue
+146/166 Test #146: sitl-IntrusiveQueue ..................................   Passed    0.07 sec
+        Start 147: sitl-IntrusiveSortedList
+147/166 Test #147: sitl-IntrusiveSortedList .............................   Passed    0.07 sec
+        Start 148: sitl-List
+148/166 Test #148: sitl-List ............................................   Passed    0.07 sec
+        Start 149: sitl-mathlib
+149/166 Test #149: sitl-mathlib .........................................   Passed    0.08 sec
+        Start 150: sitl-matrix
+150/166 Test #150: sitl-matrix ..........................................   Passed    0.07 sec
+        Start 151: sitl-param
+151/166 Test #151: sitl-param ...........................................   Passed    0.07 sec
+        Start 152: sitl-parameters
+152/166 Test #152: sitl-parameters ......................................   Passed    0.42 sec
+        Start 153: sitl-perf
+153/166 Test #153: sitl-perf ............................................   Passed    0.07 sec
+        Start 154: sitl-search_min
+154/166 Test #154: sitl-search_min ......................................   Passed    0.07 sec
+        Start 155: sitl-sleep
+155/166 Test #155: sitl-sleep ...........................................   Passed    2.08 sec
+        Start 156: sitl-versioning
+156/166 Test #156: sitl-versioning ......................................   Passed    0.08 sec
+        Start 157: sitl-controllib_test
+157/166 Test #157: sitl-controllib_test .................................   Passed    0.07 sec
+        Start 158: sitl-lightware_laser_test
+158/166 Test #158: sitl-lightware_laser_test ............................   Passed    0.06 sec
+        Start 159: sitl-rc_tests
+159/166 Test #159: sitl-rc_tests ........................................   Passed    0.09 sec
+        Start 160: sitl-uorb_tests
+160/166 Test #160: sitl-uorb_tests ......................................   Passed    4.84 sec
+        Start 161: sitl-mavlink
+161/166 Test #161: sitl-mavlink .........................................   Passed    0.13 sec
+        Start 162: sitl-imu_filtering
+162/166 Test #162: sitl-imu_filtering ...................................   Passed   10.28 sec
+        Start 163: dyn
+163/166 Test #163: dyn ..................................................   Passed    0.03 sec
+        Start 164: posix_hrt_test
+164/166 Test #164: posix_hrt_test .......................................   Passed    2.14 sec
+        Start 165: posix_cdev_test
+165/166 Test #165: posix_cdev_test ......................................   Passed    2.14 sec
+        Start 166: posix_wqueue_test
+166/166 Test #166: posix_wqueue_test ....................................   Passed    2.14 sec
+
+100% tests passed, 0 tests failed out of 166
+
+Total Test time (real) =  47.17 sec

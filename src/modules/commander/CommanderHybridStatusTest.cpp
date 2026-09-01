@@ -6,9 +6,40 @@
 
 #include <gtest/gtest.h>
 
+#include "commander_helper.h"
 #include "HybridStatusGuard.hpp"
+#include <lib/rover_control/RoverVelocityOffboardPolicy.hpp>
 
 using namespace time_literals;
+
+TEST(CommanderHybridStatus, IndependentIdentityIsNotVtol)
+{
+	vehicle_status_s status{};
+	status.system_type = commander::VehicleTypeQuadRover;
+	EXPECT_TRUE(commander::is_quad_rover(status));
+	EXPECT_FALSE(commander::is_vtol(status));
+}
+
+TEST(CommanderHybridStatus, RoverRejectsAltitudeAndTransitionRejectsAllModes)
+{
+	EXPECT_FALSE(commander::hybridModeAllowed(hybrid_vehicle_status_s::HYBRID_STATE_DRIVING,
+			vehicle_status_s::NAVIGATION_STATE_ALTCTL));
+	EXPECT_TRUE(commander::hybridModeAllowed(hybrid_vehicle_status_s::HYBRID_STATE_DRIVING,
+			vehicle_status_s::NAVIGATION_STATE_AUTO_RTL));
+	EXPECT_FALSE(commander::hybridModeAllowed(hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING,
+			vehicle_status_s::NAVIGATION_STATE_MANUAL));
+}
+
+TEST(CommanderHybridStatus, UnstableShapeHasNoPhysicalVehicleType)
+{
+	EXPECT_EQ(int(commander::hybridVehicleType(hybrid_vehicle_status_s::HYBRID_STATE_FLYING)),
+		  int(vehicle_status_s::VEHICLE_TYPE_ROTARY_WING));
+	EXPECT_EQ(int(commander::hybridVehicleType(hybrid_vehicle_status_s::HYBRID_STATE_DRIVING)),
+		  int(vehicle_status_s::VEHICLE_TYPE_ROVER));
+	EXPECT_EQ(int(commander::hybridVehicleType(hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING)), 0);
+	EXPECT_EQ(int(commander::hybridVehicleType(hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT)), 0);
+	EXPECT_EQ(int(commander::hybridVehicleType(hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN)), 0);
+}
 
 TEST(CommanderHybridStatus, FaultOverridesStableState)
 {
@@ -34,11 +65,24 @@ TEST(CommanderHybridStatus, TransitionAndStaleStatusDisableControl)
 	EXPECT_FALSE(commander::hybridStateEnablesControl(hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN));
 }
 
-TEST(CommanderHybridStatus, FreshUpdateTriggersImmediateProcessing)
+TEST(CommanderHybridStatus, RoverOffboardAvailabilityRequiresDedicatedModeAndHealthyShape)
 {
-	EXPECT_TRUE(commander::shouldProcessHybridStatus(true, true));
-	EXPECT_FALSE(commander::shouldProcessHybridStatus(true, false));
-	EXPECT_FALSE(commander::shouldProcessHybridStatus(false, true));
+	RoverVelocityOffboardMode mode{1_s, false, true, false, false, false, false, false, false};
+	RoverVelocityDrivingStatus status{1_s, 500_ms, true, true};
+	EXPECT_FALSE(roverOffboardModeAvailable(true, mode, status, 1_s, 1_s, 1_s));
+
+	mode.velocity = false;
+	mode.body_rate = true;
+	EXPECT_FALSE(roverOffboardModeAvailable(true, mode, status, 1_s, 1_s, 1_s));
+
+	mode.body_rate = false;
+	mode.rover_velocity = true;
+	EXPECT_TRUE(roverOffboardModeAvailable(true, mode, status, 1_s, 1_s, 1_s));
+
+	status.fault_free = false;
+	EXPECT_FALSE(roverOffboardModeAvailable(true, mode, status, 1_s, 1_s, 1_s));
+	status = {1, 500_ms, true, true};
+	EXPECT_FALSE(roverOffboardModeAvailable(true, mode, status, 2_s, 1_s, 1_s));
 }
 
 TEST(CommanderHybridStatus, SelectsRedPatternFromFaultAndOverload)

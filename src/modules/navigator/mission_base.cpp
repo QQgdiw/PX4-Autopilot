@@ -352,6 +352,7 @@ MissionBase::on_active()
 	    && !(_mission_item.nav_cmd == NAV_CMD_TAKEOFF
 		 || _mission_item.nav_cmd == NAV_CMD_VTOL_TAKEOFF
 		 || _mission_item.nav_cmd == NAV_CMD_DO_VTOL_TRANSITION
+		 || _mission_item.nav_cmd == NAV_CMD_DO_HYBRID_TRANSITION
 		 || _mission_item.nav_cmd == NAV_CMD_LAND
 		 || _mission_item.nav_cmd == NAV_CMD_VTOL_LAND
 		 || _work_item_type == WorkItemType::WORK_ITEM_TYPE_ALIGN_HEADING)) {
@@ -1220,6 +1221,8 @@ int MissionBase::setMissionToClosestItem(double lat, double lon, float alt, floa
 
 void MissionBase::resetMission()
 {
+	reset_hybrid_transition_mission_activation();
+
 	/* we do not need to reset mission if is already.*/
 	if (_mission.count == 0u) {
 		return;
