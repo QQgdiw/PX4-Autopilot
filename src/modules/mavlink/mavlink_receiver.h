@@ -43,6 +43,8 @@
 
 #pragma once
 
+#include <pthread.h>
+
 #include "mavlink_ftp.h"
 #include "mavlink_log_handler.h"
 #include "mavlink_mission.h"
@@ -129,8 +131,8 @@ public:
 	MavlinkReceiver(Mavlink &parent);
 	~MavlinkReceiver() override;
 
-	void start();
-	void stop();
+	bool start();
+	bool stop();
 
 	bool component_was_seen(int system_id, int component_id);
 	void enable_message_statistics() { _message_statistics_enabled = true; }
@@ -242,6 +244,11 @@ private:
 
 	px4::atomic_bool 	_should_exit{false};
 	pthread_t		_thread {};
+	px4::atomic_bool	_thread_started{false};
+	px4::atomic_bool	_thread_exited{true};
+	pthread_mutex_t	_thread_state_mutex{};
+	bool			_thread_state_mutex_initialized{false};
+	bool			_join_failure_reported{false};
 	/**
 	 * @brief Updates optical flow parameters.
 	 */

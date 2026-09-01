@@ -113,6 +113,7 @@ px4_add_module(
 		mavlink_receiver.cpp
 		mavlink_shell.cpp
 		mavlink_simple_analyzer.cpp
+		mavlink_stream_config.cpp
 		mavlink_stream.cpp
 		mavlink_timesync.cpp
 		mavlink_ulog.cpp
@@ -155,6 +156,28 @@ px4_add_unit_gtest(SRC MavlinkStatustextHandlerTest.cpp
 	LINKLIBS
 		modules__mavlink
 	)
+
+px4_add_unit_gtest(
+	SRC MavlinkStreamConfigTest.cpp
+	EXTRA_SRCS
+		mavlink_stream_config.cpp
+		mavlink_stream.cpp
+	INCLUDES
+		${MAVLINK_LIBRARY_DIR}
+		${MAVLINK_LIBRARY_DIR}/${CONFIG_MAVLINK_DIALECT}
+		${MAVLINK_LIBRARY_DIR}/${MAVLINK_DIALECT_UAVIONIX}
+	COMPILE_FLAGS
+		-Wno-address-of-packed-member
+		-Wno-cast-align
+)
+if(BUILD_TESTING)
+	add_dependencies(unit-MavlinkStreamConfig
+		parameters_header
+		uorb_headers
+		mavlink_c_generate
+		mavlink_c_generate_uavionix
+	)
+endif()
 
 if(CONFIG_NET AND "${PX4_PLATFORM}" MATCHES "nuttx")
 	target_link_libraries(modules__mavlink PRIVATE nuttx_apps) # netlib_get_ipv4netmask

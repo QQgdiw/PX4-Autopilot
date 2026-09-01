@@ -47,7 +47,134 @@
 MavlinkStream::MavlinkStream(Mavlink *mavlink) :
 	_mavlink(mavlink)
 {
+	_operation_mutex_initialized = pthread_mutex_init(&_operation_mutex, nullptr) == 0;
 	_last_sent = hrt_absolute_time();
+}
+
+MavlinkStream::~MavlinkStream()
+{
+	if (_operation_mutex_initialized) {
+		pthread_mutex_destroy(&_operation_mutex);
+	}
+}
+
+bool MavlinkStream::lock(bool nonblocking)
+{
+	if (!_operation_mutex_initialized) {
+		return false;
+	}
+
+	const int result = nonblocking ? pthread_mutex_trylock(&_operation_mutex) : pthread_mutex_lock(&_operation_mutex);
+	return result == 0;
+}
+
+void MavlinkStream::unlock()
+{
+	pthread_mutex_unlock(&_operation_mutex);
+}
+
+bool MavlinkStream::set_interval(int interval, bool nonblocking)
+{
+	if (!lock(nonblocking)) {
+		return false;
+	}
+
+	_interval = interval;
+	unlock();
+	return true;
+}
+
+int MavlinkStream::get_interval()
+{
+	if (!lock(false)) {
+		return 0;
+	}
+
+	const int interval = _interval;
+	unlock();
+	return interval;
+}
+
+bool MavlinkStream::get_rate_configuration(int &interval, unsigned &size_avg, bool &is_const_rate)
+{
+	if (!lock(true)) {
+		return false;
+	}
+
+	interval = _interval;
+	size_avg = get_size_avg();
+	is_const_rate = const_rate();
+	unlock();
+	return true;
+}
+
+bool MavlinkStream::get_status_snapshot(int &interval, unsigned &size, bool &is_const_rate)
+{
+	if (!lock(true)) {
+		return false;
+	}
+
+	interval = _interval;
+	size = get_size();
+	is_const_rate = const_rate();
+	unlock();
+	return true;
+}
+
+bool MavlinkStream::request_message(float param2, float param3, float param4, float param5, float param6, float param7)
+{
+	if (!lock(false)) {
+		return false;
+	}
+
+	const bool result = request_message_impl(param2, param3, param4, param5, param6, param7);
+	unlock();
+	return result;
+}
+
+bool MavlinkStreamLifecycle::release_reader()
+{
+	if (_reader_count == 0) {
+		return false;
+	}
+
+	--_reader_count;
+	return true;
+}
+
+bool MavlinkStreamLifecycle::retire(List<MavlinkStream *> &active_streams, MavlinkStream *stream)
+{
+	if (!active_streams.remove(stream)) {
+		return false;
+	}
+
+	/* Destruction is intentionally deferred so configuration commit never
+	 * executes a stream destructor while holding the handoff mutex. */
+	_retired_streams.add(stream);
+	return true;
+}
+
+void MavlinkStreamLifecycle::cleanup_retired()
+{
+	if (_reader_count == 0) {
+		_retired_streams.clear();
+	}
+}
+
+void MavlinkStreamLifecycle::clear(List<MavlinkStream *> &active_streams)
+{
+	while (MavlinkStream *stream = active_streams.getHead()) {
+		active_streams.remove(stream);
+
+		if (_reader_count > 0) {
+			_retired_streams.add(stream);
+
+		} else {
+			delete stream;
+		}
+	}
+
+	cleanup_retired();
 }
 
 /**
@@ -55,6 +182,19 @@ MavlinkStream::MavlinkStream(Mavlink *mavlink) :
  */
 int
 MavlinkStream::update(const hrt_abstime &t)
+{
+	if (!lock(true)) {
+		update_data_while_requesting();
+		return -1;
+	}
+
+	const int result = update_unlocked(t);
+	unlock();
+	return result;
+}
+
+int
+MavlinkStream::update_unlocked(const hrt_abstime &t)
 {
 	update_data();
 

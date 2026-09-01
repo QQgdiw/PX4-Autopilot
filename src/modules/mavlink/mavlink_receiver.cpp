@@ -45,6 +45,7 @@
 #include <lib/systemlib/px4_macros.h>
 
 #include <math.h>
+#include <errno.h>
 #include <poll.h>
 
 #ifdef CONFIG_NET
@@ -71,6 +72,13 @@
 
 MavlinkReceiver::~MavlinkReceiver()
 {
+	while (!stop()) {
+		/* Do not destroy receiver state while its thread may still dereference
+		 * the parent. Normal callers have already requested shutdown, so this
+		 * loop is only a defensive retry for a transient join error. */
+		px4_usleep(100000);
+	}
+
 	delete _tune_publisher;
 	delete _px4_accel;
 	delete _px4_gyro;
@@ -88,6 +96,10 @@ MavlinkReceiver::~MavlinkReceiver()
 	_sensor_baro_pub.unadvertise();
 	_sensor_gps_pub.unadvertise();
 	_sensor_optical_flow_pub.unadvertise();
+
+	if (_thread_state_mutex_initialized) {
+		pthread_mutex_destroy(&_thread_state_mutex);
+	}
 }
 
 static constexpr vehicle_odometry_s vehicle_odometry_empty {
@@ -115,6 +127,7 @@ MavlinkReceiver::MavlinkReceiver(Mavlink &parent) :
 	_parameters_manager(parent),
 	_mavlink_timesync(parent)
 {
+	_thread_state_mutex_initialized = pthread_mutex_init(&_thread_state_mutex, nullptr) == 0;
 }
 
 void
@@ -581,8 +594,11 @@ void MavlinkReceiver::handle_message_command_both(mavlink_message_t *msg, const 
 		result = handle_request_message_command(MAVLINK_MSG_ID_STORAGE_INFORMATION);
 
 	} else if (cmd_mavlink.command == MAV_CMD_SET_MESSAGE_INTERVAL) {
-		if (set_message_interval(
-			    (int)(cmd_mavlink.param1 + 0.5f), cmd_mavlink.param2, cmd_mavlink.param3, cmd_mavlink.param4, vehicle_command.param7)) {
+		const bool valid_message_id = PX4_ISFINITE(cmd_mavlink.param1) && cmd_mavlink.param1 >= 0.f &&
+					      cmd_mavlink.param1 <= UINT16_MAX;
+
+		if (!valid_message_id || set_message_interval(
+			    (int)roundf(cmd_mavlink.param1), cmd_mavlink.param2, cmd_mavlink.param3, cmd_mavlink.param4, vehicle_command.param7)) {
 			result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_FAILED;
 		}
 
@@ -591,10 +607,15 @@ void MavlinkReceiver::handle_message_command_both(mavlink_message_t *msg, const 
 
 	} else if (cmd_mavlink.command == MAV_CMD_REQUEST_MESSAGE) {
 
-		uint16_t message_id = (uint16_t)roundf(vehicle_command.param1);
-		result = handle_request_message_command(message_id,
-							vehicle_command.param2, vehicle_command.param3, vehicle_command.param4,
-							vehicle_command.param5, vehicle_command.param6, vehicle_command.param7);
+		if (PX4_ISFINITE(vehicle_command.param1) && vehicle_command.param1 >= 0.f && vehicle_command.param1 <= UINT16_MAX) {
+			const uint16_t message_id = (uint16_t)roundf(vehicle_command.param1);
+			result = handle_request_message_command(message_id,
+								vehicle_command.param2, vehicle_command.param3, vehicle_command.param4,
+								vehicle_command.param5, vehicle_command.param6, vehicle_command.param7);
+
+		} else {
+			result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_DENIED;
+		}
 
 	} else if (cmd_mavlink.command == MAV_CMD_INJECT_FAILURE) {
 		if (_mavlink.failure_injection_enabled()) {
@@ -756,29 +777,21 @@ uint8_t MavlinkReceiver::handle_request_message_command(uint16_t message_id, flo
 		float param5, float param6, float param7)
 {
 	bool stream_found = false;
-	bool message_sent = false;
-
-	for (const auto &stream : _mavlink.get_streams()) {
-		if (stream->get_id() == message_id) {
-			stream_found = true;
-			message_sent = stream->request_message(param2, param3, param4, param5, param6, param7);
-			break;
-		}
-	}
+	bool message_sent = _mavlink.request_message(message_id, param2, param3, param4, param5, param6, param7,
+			    stream_found);
 
 	if (!stream_found) {
 		// If we don't find the stream, we can configure it with rate 0 and then trigger it once.
 		const char *stream_name = get_stream_name(message_id);
 
 		if (stream_name != nullptr) {
-			_mavlink.configure_stream_threadsafe(stream_name, 0.0f);
+			const MavlinkStreamConfigHandoff::Result configure_result =
+				_mavlink.configure_stream_threadsafe(stream_name, 0.0f);
 
-			// Now we try again to send it.
-			for (const auto &stream : _mavlink.get_streams()) {
-				if (stream->get_id() == message_id) {
-					message_sent = stream->request_message(param2, param3, param4, param5, param6, param7);
-					break;
-				}
+			if (configure_result == MavlinkStreamConfigHandoff::Result::Success) {
+				// Now we try again to send it.
+				message_sent = _mavlink.request_message(message_id, param2, param3, param4, param5, param6, param7,
+									stream_found);
 			}
 		}
 	}
@@ -2236,7 +2249,7 @@ MavlinkReceiver::handle_message_heartbeat(mavlink_message_t *msg)
 int
 MavlinkReceiver::set_message_interval(int msgId, float interval, float param3, float param4, float param7)
 {
-	if (msgId == MAVLINK_MSG_ID_HEARTBEAT) {
+	if (msgId == MAVLINK_MSG_ID_HEARTBEAT || !PX4_ISFINITE(interval)) {
 		return PX4_ERROR;
 	}
 
@@ -2255,17 +2268,10 @@ MavlinkReceiver::set_message_interval(int msgId, float interval, float param3, f
 		return PX4_ERROR;
 	}
 
-	// configure_stream wants a rate (msgs/second), so convert here.
 	float rate = 0.f;
 
-	if (interval < -0.00001f) {
-		rate = 0.f; // stop the stream
-
-	} else if (interval > 0.00001f) {
-		rate = 1000000.0f / interval;
-
-	} else {
-		rate = -2.f; // set default rate
+	if (!MavlinkStreamConfigHandoff::interval_to_rate(interval, rate)) {
+		return PX4_ERROR;
 	}
 
 	bool found_id = false;
@@ -2274,8 +2280,8 @@ MavlinkReceiver::set_message_interval(int msgId, float interval, float param3, f
 		const char *stream_name = get_stream_name(msgId);
 
 		if (stream_name != nullptr) {
-			_mavlink.configure_stream_threadsafe(stream_name, rate);
-			found_id = true;
+			found_id = _mavlink.configure_stream_threadsafe(stream_name, rate) ==
+				   MavlinkStreamConfigHandoff::Result::Success;
 		}
 	}
 
@@ -2285,17 +2291,8 @@ MavlinkReceiver::set_message_interval(int msgId, float interval, float param3, f
 void
 MavlinkReceiver::get_message_interval(int msgId)
 {
-	unsigned interval = 0;
-
-	for (const auto &stream : _mavlink.get_streams()) {
-		if (stream->get_id() == msgId) {
-			interval = stream->get_interval();
-			break;
-		}
-	}
-
 	// send back this value...
-	mavlink_msg_message_interval_send(_mavlink.get_channel(), msgId, interval);
+	mavlink_msg_message_interval_send(_mavlink.get_channel(), msgId, _mavlink.get_message_interval(msgId));
 }
 
 void
@@ -3152,7 +3149,7 @@ MavlinkReceiver::run()
 	ssize_t nread = 0;
 	hrt_abstime last_send_update = 0;
 
-	while (!_mavlink.should_exit()) {
+	while (!_should_exit.load() && !_mavlink.should_exit()) {
 
 		// check for parameter updates
 		if (_parameter_update_sub.updated()) {
@@ -3481,8 +3478,23 @@ void MavlinkReceiver::print_detailed_rx_stats() const
 	}
 }
 
-void MavlinkReceiver::start()
+bool MavlinkReceiver::start()
 {
+	if (!_thread_state_mutex_initialized) {
+		PX4_ERR("receiver thread state mutex unavailable");
+		return false;
+	}
+
+	pthread_mutex_lock(&_thread_state_mutex);
+
+	if (_thread_started.load()) {
+		pthread_mutex_unlock(&_thread_state_mutex);
+		return true;
+	}
+
+	_should_exit.store(false);
+	_thread_exited.store(false);
+
 	pthread_attr_t receiveloop_attr;
 	pthread_attr_init(&receiveloop_attr);
 
@@ -3494,9 +3506,20 @@ void MavlinkReceiver::start()
 	pthread_attr_setstacksize(&receiveloop_attr,
 				  PX4_STACK_ADJUSTED(sizeof(MavlinkReceiver) + 2840 + MAVLINK_RECEIVER_NET_ADDED_STACK));
 
-	pthread_create(&_thread, &receiveloop_attr, MavlinkReceiver::start_trampoline, (void *)this);
+	const int create_result = pthread_create(&_thread, &receiveloop_attr, MavlinkReceiver::start_trampoline, (void *)this);
+
+	if (create_result == 0) {
+		_thread_started.store(true);
+		_join_failure_reported = false;
+
+	} else {
+		_thread_exited.store(true);
+		PX4_ERR("failed to start receiver thread (%i)", create_result);
+	}
 
 	pthread_attr_destroy(&receiveloop_attr);
+	pthread_mutex_unlock(&_thread_state_mutex);
+	return create_result == 0;
 }
 
 void
@@ -3510,11 +3533,55 @@ void *MavlinkReceiver::start_trampoline(void *context)
 {
 	MavlinkReceiver *self = reinterpret_cast<MavlinkReceiver *>(context);
 	self->run();
+	self->_thread_exited.store(true);
 	return nullptr;
 }
 
-void MavlinkReceiver::stop()
+bool MavlinkReceiver::stop()
 {
 	_should_exit.store(true);
-	pthread_join(_thread, nullptr);
+
+	if (!_thread_state_mutex_initialized) {
+		return !_thread_started.load();
+	}
+
+	pthread_mutex_lock(&_thread_state_mutex);
+	bool stopped = true;
+
+	if (_thread_started.load()) {
+		int join_result = EDEADLK;
+
+		if (!pthread_equal(pthread_self(), _thread)) {
+			do {
+				join_result = pthread_join(_thread, nullptr);
+			} while (join_result == EINTR);
+		}
+
+		if (join_result == 0) {
+			_thread_started.store(false);
+			_thread_exited.store(true);
+			_join_failure_reported = false;
+
+		} else if (_thread_exited.load()) {
+			/* The execution lifetime is over even if the platform failed to
+			 * reap its pthread bookkeeping. Parent memory is now safe to free. */
+			_thread_started.store(false);
+
+			if (!_join_failure_reported) {
+				PX4_ERR("receiver exited but join failed (%i)", join_result);
+				_join_failure_reported = true;
+			}
+
+		} else if (!_join_failure_reported) {
+			PX4_ERR("failed to join receiver thread (%i)", join_result);
+			_join_failure_reported = true;
+			stopped = false;
+
+		} else {
+			stopped = false;
+		}
+	}
+
+	pthread_mutex_unlock(&_thread_state_mutex);
+	return stopped;
 }

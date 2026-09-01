@@ -44,6 +44,7 @@
 
 #include <pthread.h>
 #include <stdbool.h>
+#include <string.h>
 
 #ifdef __PX4_NUTTX
 #include <nuttx/fs/fs.h>
@@ -84,6 +85,7 @@
 #include "mavlink_messages.h"
 #include "mavlink_receiver.h"
 #include "mavlink_shell.h"
+#include "mavlink_stream_config.h"
 #include "mavlink_ulog.h"
 
 #define DEFAULT_BAUD_RATE       57600
@@ -131,6 +133,7 @@ public:
 	void request_stop()
 	{
 		_task_should_exit.store(true);
+		_stream_config_handoff.shutdown();
 		_receiver.request_stop();
 	}
 
@@ -365,7 +368,7 @@ public:
 
 	mavlink_channel_t	get_channel() const { return _channel; }
 
-	void			configure_stream_threadsafe(const char *stream_name, float rate = -1.0f);
+	MavlinkStreamConfigHandoff::Result configure_stream_threadsafe(const char *stream_name, float rate = -1.0f);
 
 	orb_advert_t		*get_mavlink_log_pub() { return &_mavlink_log_pub; }
 
@@ -411,9 +414,18 @@ public:
 	 */
 	void			send_protocol_version();
 
-	List<MavlinkStream *> &get_streams() { return _streams; }
+	bool request_message(uint16_t message_id, float param2, float param3, float param4, float param5, float param6,
+			     float param7, bool &stream_found);
+	unsigned get_message_interval(int message_id);
 
-	float			get_rate_mult() const { return _rate_mult; }
+	float get_rate_mult() const
+	{
+		const uint32_t rate_mult_bits = _rate_mult_bits.load();
+		float rate_mult = 0.f;
+		static_assert(sizeof(rate_mult) == sizeof(rate_mult_bits), "unexpected float size");
+		memcpy(&rate_mult, &rate_mult_bits, sizeof(rate_mult));
+		return rate_mult;
+	}
 
 	float			get_baudrate() { return _baudrate; }
 
@@ -568,7 +580,9 @@ private:
 
 	unsigned		_main_loop_delay{1000};	/**< mainloop delay, depends on data rate */
 
+	pthread_mutex_t		_streams_mutex{}; ///< protects the stream list and lifecycle reader state
 	List<MavlinkStream *>		_streams;
+	MavlinkStreamLifecycle	_stream_lifecycle;
 
 	MavlinkShell		*_mavlink_shell{nullptr};
 	MavlinkULog		*_mavlink_ulog{nullptr};
@@ -587,7 +601,7 @@ private:
 
 	int			_baudrate{57600};
 	int			_datarate{1000};		///< data rate for normal streams (attitude, position, etc.)
-	float			_rate_mult{1.0f};
+	px4::atomic<uint32_t>	_rate_mult_bits{0x3f800000u};
 	float			_high_latency_freq{0.015f};	///< frequency of HIGH_LATENCY2 stream
 
 	bool			_radio_status_available{false};
@@ -601,8 +615,7 @@ private:
 	 */
 	unsigned int		_mavlink_param_queue_index{0};
 
-	char			*_subscribe_to_stream{nullptr};
-	float			_subscribe_to_stream_rate{0.0f};  ///< rate of stream to subscribe to (0=disable, -1=unlimited, -2=default)
+	MavlinkStreamConfigHandoff _stream_config_handoff{};
 	bool			_udp_initialised{false};
 
 	FLOW_CONTROL_MODE	_flow_control_mode{Mavlink::FLOW_CONTROL_OFF};
@@ -694,21 +707,28 @@ private:
 	 * @param rate streaming rate in Hz, -1 = unlimited rate
 	 * @return 0 on success, <0 on error
 	 */
-	int configure_stream(const char *stream_name, const float rate = -1.0f);
+	int configure_stream(const char *stream_name, const float rate = -1.0f, bool strict = false);
+	int configure_stream_locked(const char *stream_name, float rate, bool strict);
 
 	/**
 	 * Configure default streams according to _mode for either all streams or only a single
 	 * stream.
 	 * @param configure_single_stream: if nullptr, configure all streams, else only a single stream
+	 * @param resolved_rate: if non-null, resolve the selected default without applying it
 	 * @return 0 on success, <0 on error
 	 */
-	int configure_streams_to_default(const char *configure_single_stream = nullptr);
+	int configure_streams_to_default(const char *configure_single_stream = nullptr, bool strict = false,
+					 float *resolved_rate = nullptr);
+
+	MavlinkStreamConfigHandoff::Result configure_requested_stream(const char *stream_name, float rate,
+			MavlinkStreamConfigHandoff &handoff, uint32_t generation);
 
 	void pass_message(const mavlink_message_t *msg);
 
 	void publish_telemetry_status();
 
 	void check_requested_subscriptions();
+	void cleanup_retired_streams();
 
 	void handleCommands();
 
@@ -728,6 +748,7 @@ private:
 	 * Update rate mult so total bitrate will be equal to _datarate.
 	 */
 	void update_rate_mult();
+	void set_rate_mult(float rate_mult);
 
 #if defined(MAVLINK_UDP)
 	void find_broadcast_address();
@@ -739,6 +760,7 @@ private:
 	bool set_channel();
 
 	bool set_instance_id();
+	void release_instance_id();
 
 	/**
 	 * Main mavlink task.
