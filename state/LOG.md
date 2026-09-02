@@ -943,3 +943,24 @@
 - The completed integration was published as new PX4 branch
   `origin/feature/testc4-rover-tuning`. No QGC repository files were changed;
   powered USB/QGC validation remains an explicit handoff item.
+- 2026-09-02: `HYBR_QUAD_ROV` was a residual switch from the old MAV_TYPE 22
+  VTOL facade. In the independent architecture, Commander identifies the
+  vehicle from `MAV_TYPE=200` and `rc.hybrid_apps` already starts
+  `mc_rate_control`, `mc_att_control`, and `mc_pos_control` without `vtol`.
+  Keeping the global parameter could only create a misleading or unsafe manual
+  override for standard VTOL startup, so its definition and all executable
+  reads were removed. Historical spec/plan references were retained as design
+  provenance rather than active configuration instructions.
+- Removal verification: executable source/startup references are zero; the
+  Hybrid contract passes; 6/6 Hybrid, Commander, Mission and Differential
+  Offboard focused CTests pass; affected-source AStyle and `git diff --check`
+  pass; the regenerated `zeroone_x6_hybrid` parameter metadata omits the
+  parameter and the hardware target builds at 1,893,952 bytes FLASH. Evidence
+  is in `state/test_remove_hybr_quad_rov_contract.log`,
+  `state/test_remove_hybr_quad_rov_ctest.log`,
+  `state/check_remove_hybr_quad_rov_style.log`, and
+  `state/build_remove_hybr_quad_rov.log`.
+- The first affected-source style audit exposed pre-existing indentation in
+  `MulticopterRateControl.cpp` and one missing blank line in
+  `MulticopterPositionControl.cpp`. Both were corrected mechanically with no
+  control-flow change before the final successful style check and rebuild.

@@ -42,17 +42,6 @@
  */
 
 /**
- * Enable Quad-Rover Hybrid Architecture
- *
- * If enabled, the system will treat a Standard VTOL configuration
- * as a Multicopter-Rover hybrid, routing fixed-wing states to rover controls.
- *
- * @boolean
- * @group Commander
- */
-PARAM_DEFINE_INT32(HYBR_QUAD_ROV, 0);
-
-/**
  * Roll trim
  *
  * The trim value is the actuator control value the system needs

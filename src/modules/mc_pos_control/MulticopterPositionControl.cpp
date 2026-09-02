@@ -391,6 +391,7 @@ void MulticopterPositionControl::Run()
 	perf_begin(_cycle_perf);
 
 	vehicle_status_s status{};
+
 	if (_vehicle_status_sub.copy(&status)) {
 		if (status.is_quad_rover && status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER) {
 
@@ -752,12 +753,6 @@ int MulticopterPositionControl::task_spawn(int argc, char *argv[])
 			vtol = true;
 		}
 	}
-
-	int32_t hybr_quad_rov = 0;
-        param_get(param_find("HYBR_QUAD_ROV"), &hybr_quad_rov);
-        if (hybr_quad_rov == 1) {
-                vtol = false;
-        }
 
 	MulticopterPositionControl *instance = new MulticopterPositionControl(vtol);
 

@@ -427,12 +427,6 @@ int MulticopterAttitudeControl::task_spawn(int argc, char *argv[])
 		}
 	}
 
-	int32_t hybr_quad_rov = 0;
-        param_get(param_find("HYBR_QUAD_ROV"), &hybr_quad_rov);
-        if (hybr_quad_rov == 1) {
-                vtol = false;
-        }
-
 	MulticopterAttitudeControl *instance = new MulticopterAttitudeControl(vtol);
 
 	if (instance) {

@@ -226,3 +226,17 @@ This directory records the status of testing for `debug/testc1-v1.16.1`.
   `origin/feature/testc4-rover-tuning`; original `testc1_v1.16.1`,
   `testc2_v1.16.1`, `testc3_v1.16.1`, and `testc4_v1.16.1` refs were not
   rewritten by the tuning phase.
+- `HYBR_QUAD_ROV` belonged to the retired MAV_TYPE 22 VTOL-facade startup
+  path. Independent Hybrid identity is now derived solely from `MAV_TYPE=200`,
+  and `rc.hybrid_apps` starts all multicopter controllers without the `vtol`
+  argument. The obsolete parameter and its three controller overrides were
+  removed on 2026-09-02; the old architecture remains described only in the
+  historical design/plan documents.
+- The post-removal Hybrid contract and 6/6 focused CTests pass, all four
+  affected source files pass the project AStyle check, and
+  `make zeroone_x6_hybrid` succeeds. Generated parameter XML/JSON/C++ metadata
+  contains no `HYBR_QUAD_ROV`. FLASH is 1,893,952 / 1,966,080 bytes (96.33%);
+  the `.px4` is 1,774,504 bytes with SHA-256
+  `c974219f7c14491d53c5b9bc5be7f3b1855dc8925c10160c2158b30ef95b6aa4`,
+  and the `.bin` SHA-256 is
+  `e3a7681a7a3c68f681e12aa67b298729b461ad3dc78861e255a7b030039be250`.

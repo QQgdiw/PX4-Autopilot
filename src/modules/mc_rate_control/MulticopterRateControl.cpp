@@ -111,27 +111,28 @@ MulticopterRateControl::Run()
 	perf_begin(_loop_perf);
 
 	vehicle_status_s status{};
+
 	if (_vehicle_status_sub.copy(&status)) {
 		// --- 新增：Quad-Rover Rover模式保护 ---
 		if (status.is_quad_rover && status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROVER) {
 
-		// 丢弃陀螺仪更新，防止闭环计算
-		vehicle_angular_velocity_s dummy_ang_vel{};
-		_vehicle_angular_velocity_sub.update(&dummy_ang_vel);
+			// 丢弃陀螺仪更新，防止闭环计算
+			vehicle_angular_velocity_s dummy_ang_vel{};
+			_vehicle_angular_velocity_sub.update(&dummy_ang_vel);
 
-		// 清空扭矩和推力 setpoint
-		vehicle_torque_setpoint_s torque{};
-		torque.timestamp = hrt_absolute_time();
-		memset(&torque.xyz, 0, sizeof(torque.xyz));
-		_vehicle_torque_setpoint_pub.publish(torque);
+			// 清空扭矩和推力 setpoint
+			vehicle_torque_setpoint_s torque{};
+			torque.timestamp = hrt_absolute_time();
+			memset(&torque.xyz, 0, sizeof(torque.xyz));
+			_vehicle_torque_setpoint_pub.publish(torque);
 
-		vehicle_thrust_setpoint_s thrust{};
-		thrust.timestamp = hrt_absolute_time();
-		memset(&thrust.xyz, 0, sizeof(thrust.xyz));
-		_vehicle_thrust_setpoint_pub.publish(thrust);
+			vehicle_thrust_setpoint_s thrust{};
+			thrust.timestamp = hrt_absolute_time();
+			memset(&thrust.xyz, 0, sizeof(thrust.xyz));
+			_vehicle_thrust_setpoint_pub.publish(thrust);
 
-		perf_end(_loop_perf);
-		return; // 完全跳过 MC 控制逻辑
+			perf_end(_loop_perf);
+			return; // 完全跳过 MC 控制逻辑
 		}
 	}
 
@@ -329,12 +330,6 @@ int MulticopterRateControl::task_spawn(int argc, char *argv[])
 			vtol = true;
 		}
 	}
-
-	int32_t hybr_quad_rov = 0;
-        param_get(param_find("HYBR_QUAD_ROV"), &hybr_quad_rov);
-        if (hybr_quad_rov == 1) {
-                vtol = false;
-        }
 
 	MulticopterRateControl *instance = new MulticopterRateControl(vtol);
 

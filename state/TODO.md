@@ -336,3 +336,15 @@
       are verified during handoff.
 - [ ] Perform powered USB/QGC validation of command 511 stream enable/disable,
       ACK behavior, termination frames, and live tuning values.
+
+## 2026-09-02 remove legacy HYBR_QUAD_ROV parameter
+
+- [x] Confirm that independent Quad-Rover identity is owned by `MAV_TYPE=200`
+      and normal Hybrid startup launches multicopter controllers without the
+      historical `vtol` argument.
+- [x] Remove the obsolete `HYBR_QUAD_ROV` parameter definition and the three
+      multicopter controller startup overrides.
+- [x] Run source-reference, formatting, focused test, full hybrid build, and
+      artifact checks. Hybrid contract and 6/6 focused CTests pass; generated
+      parameter metadata contains no `HYBR_QUAD_ROV`.
+- [x] Commit and push the cleanup to `origin/feature/testc4-rover-tuning`.

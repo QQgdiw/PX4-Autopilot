@@ -1,0 +1,18 @@
+Internal ctest changing into directory: /home/crocodile/PX4-Autopilot-testc4-rover-tuning/build/px4_sitl_test
+Test project /home/crocodile/PX4-Autopilot-testc4-rover-tuning/build/px4_sitl_test
+    Start  18: unit-HybridTransitionPolicy
+1/6 Test  #18: unit-HybridTransitionPolicy ..............   Passed    0.00 sec
+    Start  72: unit-RoverVelocityOffboardPolicy
+2/6 Test  #72: unit-RoverVelocityOffboardPolicy .........   Passed    0.00 sec
+    Start  87: unit-CommanderHybridStatus
+3/6 Test  #87: unit-CommanderHybridStatus ...............   Passed    0.00 sec
+    Start  90: functional-hybridCheck
+4/6 Test  #90: functional-hybridCheck ...................   Passed    0.00 sec
+    Start 131: unit-HybridTransitionMission
+5/6 Test #131: unit-HybridTransitionMission .............   Passed    0.00 sec
+    Start 135: functional-DifferentialOffboardControl
+6/6 Test #135: functional-DifferentialOffboardControl ...   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 6
+
+Total Test time (real) =   0.02 sec
