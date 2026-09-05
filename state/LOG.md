@@ -1480,8 +1480,9 @@
   formatter corrected them, after which the complete 171-test suite passed
   again. Focused HX/Hybrid/Commander/Mission tests pass 14/14, the Hybrid
   contract passes, and `git diff --check` is empty.
-- Final target build is successful at 1,869,480 bytes FLASH (95.09%). The
-  `.px4` is 1,748,844 bytes with SHA-256
-  `48f3980bace8f7df77c97e24bd38ba4d81b56729833db3fb11a10d499d89849b`;
-  the `.bin` SHA-256 is
-  `8f13ce277f4ec2063bddea1777f2a1d76f93c8cfc0779bb4941da2415cc0f95f`.
+- Merge commit `43dcabdcb1` has parents `96f3b71658` and `23d274ea60`.
+  A clean post-commit rebuild embeds `v1.16.1-152-g43dcabdcb1` and uses
+  1,869,472 bytes FLASH (95.09%). The `.px4` is 1,748,896 bytes with SHA-256
+  `080f4c1095c7935068236a4a91608f8bf21f0ea51eadee9981d9e768a7fb91da`;
+  the 1,869,472-byte `.bin` SHA-256 is
+  `528d8419e6da2ab178a85cc77d60bd8f36e2e46d2bc6d9bfe3f984f1b500f044`.

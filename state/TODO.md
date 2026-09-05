@@ -490,8 +490,10 @@
       are introduced by this merge.
 - [x] Pass isolated-PATH full CTest (171/171), 14 focused HX/Hybrid/Commander/
       Mission tests, Hybrid contract, AStyle and `git diff --check`.
-- [x] Build `zeroone_x6_hybrid`; FLASH is 1,869,480 / 1,966,080 bytes (95.09%).
-- [ ] Commit the semantic merge, fast-forward the local target branch, push the
+- [x] Create merge commit `43dcabdcb1`, then rebuild `zeroone_x6_hybrid` from
+      a clean target directory; FLASH is 1,869,472 / 1,966,080 bytes (95.09%)
+      and the embedded version is `v1.16.1-152-g43dcabdcb1`.
+- [x] Record the final evidence, fast-forward the local target branch, push the
       target branch without force, and verify final refs/status.
 - [ ] Perform powered shared-UART, three-servo, landing-gear sequence, fault,
       QGC command/ACK and Rover tuning-stream acceptance tests.

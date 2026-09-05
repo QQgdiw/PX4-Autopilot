@@ -341,8 +341,9 @@ This directory records the status of testing for `debug/testc1-v1.16.1`.
   display the new per-servo/gear details without a future versioned message.
 - Final pre-commit verification passes 171/171 full CTests, 14/14 focused
   HX/Hybrid/Commander/Mission tests, the Hybrid source contract, affected-file
-  AStyle and `git diff --check`. `zeroone_x6_hybrid` uses 1,869,480 / 1,966,080
-  FLASH bytes (95.09%). Artifact sizes are 1,748,844 bytes (`.px4`) and
-  1,869,480 bytes (`.bin`); SHA-256 values are
-  `48f3980bace8f7df77c97e24bd38ba4d81b56729833db3fb11a10d499d89849b`
-  and `8f13ce277f4ec2063bddea1777f2a1d76f93c8cfc0779bb4941da2415cc0f95f`.
+  AStyle and `git diff --check`. The clean post-merge build embeds
+  `v1.16.1-152-g43dcabdcb1` and uses 1,869,472 / 1,966,080 FLASH bytes
+  (95.09%). Artifact sizes are 1,748,896 bytes (`.px4`) and 1,869,472 bytes
+  (`.bin`); SHA-256 values are
+  `080f4c1095c7935068236a4a91608f8bf21f0ea51eadee9981d9e768a7fb91da`
+  and `528d8419e6da2ab178a85cc77d60bd8f36e2e46d2bc6d9bfe3f984f1b500f044`.
