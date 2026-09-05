@@ -47,6 +47,12 @@ then
 	then
 		echo "ERROR [Hybrid] HX8 UART status unavailable; transformation arming will be inhibited"
 	fi
+elif param compare HYB_ACT_TYPE 2
+then
+	if ! hx8_uart_servo status
+	then
+		echo "ERROR [Hybrid] mixed UART servo bus unavailable; hybrid arming will be inhibited"
+	fi
 fi
 
 echo "[Hybrid] Core module start commands completed; check errors above."

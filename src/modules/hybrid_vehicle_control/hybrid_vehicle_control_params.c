@@ -46,10 +46,102 @@ PARAM_DEFINE_INT32(HYB_SENS_EN, 1);
  *
  * @value 0 PWM
  * @value 1 HX8 UART servo
+ * @value 2 HX8 landing gear plus dual HX-65HM transformation servos
  * @reboot_required true
  * @group Hybrid Control
  */
 PARAM_DEFINE_INT32(HYB_ACT_TYPE, 0);
+
+/**
+ * Automatic landing gear sequencing
+ *
+ * When disabled, LG_MAN_CH commands the gear independently. Gear position is
+ * not part of the transformation sequence, but gear communication and health
+ * must remain valid for vehicle readiness and transformation entry.
+ *
+ * @boolean
+ * @group Hybrid Control
+ */
+PARAM_DEFINE_INT32(LG_AUTO_EN, 1);
+
+/**
+ * Manual landing gear RC channel
+ *
+ * Below -0.5 commands down, the center zone holds the current position, and
+ * above 0.5 commands stowed. Used only when LG_AUTO_EN is disabled.
+ *
+ * @min 1
+ * @max 6
+ * @group Hybrid Control
+ */
+PARAM_DEFINE_INT32(LG_MAN_CH, 5);
+
+/**
+ * Landing gear angle tolerance
+ *
+ * @group Hybrid Control
+ * @unit deg
+ * @min 0.1
+ * @max 90.0
+ * @decimal 1
+ */
+PARAM_DEFINE_FLOAT(LG_ANG_TOL, 5.0f);
+
+/**
+ * Landing gear motion timeout
+ *
+ * @group Hybrid Control
+ * @unit s
+ * @min 0.5
+ * @max 30.0
+ * @decimal 1
+ */
+PARAM_DEFINE_FLOAT(LG_TIMEOUT, 8.0f);
+
+/**
+ * Stable landed confirmation time
+ *
+ * @group Hybrid Control
+ * @unit s
+ * @min 0.1
+ * @max 5.0
+ * @decimal 1
+ */
+PARAM_DEFINE_FLOAT(LG_LAND_T, 1.0f);
+
+/**
+ * Stable airborne confirmation time
+ *
+ * @group Hybrid Control
+ * @unit s
+ * @min 0.1
+ * @max 5.0
+ * @decimal 1
+ */
+PARAM_DEFINE_FLOAT(LG_AIR_T, 1.0f);
+
+/**
+ * HX-65HM endpoint tolerance
+ *
+ * Both transformation servos must independently be within this tolerance.
+ *
+ * @group Hybrid Control
+ * @min 1
+ * @max 3000
+ */
+PARAM_DEFINE_INT32(H65_TOL, 100);
+
+/**
+ * HX-65HM maximum normalized left/right skew
+ *
+ * Zero means both sides are aligned. One is a full transformation stroke.
+ *
+ * @group Hybrid Control
+ * @min 0.01
+ * @max 0.50
+ * @decimal 2
+ */
+PARAM_DEFINE_FLOAT(H65_SKEW, 0.15f);
 
 /**
  * Transformation no-progress timeout

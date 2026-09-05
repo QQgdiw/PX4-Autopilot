@@ -1,0 +1,33 @@
+[1/22] Building CXX object src/lib/hx8_servo/CMakeFiles/hx65_pair_controller.dir/Hx65PairController.cpp.obj
+[2/22] Linking CXX static library src/lib/hx8_servo/libhx65_pair_controller.a
+[3/22] Building CXX object src/drivers/actuators/hx8_uart_servo/CMakeFiles/drivers__actuators__hx8_uart_servo.dir/hx8_uart_servo_main.cpp.obj
+[4/22] Generating px4 event json file from source
+[5/22] Building CXX object src/drivers/actuators/hx8_uart_servo/CMakeFiles/drivers__actuators__hx8_uart_servo.dir/Hx8UartServo.cpp.obj
+[6/22] Linking CXX static library src/drivers/actuators/hx8_uart_servo/libdrivers__actuators__hx8_uart_servo.a
+[7/22] Generating combined event json file
+[8/22] Generating component_general.json and checksums.h
+[9/22] Building CXX object src/modules/logger/CMakeFiles/modules__logger.dir/logger.cpp.obj
+[10/22] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_messages.cpp.obj
+[11/22] Linking CXX static library src/modules/logger/libmodules__logger.a
+[12/22] ROMFS: copying extras
+[13/22] Linking CXX static library src/modules/mavlink/libmodules__mavlink_original.a
+[14/22] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/modules__mavlink_unity.cpp.obj
+[15/22] ROMFS: pruning
+[16/22] Linking CXX static library src/modules/mavlink/libmodules__mavlink.a
+[17/22] ROMFS: generating image
+[18/22] Building C object ROMFS/CMakeFiles/romfs.dir/nsh_romfsimg.c.obj
+[19/22] Linking C static library ROMFS/libromfs.a
+[20/22] Linking CXX executable zeroone_x6_hybrid.elf
+Memory region         Used Size  Region Size  %age Used
+        ITCM_RAM:          0 GB        64 KB      0.00%
+           FLASH:     1888168 B      1920 KB     96.04%
+       DTCM1_RAM:          0 GB        64 KB      0.00%
+       DTCM2_RAM:          0 GB        64 KB      0.00%
+        AXI_SRAM:       99844 B       512 KB     19.04%
+           SRAM1:          0 GB       128 KB      0.00%
+           SRAM2:          0 GB       128 KB      0.00%
+           SRAM3:          0 GB        32 KB      0.00%
+           SRAM4:          2 KB        64 KB      3.12%
+          BKPRAM:          0 GB         4 KB      0.00%
+[21/22] Generating ../../zeroone_x6_hybrid.bin
+[22/22] Creating /home/crocodile/PX4-Autopilot-hx8-hx65hm/build/zeroone_x6_hybrid/zeroone_x6_hybrid.px4

@@ -48,6 +48,8 @@
 #include <lib/hybrid_control/TransformationStateMachine.hpp>
 #include <lib/hybrid_control/M2006DriveGate.hpp>
 #include <lib/hybrid_control/Hx8BackendPolicy.hpp>
+#include <lib/hybrid_control/Hx65BackendPolicy.hpp>
+#include <lib/hybrid_control/HybridSequenceCoordinator.hpp>
 #include <uORB/SubscriptionMultiArray.hpp>
 
 // uORB 发布与订阅
@@ -67,6 +69,8 @@
 #include <uORB/topics/magnetic_sensor.h>
 #include <uORB/topics/hx8_servo_status.h>
 #include <uORB/topics/hx8_servo_command.h>
+#include <uORB/topics/hx65_servo_status.h>
+#include <uORB/topics/hx65_servo_command.h>
 
 class HybridVehicleControl : public ModuleBase<HybridVehicleControl>, public ModuleParams, public px4::ScheduledWorkItem
 {
@@ -100,6 +104,8 @@ private:
 	void publish_status(const hybrid_control::TransformationInput &input, hrt_abstime now);
 	void publish_servo(hrt_abstime now);
 	void publish_hx8_command(hrt_abstime now);
+	void publish_hx65_command(hrt_abstime now);
+	void publish_gear_command(hrt_abstime now);
 	void publish_motor_outputs(hrt_abstime now);
 	hybrid_control::TransformationConfig transformation_config() const;
 	int clear_fault();
@@ -121,6 +127,7 @@ private:
 	uORB::Subscription _encoder_sub{ORB_ID(sensor_encoder)};
 	uORB::SubscriptionMultiArray<magnetic_sensor_s, 2> _magnetic_subs{ORB_ID::magnetic_sensor};
 	uORB::Subscription _hx8_status_sub{ORB_ID(hx8_servo_status)};
+	uORB::Subscription _hx65_status_sub{ORB_ID(hx65_servo_status)};
 	// 监听多旋翼分配器发出的电机指令 (Motor 1-4)
 	uORB::Subscription _actuator_motors_mc_sub{ORB_ID(actuator_motors_mc)};
 	// 监听官方差速模块发出的车轮指令 (Motor 5-6)
@@ -131,6 +138,7 @@ private:
 	uORB::Publication<hybrid_vehicle_status_s> _hybrid_status_pub{ORB_ID(hybrid_vehicle_status)};
 	uORB::Publication<vehicle_command_s>      _vehicle_command_pub{ORB_ID(vehicle_command)};
 	uORB::Publication<hx8_servo_command_s> _hx8_command_pub{ORB_ID(hx8_servo_command)};
+	uORB::Publication<hx65_servo_command_s> _hx65_command_pub{ORB_ID(hx65_servo_command)};
 	// 全系统唯一允许向最终物理引脚发送电机指令的模块
 	uORB::Publication<actuator_motors_s> _actuator_motors_final_pub{ORB_ID(actuator_motors)};
 
@@ -169,11 +177,21 @@ private:
 	actuator_armed_s _actuator_armed{};
 	vehicle_land_detected_s _vehicle_land_detected{};
 	hx8_servo_status_s _hx8_status{};
+	hx65_servo_status_s _hx65_status{};
 	uint32_t _hx8_sequence{0};
 	hybrid_control::HybridTarget _hx8_last_target{hybrid_control::HybridTarget::None};
 	uint64_t _hx8_last_hold{0};
 	uint8_t _hx8_release_attempts{0};
 	hybrid_control::Hx8CommandPolicy _hx8_command_policy;
+	hybrid_control::Hx8CommandPolicy _hx65_command_policy;
+	hybrid_control::HybridSequenceCoordinator _sequence;
+	hybrid_control::SequenceOutput _sequence_output{};
+	bool _sequence_initialized{false};
+	uint32_t _gear_sequence{0};
+	hybrid_control::GearTarget _last_gear_target{hybrid_control::GearTarget::None};
+	uint64_t _last_disarm_request{0};
+	float _manual_gear_value{0.f};
+	uint64_t _manual_gear_timestamp{0};
 
 	bool _manual_commissioning_active{false};
 	bool _manual_value_initialized{false};
@@ -218,6 +236,29 @@ private:
 		,(ParamInt<px4::params::HX8_ACC_T>) _param_hx8_acc_t
 		,(ParamInt<px4::params::HX8_DEC_T>) _param_hx8_dec_t
 		,(ParamInt<px4::params::HX8_PWR_LIM>) _param_hx8_pwr_lim
+		,(ParamBool<px4::params::LG_AUTO_EN>) _param_lg_auto_en
+		,(ParamInt<px4::params::LG_MAN_CH>) _param_lg_man_ch
+		,(ParamFloat<px4::params::LG_ANG_DN>) _param_lg_ang_dn
+		,(ParamFloat<px4::params::LG_ANG_CLR>) _param_lg_ang_clr
+		,(ParamFloat<px4::params::LG_ANG_STW>) _param_lg_ang_stw
+		,(ParamFloat<px4::params::LG_ANG_TOL>) _param_lg_ang_tol
+		,(ParamFloat<px4::params::LG_TIMEOUT>) _param_lg_timeout
+		,(ParamFloat<px4::params::LG_LAND_T>) _param_lg_land_t
+		,(ParamFloat<px4::params::LG_AIR_T>) _param_lg_air_t
+		,(ParamInt<px4::params::LG_MOVE_T>) _param_lg_move_t
+		,(ParamInt<px4::params::LG_ACC_T>) _param_lg_acc_t
+		,(ParamInt<px4::params::LG_DEC_T>) _param_lg_dec_t
+		,(ParamInt<px4::params::LG_PWR_LIM>) _param_lg_pwr_lim
+		,(ParamInt<px4::params::H65_L_ID>) _param_h65_l_id
+		,(ParamInt<px4::params::H65_R_ID>) _param_h65_r_id
+		,(ParamInt<px4::params::H65_L_QUD>) _param_h65_l_qud
+		,(ParamInt<px4::params::H65_L_ROV>) _param_h65_l_rov
+		,(ParamInt<px4::params::H65_R_QUD>) _param_h65_r_qud
+		,(ParamInt<px4::params::H65_R_ROV>) _param_h65_r_rov
+		,(ParamInt<px4::params::H65_SPEED>) _param_h65_speed
+		,(ParamInt<px4::params::H65_ACC>) _param_h65_acc
+		,(ParamInt<px4::params::H65_TOL>) _param_h65_tol
+		,(ParamFloat<px4::params::H65_SKEW>) _param_h65_skew
 	)
 };
 

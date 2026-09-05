@@ -115,6 +115,8 @@ set(msg_files
 	HoverThrustEstimate.msg
 	Hx8ServoCommand.msg
 	Hx8ServoStatus.msg
+	Hx65ServoCommand.msg
+	Hx65ServoStatus.msg
 	HybridVehicleStatus.msg
 	InputRc.msg
 	InternalCombustionEngineControl.msg

@@ -6,9 +6,46 @@ serial_config:
       group: HX8 UART Servo
       default: EXT2
 parameters:
+  - group: Hybrid Control
+    definitions:
+      HX_BAUD:
+        description:
+          short: Shared HX servo bus baud rate
+          long: |
+            Baud rate used by the flight-controller UART shared by the HX8-U45H-M
+            and both HX-65HM servos. All three servos must be commissioned to the
+            selected rate before they are connected to the bus.
+        type: enum
+        values:
+          50: 50 8N1
+          75: 75 8N1
+          110: 110 8N1
+          134: 134 8N1
+          150: 150 8N1
+          200: 200 8N1
+          300: 300 8N1
+          600: 600 8N1
+          1200: 1200 8N1
+          1800: 1800 8N1
+          2400: 2400 8N1
+          4800: 4800 8N1
+          9600: 9600 8N1
+          19200: 19200 8N1
+          38400: 38400 8N1
+          57600: 57600 8N1
+          115200: 115200 8N1
+          230400: 230400 8N1
+          460800: 460800 8N1
+          500000: 500000 8N1
+          921600: 921600 8N1
+          1000000: 1000000 8N1
+          1500000: 1500000 8N1
+          2000000: 2000000 8N1
+          3000000: 3000000 8N1
+        reboot_required: true
+        default: 1000000
   - group: HX8 UART Servo
     definitions:
-      HX8_BAUD: {description: {short: HX8 UART baud rate}, type: int32, reboot_required: true, default: 115200}
       HX8_ID: {description: {short: HX8 servo ID}, type: int32, min: 0, max: 254, reboot_required: true, default: 0}
       HX8_ANG_QUD: {description: {short: Quad endpoint angle}, type: float, min: -180, max: 180, reboot_required: true, default: 0}
       HX8_ANG_ROV: {description: {short: Rover endpoint angle}, type: float, min: -180, max: 180, reboot_required: true, default: 0}
@@ -25,3 +62,21 @@ parameters:
       HX8_CFG_STL: {description: {short: Expected stall release enable}, type: int32, min: 0, max: 1, reboot_required: true, default: 1}
       HX8_CFG_RSP: {description: {short: Expected response enable}, type: int32, min: 0, max: 1, reboot_required: true, default: 1}
       HX8_CFG_BOOT: {description: {short: Expected power-on lock}, type: int32, min: 0, max: 1, reboot_required: true, default: 0}
+      LG_ANG_DN: {description: {short: Landing gear fully down multi-turn angle deg}, type: float, reboot_required: true, default: 400000}
+      LG_ANG_CLR: {description: {short: Landing gear wheel-clear multi-turn angle deg}, type: float, reboot_required: true, default: 400000}
+      LG_ANG_STW: {description: {short: Landing gear stowed multi-turn angle deg}, type: float, reboot_required: true, default: 400000}
+      LG_MOVE_T: {description: {short: Landing gear move duration ms}, type: int32, min: 1, max: 65535, reboot_required: true, default: 5000}
+      LG_ACC_T: {description: {short: Landing gear acceleration duration ms}, type: int32, min: 20, max: 65535, reboot_required: true, default: 200}
+      LG_DEC_T: {description: {short: Landing gear deceleration duration ms}, type: int32, min: 20, max: 65535, reboot_required: true, default: 200}
+      LG_PWR_LIM: {description: {short: Landing gear run power limit mW}, type: int32, min: 0, max: 65535, reboot_required: true, default: 0}
+  - group: HX-65HM Pair
+    definitions:
+      H65_L_ID: {description: {short: Left transformation servo ID}, type: int32, min: 0, max: 253, reboot_required: true, default: 1}
+      H65_R_ID: {description: {short: Right transformation servo ID}, type: int32, min: 0, max: 253, reboot_required: true, default: 2}
+      H65_PROT: {description: {short: Expected protection control mask}, type: int32, min: 0, max: 63, reboot_required: true, default: 44}
+      H65_L_QUD: {description: {short: Left Quad endpoint steps}, type: int32, min: -32768, max: 30719, reboot_required: true, default: -32768}
+      H65_L_ROV: {description: {short: Left Rover endpoint steps}, type: int32, min: -32768, max: 30719, reboot_required: true, default: -32768}
+      H65_R_QUD: {description: {short: Right Quad endpoint steps}, type: int32, min: -32768, max: 30719, reboot_required: true, default: -32768}
+      H65_R_ROV: {description: {short: Right Rover endpoint steps}, type: int32, min: -32768, max: 30719, reboot_required: true, default: -32768}
+      H65_SPEED: {description: {short: Transformation speed steps per second}, type: int32, min: 1, max: 3400, reboot_required: true, default: 1000}
+      H65_ACC: {description: {short: Transformation acceleration in 100 steps per second squared}, type: int32, min: 0, max: 254, reboot_required: true, default: 10}

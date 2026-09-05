@@ -43,6 +43,11 @@ inline uint8_t hybridStateForCommander(const hybrid_vehicle_status_s &status, hr
 		return hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT;
 	}
 
+	if (status.sequence_fault != hybrid_vehicle_status_s::SEQUENCE_FAULT_NONE
+	    && status.propulsion_owner == hybrid_vehicle_status_s::PROPULSION_NONE) {
+		return hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT;
+	}
+
 	return status.current_state;
 }
 
@@ -58,7 +63,8 @@ inline HybridRedPattern hybridRedPattern(const hybrid_vehicle_status_s &status, 
 	}
 
 	const bool fault = status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT
-			   || status.fault_reason != hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE;
+			   || status.fault_reason != hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE
+			   || status.sequence_fault != hybrid_vehicle_status_s::SEQUENCE_FAULT_NONE;
 
 	if (overload && fault) {
 		return HybridRedPattern::CombinedTriple;

@@ -1,5 +1,89 @@
 # Test Workspace State
 
+- Hardware isolation proved that HX8 is healthy at a centered-switch cold boot
+  and that either first landing-gear move triggers power protection. The root
+  cause is now identified in code: command `0x0e` encodes its interval as 16
+  bits instead of the vendor-defined 32 bits, shifting the remaining fields.
+  The correction is built; target-hardware retest is still pending. Corrected
+  artifact: `build/zeroone_x6_hybrid/zeroone_x6_hybrid.px4`, 1,773,676 bytes,
+  SHA-256
+  `21571592d52922060a727335e74f0a754825e94b210e9cdbcda286fc58d25e87`.
+- With `LG_AUTO_EN=0`, landing-gear angle is operator-owned and does not gate
+  transformation stages or Ready. HX8 online/config/protection health remains
+  mandatory, Quad-to-Rover still requires landing plus disarm, Rover-to-Quad
+  still requires disarm, and concurrent HX8/HX-65HM motion is permitted.
+- Pre-`0x0e`-fix manual-gear firmware artifact:
+  `build/zeroone_x6_hybrid/zeroone_x6_hybrid.px4`, 1,773,656 bytes, SHA-256
+  `7c99c8242e24d2acd7001404b26aaaf5ac369e792d2ed85bc574d4c5a9ffbdea`.
+
+## 2026-09-02 HX8 landing gear and dual HX-65HM transformation worktree
+
+- Base: `origin/testc3_v1.16.1` at
+  `285a9d5716e6f2935545532350645044a52ad11b`.
+- Branch: `feat/hybrid-landing-gear-servos`.
+- Worktree: `/home/crocodile/PX4-Autopilot-hx8-hx65hm`.
+- Scope: one FashionStar HX8-U45H-M multi-turn landing-gear actuator and two
+  Hiwonder HX-65HM transformation actuators on one half-duplex UART bus.
+- Shared-bus UART rate: `HX_BAUD` in the `Hybrid Control` group, default
+  1,000,000 baud; the setting applies to the flight-controller UART for all
+  three servos.
+- Concise field guide: `docs/hybrid/hx-shared-bus-commissioning.zh-CN.md` covers
+  offline ID/rate setup, PX4 parameters, seven endpoint measurements, status
+  commands, no-propeller acceptance, and fault injection.
+- Current phase: implementation and host verification complete; target-hardware
+  commissioning and no-propeller acceptance remain pending.
+- Required build target: `make zeroone_x6_hybrid` only.
+- Initial integrated artifact: `build/zeroone_x6_hybrid/zeroone_x6_hybrid.px4`,
+  1,773,612 bytes, SHA-256
+  `ae2adcd53983d87dd927809ea89a5cf01c16a088d9424eea301fc60bbba1b6e4`.
+- Linker FLASH usage: 1,890,024 bytes of 1,920 KiB (96.13%).
+- The HX8 boot verifier deliberately does not read parameter 36. The shared
+  UART rate is applied from `HX_BAUD`; a servo-side baud mismatch is detected
+  by absence of replies, not by comparing protocol-specific baud codes.
+- An HX-65HM response timeout only invalidates online/healthy after the initial
+  request plus both retries fail. A retryable miss keeps the last verified
+  state; independent 500 ms feedback freshness still guards stale devices.
+- The single mixed-protocol UART enforces 5 ms of bus quiet time after a valid
+  response and after response-less HX-65HM broadcasts before either protocol
+  may transmit another request.
+- `hx8_uart_servo status` reports per-side HX-65HM timeout/retry counters using
+  atomic snapshots, allowing field diagnosis without changing the uORB ABI.
+- A malformed or wrong-ID HX-65HM frame increments the protocol-error counter
+  and resets parser framing but no longer aborts the expected transaction;
+  valid following bytes remain eligible until the normal response timeout.
+- `hx8_uart_servo status` stores and prints only the first HX-65HM RX parser
+  error, bounded to 16 wire-order bytes plus result/expected-ID/request-kind;
+  it does not stream or repeatedly log bus traffic.
+- The same bounded snapshot records a first ordinary response timeout as
+  diagnostic result 5, preserving an all-header or truncated RX stream after
+  repeated-header recovery.
+- The HX-65HM stream parser treats an arbitrary run of `0xff` bytes as a
+  repeated header preamble and retains the last two header bytes. Since valid
+  response IDs are 0..253, this is unambiguous and preserves all other checks.
+- During mixed-bus startup, HX-65HM discovery and configuration verification
+  now run as an exclusive phase before any HX8 transaction. Normal interleaved
+  scheduling resumes after both HX-65HM devices either verify or exhaust the
+  boot attempts. This isolates startup protocol interaction without masking a
+  genuine HX-65HM failure.
+- The diagnostic firmware captures the HX-65HM boot transaction stream before
+  the first UART read: exact TX and RX bytes, relative microsecond timestamps,
+  parser results, and timeouts. It freezes after success, failure, or 512 data
+  bytes and prints only on `hx8_uart_servo trace`; no live logging occurs in the
+  timing-sensitive receive path.
+- HX-65HM boot verification no longer sends Ping because both physical devices
+  respond to a targeted Ping on a multidrop bus. It starts with a targeted
+  identity-register Read. After a successful boot, the bounded trace repeatedly
+  rearms around each Monitor Read and freezes only on the first monitor timeout.
+- The Monitor diagnostic now uses a 16-entry circular pre-trigger buffer with
+  at most 32 raw bytes per entry (512 bytes total). It continuously records
+  HX8/HX-65HM TX and RX plus timeout/parser markers after boot, then freezes in
+  chronological order on the first HX-65HM Monitor timeout.
+- After any HX8 TX or RX, H65 transmission is held until a fixed 40 ms parser-
+  recovery deadline. If H65 work is pending when the deadline expires, it is
+  serviced before ordinary HX8 work; an HX8 emergency release can still
+  preempt and restart the recovery interval.
+- Hardware acceptance has not been performed.
+
 This directory records the status of testing for `debug/testc1-v1.16.1`.
 
 - Base: `origin/testc1_v1.16.1` at `d86bdd6a4a957704a7c4218a628d6007e2a4e1f9`

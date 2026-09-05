@@ -55,6 +55,10 @@ int Hx8UartServo::custom_command(int argc, char *argv[])
 		return instance->print_status();
 	}
 
+	if (!strcmp(argv[0], "trace")) {
+		return instance->cli_trace();
+	}
+
 	if (!strcmp(argv[0], "config") && argc > 1 && !strcmp(argv[1], "check")) {
 		return instance->cli_config_check();
 	}
@@ -72,7 +76,7 @@ int Hx8UartServo::print_usage(const char *reason)
 		PX4_WARN("%s", reason);
 	}
 
-	PX4_INFO("hx8_uart_servo start -d <device>; status; config check; config write; stop");
+	PX4_INFO("hx8_uart_servo start -d <device>; status; trace; config check; config write; stop");
 	return PX4_OK;
 }
 

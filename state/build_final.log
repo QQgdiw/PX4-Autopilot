@@ -1,0 +1,28 @@
+[1/17] Generating ../romfs_files.tar
+[2/17] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/hybridCheck.cpp.obj
+[3/17] Linking CXX static library src/modules/commander/HealthAndArmingChecks/libhealth_and_arming_checks.a
+[4/17] ROMFS: copying, generating airframes
+[5/17] ROMFS: copying rc.board_arch_defaults
+[6/17] ROMFS: copying rc.board_defaults
+[7/17] ROMFS: copying rc.board_mavlink
+[8/17] ROMFS: copying rc.board_sensors
+[9/17] ROMFS: copying /home/crocodile/PX4-Autopilot-hx8-hx65hm/boards/zeroone/x6/extras/px4_io-v2_default.bin
+[10/17] ROMFS: copying extras
+[11/17] ROMFS: pruning
+[12/17] ROMFS: generating image
+[13/17] Building C object ROMFS/CMakeFiles/romfs.dir/nsh_romfsimg.c.obj
+[14/17] Linking C static library ROMFS/libromfs.a
+[15/17] Linking CXX executable zeroone_x6_hybrid.elf
+Memory region         Used Size  Region Size  %age Used
+        ITCM_RAM:          0 GB        64 KB      0.00%
+           FLASH:     1886744 B      1920 KB     95.96%
+       DTCM1_RAM:          0 GB        64 KB      0.00%
+       DTCM2_RAM:          0 GB        64 KB      0.00%
+        AXI_SRAM:       99844 B       512 KB     19.04%
+           SRAM1:          0 GB       128 KB      0.00%
+           SRAM2:          0 GB       128 KB      0.00%
+           SRAM3:          0 GB        32 KB      0.00%
+           SRAM4:          2 KB        64 KB      3.12%
+          BKPRAM:          0 GB         4 KB      0.00%
+[16/17] Generating ../../zeroone_x6_hybrid.bin
+[17/17] Creating /home/crocodile/PX4-Autopilot-hx8-hx65hm/build/zeroone_x6_hybrid/zeroone_x6_hybrid.px4

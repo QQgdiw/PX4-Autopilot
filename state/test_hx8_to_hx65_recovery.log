@@ -1,0 +1,26 @@
+[1/5] Building CXX object src/lib/hx8_servo/CMakeFiles/hx8_controller.dir/Hx8Controller.cpp.o
+[2/5] Linking CXX static library src/lib/hx8_servo/libhx8_controller.a
+[3/5] Building CXX object src/lib/hx8_servo/CMakeFiles/unit-Hx8Controller.dir/Hx8ControllerTest.cpp.o
+[4/5] Linking CXX executable unit-Hx8Controller
+[4/5] Running tests
+   Site: crocodile
+   Build name: Linux-c++
+Test project /home/crocodile/PX4-Autopilot-hx8-hx65hm/build/px4_sitl_test
+    Start 16: unit-Hx8BackendPolicy
+1/7 Test #16: unit-Hx8BackendPolicy ............   Passed    0.01 sec
+    Start 17: unit-Hx65BackendPolicy
+2/7 Test #17: unit-Hx65BackendPolicy ...........   Passed    0.00 sec
+    Start 23: unit-Hx8Protocol
+3/7 Test #23: unit-Hx8Protocol .................   Passed    0.00 sec
+    Start 24: unit-Hx8Controller
+4/7 Test #24: unit-Hx8Controller ...............   Passed    0.00 sec
+    Start 25: unit-Hx8CliPolicy
+5/7 Test #25: unit-Hx8CliPolicy ................   Passed    0.00 sec
+    Start 26: unit-Hx65Protocol
+6/7 Test #26: unit-Hx65Protocol ................   Passed    0.00 sec
+    Start 27: unit-Hx65PairController
+7/7 Test #27: unit-Hx65PairController ..........   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 7
+
+Total Test time (real) =   0.11 sec

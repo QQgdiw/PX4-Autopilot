@@ -89,7 +89,7 @@ Hx8CommandDecision Hx8CommandPolicy::update(ActuatorBackend backend, const Trans
 		_held_target = HybridTarget::None;
 	}
 
-	if (backend != ActuatorBackend::Hx8) {
+	if (backend != ActuatorBackend::Hx8 && backend != ActuatorBackend::Hx65) {
 		return {};
 	}
 

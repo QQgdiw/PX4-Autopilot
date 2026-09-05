@@ -1,5 +1,129 @@
 # Current Task
 
+## 2026-09-02 landing gear and transformation actuator redesign
+
+- [x] Confirm the requested base branch and commit.
+- [x] Create a dedicated worktree and feature branch.
+- [x] Locate the existing HX8 protocol, driver, hybrid state machine, and arming
+      checks.
+- [x] Read the local HX-65HM protocol PDF, user manual, register workbook, and
+      SDK examples from `/mnt/e/PX4/HX-65HM`.
+- [x] Compare FashionStar's public multi-turn protocol with the implemented HX8
+      command subset.
+- [x] Build the untouched `zeroone_x6_hybrid` baseline and record evidence.
+- [x] Obtain owner approval for the bus architecture, explicit readiness model,
+      manual-mode interlocks, and unresolved hardware parameters.
+- [x] Write host tests for both wire protocols, mixed-protocol bus arbitration,
+      dual-servo agreement, landing-gear sequencing, and arming gates.
+- [x] Implement the approved UART bus driver and coordinator logic.
+- [x] Run focused tests and `make zeroone_x6_hybrid` serially; report hardware
+      acceptance separately.
+- [x] Replace the fixed/guard-only HX8 baud setting with the shared `HX_BAUD`
+      parameter, default 1 Mbps, and apply it to the UART termios setup.
+- [x] Verify generated metadata, Hx8 tests (4/4), Hx65 tests (3/3), and the
+      final `zeroone_x6_hybrid` firmware build after the baud-rate change.
+- [x] Write the concise Simplified Chinese shared-bus commissioning guide with
+      executable command templates and explicit measured-value placeholders.
+- [x] Remove the remaining HX8 parameter-36 baud-code comparison, add a
+      regression assertion that boot verification never reads it, pass Hx8
+      tests 4/4, and rebuild `zeroone_x6_hybrid`.
+- [x] Keep the last verified HX-65HM online/healthy state during retryable
+      first-response timeouts; declare offline only after all retries fail,
+      pass Hx65 tests 3/3, and rebuild `zeroone_x6_hybrid`.
+- [x] Add a 5 ms shared-bus quiet interval across HX8/HX-65HM protocol
+      switches, pass all Hx tests 7/7, and rebuild `zeroone_x6_hybrid`.
+- [x] Add thread-safe left/right HX-65HM timeout and retry diagnostics to the
+      driver CLI, pass all Hx tests 7/7, and rebuild the target firmware.
+- [x] Keep an HX-65HM transaction active after malformed/unrelated RX frames,
+      resynchronize the stream parser, pass all Hx tests 7/7, and rebuild the
+      target firmware.
+- [x] Add a bounded first-error HX-65HM RX byte snapshot with parser result,
+      expected ID, and request kind to the driver CLI; rebuild and retest.
+- [x] Decode the captured `ff ff ff ff` failure, make the H65 stream parser
+      retain the last two bytes of repeated header preambles, add the captured
+      Ping vector as a regression test, and rebuild the target firmware.
+- [x] Decode the subsequent `ff ff 02 ff` capture, isolate the complete
+      HX-65HM boot handshake from all HX8 traffic, pass all Hx tests 7/7, and
+      rebuild `zeroone_x6_hybrid`.
+- [x] Add a bounded 512-byte frozen HX-65HM boot transaction trace containing
+      TX, RX, relative timestamps, parser results, and timeout events; expose it
+      only through `hx8_uart_servo trace`, pass Hx tests 7/7, and rebuild.
+- [ ] Configure all three servos individually to the selected `HX_BAUD`, assign
+      HX-65HM IDs 1/2, then connect the shared bus with HX8 ID 0.
+- [x] Restore valid replies from HX-65HM ID 1/2 after upper-computer setup;
+      both servos now verify healthy at their Quad endpoints.
+- [ ] Flash the retry-semantics firmware, clear the previously latched fault
+      while fully disarmed, and confirm no new fault while timeout counters are
+      observed for at least 60 seconds.
+- [ ] Flash the shared-bus-spacing firmware and repeat the 60-second counter
+      delta test; do not accept flight readiness unless timeout growth is
+      eliminated or its remaining physical cause is identified.
+- [ ] Use the per-side CLI counters to determine whether recovered monitor
+      timeouts follow one actuator/wiring branch or affect both sides evenly.
+- [ ] Flash the RX-resynchronization firmware and verify that left ID 1 boots
+      reliably despite any counted stale or malformed frames.
+- [ ] Capture and decode the first failing left-ID-1 Ping RX bytes on hardware;
+      use the evidence to distinguish corruption, wrong-ID data, or other-
+      protocol residue before making further timing changes.
+- [ ] Flash the repeated-header parser firmware and confirm both H65 devices
+      boot and remain reachable for a 60-second counter-delta test.
+- [ ] Flash the HX-65HM-exclusive-boot firmware. If its first boot trace still
+      fails, record the trace: it then occurred before any HX8 request and
+      requires UART/electrical timing capture rather than more protocol
+      interleaving changes.
+- [x] Flash the boot-trace diagnostic firmware after a full power cycle and
+      decode the complete trace: both first Ping responses were corrupt at the
+      raw UART-read boundary, while both retries and all configuration reads
+      succeeded.
+- [ ] Capture flight-controller TX, RX, and the one-wire bus with a logic
+      analyzer around a failed HX-65HM response to distinguish converter
+      turnaround/bus contention from UART framing or signal-integrity faults.
+- [x] Remove per-device HX-65HM Ping from multidrop boot verification and start
+      directly with targeted identity-register reads; add a regression test
+      proving the controller never emits Ping during boot.
+- [x] Extend the bounded trace to discard successful Monitor transactions and
+      freeze the first failed steady-state Monitor Read separately; do not
+      assume its cause is the now-confirmed boot-Ping response collision.
+- [x] Flash the no-Ping/Monitor-trace firmware, confirm zero startup contention,
+      then return the first outcome-4 `hx8_uart_servo trace` capture.
+- [x] Confirm no-Ping boot verification on hardware and capture an outcome-4
+      Monitor failure: the exact request was transmitted, no RX bytes arrived,
+      and every counted timeout remained within the retry budget.
+- [x] Add a bounded circular pre-trigger trace covering both HX8 and HX-65HM TX
+      and RX, then freeze on the first H65 Monitor timeout to verify whether a
+      specific preceding HX8 frame or protocol-switch interval causes the miss.
+- [ ] Flash the cross-protocol pre-trigger firmware and return the complete
+      outcome-4 trace so the preceding HX8 frame and exact switch gap can be
+      correlated with the H65 no-response transaction.
+- [x] Correlate the first failure: 34.660 ms after HX8 RX succeeded, whereas
+      9.629 ms after HX8 RX produced zero response, bounding the H65 parser
+      recovery requirement between roughly 10 and 35 ms.
+- [x] Enforce a fixed asymmetric 40 ms HX8-to-H65 guard and split
+      long trace hex across bounded console lines, then rebuild the target.
+- [ ] Flash the 40 ms recovery firmware and compare per-side timeout/retry
+      counters before and after at least 60 seconds; accept only zero growth,
+      otherwise return the complete outcome-4 trace.
+- [x] Audit the reported second manual transition block and confirm it was
+      caused by manual mode retaining automatic gear-position stages.
+- [x] Implement the owner-approved manual sequence: no gear-angle stages,
+      retain HX8 health and landing/disarm gates, and allow concurrent motion.
+- [x] Pass Hybrid sequence/Commander tests, functional hybrid arming check,
+      all seven Hx tests, `git diff --check`, and `make zeroone_x6_hybrid`.
+- [ ] Hardware-test both manual shape directions with gear at non-endpoint
+      angles, then inject HX8 communication/protection failure and confirm
+      Ready/arming remains blocked.
+- [x] Center the manual gear control and cold-start both FC and servo: HX8 is
+      healthy with sequence zero, and either first gear move triggers `0x40`.
+- [x] Fix HX8 `0x0e` multi-turn interval packing from 16-bit to the documented
+      32-bit field, update controller tests, pass all seven HX tests, and build
+      `zeroone_x6_hybrid`.
+- [ ] Flash the corrected `0x0e` firmware and repeat both-direction landing-gear
+      motion while checking that `protection_flags` remains zero.
+- [ ] Record all seven physical endpoints, set nonzero motion power and
+      tolerances, reboot, and pass `hx8_uart_servo config check`.
+- [ ] Perform no-propeller automatic/manual sequence, induced feedback loss,
+      skew, protection, power-cycle, and load acceptance tests.
+
 - [x] Create an isolated worktree from `origin/testc1_v1.16.1`.
 - [x] Verify branch, base commit, and clean initial worktree state.
 - [x] Build `zeroone_x6_hybrid` and capture the result.

@@ -6,7 +6,7 @@
 namespace hybrid_control
 {
 
-enum class SensorSource : uint8_t { None, As5600, Tmag5273, Hx8 };
+enum class SensorSource : uint8_t { None, As5600, Tmag5273, Hx8, Hx65 };
 
 struct PositionSample {
 	float normalized{NAN};

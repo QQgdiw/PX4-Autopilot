@@ -1,5 +1,6 @@
 #include "TransformationStateMachine.hpp"
 #include "Hx8BackendPolicy.hpp"
+#include "Hx65BackendPolicy.hpp"
 
 #include <cmath>
 #include <cstring>
@@ -77,7 +78,8 @@ TransformFault validateTransformationConfig(const TransformationConfig &config)
 	    || !inRange(config.sensor_timeout_s, 0.01f, 5.f)
 	    || !inRange(config.debounce_s, 0.f, 2.f)
 	    || !inRange(config.max_transition_s, 0.1f, 10.f)
-	    || (config.backend != ActuatorBackend::Pwm && config.backend != ActuatorBackend::Hx8)
+	    || (config.backend != ActuatorBackend::Pwm && config.backend != ActuatorBackend::Hx8
+		&& config.backend != ActuatorBackend::Hx65)
 	    || !inRange(config.stall_timeout_s, 0.01f, 10.f)
 	    || !inRange(config.stall_distance, 0.001f, 1.f)
 	    || config.tmag_quad_device_id < 0
@@ -98,6 +100,16 @@ TransformFault validateTransformationConfig(const TransformationConfig &config)
 		if (!(span > 1e-6f) || config.angle_tolerance / span >= 0.5f) {
 			return TransformFault::InvalidConfiguration;
 		}
+	}
+	if (config.backend == ActuatorBackend::Hx65
+	    && !Hx65BackendPolicy::parametersValid(config.hx65_left_id, config.hx65_right_id, config.hx8_id,
+		    config.hx65_left_quad, config.hx65_left_rover, config.hx65_right_quad, config.hx65_right_rover,
+		    config.hx65_speed, config.hx65_acceleration, config.hx65_tolerance)) {
+		return TransformFault::InvalidConfiguration;
+	}
+	if (config.backend == ActuatorBackend::Hx65
+	    && !inRange(config.hx65_max_skew, 0.01f, 0.5f)) {
+		return TransformFault::InvalidConfiguration;
 	}
 
 	return TransformFault::None;
@@ -211,8 +223,9 @@ TransformationStateMachine::Endpoint TransformationStateMachine::as5600Endpoint(
 SensorSource TransformationStateMachine::stablePositionSource(const TransformationInput &input) const
 {
 	const Endpoint expected = _output.state == HybridState::Flying ? Endpoint::Quad : Endpoint::Rover;
-	if (_config.backend == ActuatorBackend::Hx8) {
-		return hx8Endpoint(input) == expected ? SensorSource::Hx8 : SensorSource::None;
+	if (_config.backend != ActuatorBackend::Pwm) {
+		const SensorSource source = _config.backend == ActuatorBackend::Hx8 ? SensorSource::Hx8 : SensorSource::Hx65;
+		return hx8Endpoint(input) == expected ? source : SensorSource::None;
 	}
 
 	if (input.as5600_valid) {
@@ -227,7 +240,7 @@ SensorSource TransformationStateMachine::stablePositionSource(const Transformati
 
 bool TransformationStateMachine::sensorConflict(const TransformationInput &input) const
 {
-	if (_config.backend == ActuatorBackend::Hx8) {
+	if (_config.backend != ActuatorBackend::Pwm) {
 		return false;
 	}
 	const bool quad_active = input.tmag_quad_valid && input.tmag_quad_active;
@@ -243,7 +256,8 @@ bool TransformationStateMachine::sensorConflict(const TransformationInput &input
 
 TransformationStateMachine::Endpoint TransformationStateMachine::hx8Endpoint(const TransformationInput &input) const
 {
-	if (!input.position.valid || input.position.source != SensorSource::Hx8 || !std::isfinite(input.position.normalized)) {
+	const SensorSource expected_source = _config.backend == ActuatorBackend::Hx65 ? SensorSource::Hx65 : SensorSource::Hx8;
+	if (!input.position.valid || input.position.source != expected_source || !std::isfinite(input.position.normalized)) {
 		return Endpoint::None;
 	}
 	if (!input.position.endpoint_confirmed) { return Endpoint::None; }
@@ -343,10 +357,11 @@ TransformationOutput TransformationStateMachine::initialize(const Transformation
 	}
 
 	const Endpoint endpoint = as5600Endpoint(input);
-	if (config.backend == ActuatorBackend::Hx8) {
+	if (config.backend != ActuatorBackend::Pwm) {
 		const Endpoint hx8_endpoint = hx8Endpoint(input);
-		if (hx8_endpoint == Endpoint::Quad) { setStable(HybridState::Flying, SensorSource::Hx8); }
-		else if (hx8_endpoint == Endpoint::Rover) { setStable(HybridState::Driving, SensorSource::Hx8); }
+		const SensorSource source = config.backend == ActuatorBackend::Hx8 ? SensorSource::Hx8 : SensorSource::Hx65;
+		if (hx8_endpoint == Endpoint::Quad) { setStable(HybridState::Flying, source); }
+		else if (hx8_endpoint == Endpoint::Rover) { setStable(HybridState::Driving, source); }
 		return _output;
 	}
 
@@ -398,9 +413,10 @@ TransformationOutput TransformationStateMachine::request(HybridTarget target, ui
 bool TransformationStateMachine::targetDetected(const TransformationInput &input)
 {
 	const Endpoint wanted = _output.target == HybridTarget::Flying ? Endpoint::Quad : Endpoint::Rover;
-	if (_config.backend == ActuatorBackend::Hx8) {
-		_output.source = hx8Endpoint(input) == wanted ? SensorSource::Hx8 : SensorSource::None;
-		return _output.source == SensorSource::Hx8;
+	if (_config.backend != ActuatorBackend::Pwm) {
+		const SensorSource source = _config.backend == ActuatorBackend::Hx8 ? SensorSource::Hx8 : SensorSource::Hx65;
+		_output.source = hx8Endpoint(input) == wanted ? source : SensorSource::None;
+		return _output.source == source;
 	}
 
 	if (input.as5600_valid) {
@@ -449,7 +465,7 @@ TransformationOutput TransformationStateMachine::update(const TransformationInpu
 	}
 
 	if (!transitioning) {
-		if (_config.backend == ActuatorBackend::Hx8 && (_output.state == HybridState::Flying || _output.state == HybridState::Driving)) {
+		if (_config.backend != ActuatorBackend::Pwm && (_output.state == HybridState::Flying || _output.state == HybridState::Driving)) {
 			if (!input.actuator.online) {
 				enterFault(TransformFault::ActuatorCommunication);
 				return _output;
@@ -464,10 +480,11 @@ TransformationOutput TransformationStateMachine::update(const TransformationInpu
 			}
 		}
 		if (_config.sensors_enabled && _output.state == HybridState::Unknown) {
-			if (_config.backend == ActuatorBackend::Hx8) {
+			if (_config.backend != ActuatorBackend::Pwm) {
 				const Endpoint endpoint = hx8Endpoint(input);
-				if (endpoint == Endpoint::Quad) { setStable(HybridState::Flying, SensorSource::Hx8); }
-				else if (endpoint == Endpoint::Rover) { setStable(HybridState::Driving, SensorSource::Hx8); }
+				const SensorSource source = _config.backend == ActuatorBackend::Hx8 ? SensorSource::Hx8 : SensorSource::Hx65;
+				if (endpoint == Endpoint::Quad) { setStable(HybridState::Flying, source); }
+				else if (endpoint == Endpoint::Rover) { setStable(HybridState::Driving, source); }
 				return _output;
 			}
 			const Endpoint endpoint = as5600Endpoint(input);
@@ -520,7 +537,7 @@ TransformationOutput TransformationStateMachine::update(const TransformationInpu
 	}
 
 	if (input.position.endpoint_confirmed
-	    && (_config.backend != ActuatorBackend::Hx8 || hx8Endpoint(input) == (_output.target == HybridTarget::Flying ? Endpoint::Quad : Endpoint::Rover))) {
+	    && (_config.backend == ActuatorBackend::Pwm || hx8Endpoint(input) == (_output.target == HybridTarget::Flying ? Endpoint::Quad : Endpoint::Rover))) {
 		setStable(_output.target == HybridTarget::Flying ? HybridState::Flying : HybridState::Driving,
 			  input.position.source);
 		return _output;

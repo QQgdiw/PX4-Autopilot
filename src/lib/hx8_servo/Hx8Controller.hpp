@@ -103,6 +103,9 @@ public:
 	void notifyProtocolError();
 	void notifyTransportError();
 	const ControllerStatus &status() const { return _status; }
+	bool hasOutstandingRequest() const { return _outstanding.valid; }
+	CommandId outstandingCommand() const { return _outstanding.command; }
+	bool emergencyReleasePending() const { return _release_pending; }
 
 private:
 	enum class BootState : uint8_t { Ping, Read, Complete, Failed };

@@ -207,6 +207,26 @@ TEST(TransformationStateMachine, Hx8NormalizationPreservesNegativePiEndpointDire
 			0.9994f, 0.001f);
 }
 
+TEST(TransformationStateMachine, Hx65UsesItsOwnDualServoPositionSource)
+{
+	TransformationStateMachine machine;
+	auto cfg = config();
+	cfg.backend = ActuatorBackend::Hx65;
+	cfg.hx65_left_quad = -1000;
+	cfg.hx65_left_rover = 1000;
+	cfg.hx65_right_quad = 1000;
+	cfg.hx65_right_rover = -1000;
+	auto sensed = input(1);
+	sensed.position = {0.f, true, true, SensorSource::Hx65, 1};
+	EXPECT_EQ(machine.initialize(cfg, sensed).state, HybridState::Flying);
+	EXPECT_EQ(machine.request(HybridTarget::Driving, 2).state, HybridState::TransitionToRover);
+	sensed.now_us = 3;
+	sensed.position = {1.f, true, true, SensorSource::Hx65, 3};
+	const auto output = machine.update(sensed);
+	EXPECT_EQ(output.state, HybridState::Driving);
+	EXPECT_EQ(output.source, SensorSource::Hx65);
+}
+
 TEST(TransformationStateMachine, RepeatedTransitionRequestDoesNotRestartTimeout)
 {
 	TransformationStateMachine machine;

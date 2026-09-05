@@ -13,9 +13,32 @@ uint8 SENSOR_NONE = 0
 uint8 SENSOR_AS5600 = 1
 uint8 SENSOR_TMAG5273 = 2
 uint8 SENSOR_HX8 = 3
+uint8 SENSOR_HX65 = 4
 
 uint8 ACTUATOR_PWM = 0
 uint8 ACTUATOR_HX8 = 1
+uint8 ACTUATOR_HX65 = 2
+
+uint8 PROPULSION_NONE = 0
+uint8 PROPULSION_QUAD = 1
+uint8 PROPULSION_ROVER = 2
+
+uint8 SEQUENCE_STABLE_QUAD = 0
+uint8 SEQUENCE_Q2R_PREPARE = 1
+uint8 SEQUENCE_Q2R_TRANSFORM = 2
+uint8 SEQUENCE_ROVER_RETRACT = 3
+uint8 SEQUENCE_STABLE_ROVER = 4
+uint8 SEQUENCE_R2Q_PREPARE = 5
+uint8 SEQUENCE_R2Q_TRANSFORM = 6
+uint8 SEQUENCE_QUAD_WAIT_AIRBORNE = 7
+uint8 SEQUENCE_QUAD_RETRACT = 8
+uint8 SEQUENCE_FAULT = 9
+
+uint8 SEQUENCE_FAULT_NONE = 0
+uint8 SEQUENCE_FAULT_GEAR_COMMUNICATION = 1
+uint8 SEQUENCE_FAULT_GEAR_TIMEOUT = 2
+uint8 SEQUENCE_FAULT_SHAPE = 3
+uint8 SEQUENCE_FAULT_INVALID_CONFIGURATION = 4
 
 uint8 TRANSFORM_FAULT_NONE = 0
 uint8 TRANSFORM_FAULT_NO_SENSOR = 1
@@ -48,3 +71,13 @@ bool actuator_healthy
 bool actuator_config_verified
 uint8 actuator_protection_flags
 uint64 no_progress_elapsed
+uint8 sequence_state
+uint8 sequence_fault
+uint8 propulsion_owner
+bool propulsion_ready
+bool gear_online
+bool gear_healthy
+bool gear_down
+bool gear_clear
+bool gear_stowed
+float32 gear_angle_deg
