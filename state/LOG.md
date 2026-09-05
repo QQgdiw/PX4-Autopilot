@@ -1486,3 +1486,8 @@
   `080f4c1095c7935068236a4a91608f8bf21f0ea51eadee9981d9e768a7fb91da`;
   the 1,869,472-byte `.bin` SHA-256 is
   `528d8419e6da2ab178a85cc77d60bd8f36e2e46d2bc6d9bfe3f984f1b500f044`.
+- The source integration commit also carried 13 unrelated third-party gitlink
+  changes (Gazebo/JMAVSim/JSBSim, ModalAI, Vertiq, Cyphal, CDR, crypto and
+  Zenoh). The fast-forward summary exposed them before any remote push. They
+  were restored exactly to the target baseline pins in a follow-up commit;
+  MAVLink was never among those changes and remains at `21922689c6`.
