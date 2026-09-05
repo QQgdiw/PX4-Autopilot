@@ -53,7 +53,8 @@ bool isStableAndSafe(const hybrid_vehicle_status_s &status)
 	const bool stable_state = status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_FLYING
 				  || status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING;
 
-	if (!stable_state || status.fault_reason != hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE) {
+	if (!stable_state || status.fault_reason != hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE
+	    || status.sequence_fault != hybrid_vehicle_status_s::SEQUENCE_FAULT_NONE) {
 		return false;
 	}
 
@@ -66,6 +67,13 @@ bool isStableAndSafe(const hybrid_vehicle_status_s &status)
 		       && status.position_normalized >= 0.f && status.position_normalized <= 1.f
 		       && status.actuator_online && status.actuator_healthy && status.actuator_config_verified
 		       && status.actuator_protection_flags == 0;
+	}
+
+	if (status.actuator_backend == hybrid_vehicle_status_s::ACTUATOR_HX65) {
+		return status.propulsion_ready && status.position_confirmed && status.position_valid
+		       && std::isfinite(status.position_normalized)
+		       && status.actuator_online && status.actuator_healthy && status.actuator_config_verified
+		       && status.actuator_protection_flags == 0 && status.gear_online && status.gear_healthy;
 	}
 
 	return false;
@@ -158,9 +166,11 @@ bool HybridChecks::getConfiguration(HybridCheckConfiguration &configuration) con
 
 bool HybridChecks::hasSafeServoMapping(const HybridCheckConfiguration &configuration) const
 {
-	if (configuration.actuator_backend == hybrid_vehicle_status_s::ACTUATOR_HX8) {
+	if (configuration.actuator_backend == hybrid_vehicle_status_s::ACTUATOR_HX8
+	    || configuration.actuator_backend == hybrid_vehicle_status_s::ACTUATOR_HX65) {
 		return configuration.motor5_function == 0 && configuration.motor6_function == 0
-		       && configuration.m8_disarmed == 0 && configuration.m8_failsafe == 0;
+		       && configuration.servo_function == 0 && configuration.m8_disarmed == 0
+		       && configuration.m8_failsafe == 0;
 	}
 
 	return configuration.motor5_function == 0 && configuration.motor6_function == 0

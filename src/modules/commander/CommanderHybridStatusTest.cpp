@@ -48,7 +48,8 @@ TEST(CommanderHybridStatus, FaultOverridesStableState)
 	status.current_state = hybrid_vehicle_status_s::HYBRID_STATE_FLYING;
 	status.fault_reason = hybrid_vehicle_status_s::TRANSFORM_FAULT_SENSOR_TIMEOUT;
 
-	EXPECT_EQ(commander::hybridStateForCommander(status, 1_s), hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT);
+	EXPECT_EQ(commander::hybridStateForCommander(status, 1_s),
+		  static_cast<uint8_t>(hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT));
 	EXPECT_FALSE(commander::hybridStateEnablesControl(hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT));
 }
 
@@ -61,8 +62,24 @@ TEST(CommanderHybridStatus, TransitionAndStaleStatusDisableControl)
 
 	hybrid_vehicle_status_s stale{};
 	stale.current_state = hybrid_vehicle_status_s::HYBRID_STATE_DRIVING;
-	EXPECT_EQ(commander::hybridStateForCommander(stale, 1_s), hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN);
+	EXPECT_EQ(commander::hybridStateForCommander(stale, 1_s),
+		  static_cast<uint8_t>(hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN));
 	EXPECT_FALSE(commander::hybridStateEnablesControl(hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN));
+}
+
+TEST(CommanderHybridStatus, SequenceFaultPreservesAnExistingSafePropulsionOwner)
+{
+	hybrid_vehicle_status_s airborne{};
+	airborne.timestamp = 1_s;
+	airborne.current_state = hybrid_vehicle_status_s::HYBRID_STATE_FLYING;
+	airborne.sequence_fault = hybrid_vehicle_status_s::SEQUENCE_FAULT_GEAR_COMMUNICATION;
+	airborne.propulsion_owner = hybrid_vehicle_status_s::PROPULSION_QUAD;
+	EXPECT_EQ(commander::hybridStateForCommander(airborne, 1_s),
+		  static_cast<uint8_t>(hybrid_vehicle_status_s::HYBRID_STATE_FLYING));
+
+	airborne.propulsion_owner = hybrid_vehicle_status_s::PROPULSION_NONE;
+	EXPECT_EQ(commander::hybridStateForCommander(airborne, 1_s),
+		  static_cast<uint8_t>(hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT));
 }
 
 TEST(CommanderHybridStatus, RoverOffboardAvailabilityRequiresDedicatedModeAndHealthyShape)

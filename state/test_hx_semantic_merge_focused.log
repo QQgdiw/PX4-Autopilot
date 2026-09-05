@@ -1,0 +1,34 @@
+Internal ctest changing into directory: /home/crocodile/PX4-Autopilot-testc4-hx-servos/build/px4_sitl_test
+Test project /home/crocodile/PX4-Autopilot-testc4-hx-servos/build/px4_sitl_test
+      Start  14: unit-TransformationStateMachine
+ 1/14 Test  #14: unit-TransformationStateMachine ...   Passed    0.00 sec
+      Start  15: unit-TransformationPosition
+ 2/14 Test  #15: unit-TransformationPosition .......   Passed    0.00 sec
+      Start  16: unit-Hx8BackendPolicy
+ 3/14 Test  #16: unit-Hx8BackendPolicy .............   Passed    0.00 sec
+      Start  17: unit-Hx65BackendPolicy
+ 4/14 Test  #17: unit-Hx65BackendPolicy ............   Passed    0.00 sec
+      Start  18: unit-HybridSequenceCoordinator
+ 5/14 Test  #18: unit-HybridSequenceCoordinator ....   Passed    0.00 sec
+      Start  20: unit-HybridTransitionPolicy
+ 6/14 Test  #20: unit-HybridTransitionPolicy .......   Passed    0.00 sec
+      Start  24: unit-Hx8Protocol
+ 7/14 Test  #24: unit-Hx8Protocol ..................   Passed    0.00 sec
+      Start  25: unit-Hx8Controller
+ 8/14 Test  #25: unit-Hx8Controller ................   Passed    0.00 sec
+      Start  26: unit-Hx8CliPolicy
+ 9/14 Test  #26: unit-Hx8CliPolicy .................   Passed    0.00 sec
+      Start  27: unit-Hx65Protocol
+10/14 Test  #27: unit-Hx65Protocol .................   Passed    0.00 sec
+      Start  28: unit-Hx65PairController
+11/14 Test  #28: unit-Hx65PairController ...........   Passed    0.00 sec
+      Start  91: unit-CommanderHybridStatus
+12/14 Test  #91: unit-CommanderHybridStatus ........   Passed    0.00 sec
+      Start  94: functional-hybridCheck
+13/14 Test  #94: functional-hybridCheck ............   Passed    0.00 sec
+      Start 135: unit-HybridTransitionMission
+14/14 Test #135: unit-HybridTransitionMission ......   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 14
+
+Total Test time (real) =   0.06 sec

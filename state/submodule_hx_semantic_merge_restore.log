@@ -1,0 +1,4 @@
+Submodule path 'platforms/nuttx/NuttX/apps': checked out 'e37940d8535f603a16b8f6f21c21edaf584218aa'
+Submodule path 'platforms/nuttx/NuttX/nuttx': checked out '886acbbdb4f061e5c0ce1a76afbcfa7cb7df9849'
+Submodule path 'src/drivers/uavcan/libdronecan/dsdl': checked out '993be80a62ec957c01fb41115b83663959a49f46'
+Submodule path 'src/drivers/uavcan/libdronecan/libuavcan/dsdl_compiler/pydronecan': checked out '19fdf2e5b383243ccdb1094edae0603cf11469e8'

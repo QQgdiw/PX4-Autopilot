@@ -51,14 +51,18 @@ uint16_t read16(const uint8_t *bytes)
 	return static_cast<uint16_t>(bytes[0]) | (static_cast<uint16_t>(bytes[1]) << 8);
 }
 
+uint32_t read32(const uint8_t *bytes)
+{
+	return static_cast<uint32_t>(bytes[0]) | (static_cast<uint32_t>(bytes[1]) << 8)
+	       | (static_cast<uint32_t>(bytes[2]) << 16) | (static_cast<uint32_t>(bytes[3]) << 24);
+}
+
 uint16_t expectedValue(uint8_t parameter, const ProtectionConfig &config)
 {
 	switch (parameter) {
 	case 33: return config.response_enabled;
 
 	case 34: return ServoId;
-
-	case 36: return 5;
 
 	case 37: return config.stall_release_enabled;
 
@@ -122,7 +126,7 @@ uint64_t finishBoot(Controller &controller, const ProtectionConfig &config = val
 	EXPECT_EQ(request.payload_length, 0);
 	controller.acceptResponse(response(CommandId::Ping, ServoId), now);
 
-	for (unsigned i = 0; i < 11; ++i) {
+	for (unsigned i = 0; i < 10; ++i) {
 		now += Controller::MinimumCommandSpacingUs;
 		request = controller.update(input(now));
 		EXPECT_TRUE(request.valid);
@@ -224,6 +228,39 @@ TEST(Hx8Controller, ReleasePreemptsTargetAndTargetUsesTimedMovePayload)
 	EXPECT_EQ(read16(&request.payload[4]), 100);
 	EXPECT_EQ(read16(&request.payload[6]), 120);
 	EXPECT_EQ(read16(&request.payload[8]), 2500);
+}
+
+TEST(Hx8Controller, LandingGearUsesAdvancedMultiTurnPayloadWhileDisarmed)
+{
+	Controller controller;
+	uint64_t now = finishBoot(controller);
+	MotionCommand command = motion(2, now, -720.5f);
+	command.type = 4;
+	controller.setTarget(command);
+	now += Controller::MinimumCommandSpacingUs;
+	const PendingRequest request = controller.update(input(now));
+	ASSERT_TRUE(request.valid);
+	EXPECT_EQ(request.command, CommandId::TimedMultiTurnMove);
+	ASSERT_EQ(request.payload_length, 14);
+	EXPECT_EQ(static_cast<int32_t>(read32(request.payload)), -7205);
+	EXPECT_EQ(read32(&request.payload[4]), 600u);
+	EXPECT_EQ(read16(&request.payload[8]), 100);
+	EXPECT_EQ(read16(&request.payload[10]), 120);
+	EXPECT_EQ(read16(&request.payload[12]), 2500);
+}
+
+TEST(Hx8Controller, LandingGearHoldIsAllowedWhileDisarmed)
+{
+	Controller controller;
+	uint64_t now = finishBoot(controller);
+	MotionCommand command = motion(3, now, 360.f);
+	command.type = 5;
+	controller.setTarget(command);
+	now += Controller::MinimumCommandSpacingUs;
+	const PendingRequest request = controller.update(input(now));
+	ASSERT_TRUE(request.valid);
+	EXPECT_EQ(request.command, CommandId::TimedMultiTurnMove);
+	EXPECT_EQ(static_cast<int32_t>(read32(request.payload)), 3600);
 }
 
 TEST(Hx8Controller, RejectsRepeatedOutOfOrderAndExpiredCommands)
@@ -418,7 +455,7 @@ TEST(Hx8Controller, BootPingsAndReadsCompleteConfigurationWithoutWriting)
 	ASSERT_EQ(request.command, CommandId::Ping);
 	controller.acceptResponse(response(CommandId::Ping, ServoId), now);
 
-	for (unsigned i = 0; i < 11; ++i) {
+	for (unsigned i = 0; i < 10; ++i) {
 		now += Controller::MinimumCommandSpacingUs;
 		request = controller.update(input(now));
 		ASSERT_TRUE(request.valid);
@@ -429,9 +466,10 @@ TEST(Hx8Controller, BootPingsAndReadsCompleteConfigurationWithoutWriting)
 		controller.acceptResponse(parameterResponse(request.payload[0], value), now);
 	}
 
-	for (uint8_t parameter : {33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 46}) {
+	for (uint8_t parameter : {33, 34, 37, 38, 39, 40, 41, 42, 43, 46}) {
 		EXPECT_TRUE(seen[parameter]);
 	}
+	EXPECT_FALSE(seen[36]);
 	EXPECT_TRUE(controller.status().config_verified);
 }
 
@@ -446,7 +484,7 @@ TEST(Hx8Controller, ConfigurationMismatchPreventsVerification)
 	PendingRequest request = controller.update(input(now));
 	controller.acceptResponse(response(CommandId::Ping, ServoId), now);
 
-	for (unsigned i = 0; i < 11; ++i) {
+	for (unsigned i = 0; i < 10; ++i) {
 		now += Controller::MinimumCommandSpacingUs;
 		request = controller.update(input(now));
 		const uint8_t parameter = request.payload[0];

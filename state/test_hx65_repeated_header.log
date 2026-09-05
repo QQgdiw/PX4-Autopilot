@@ -1,0 +1,37 @@
+[1/16] Building CXX object src/lib/hx8_servo/CMakeFiles/hx65_protocol.dir/Hx65Protocol.cpp.o
+[2/16] Linking CXX static library src/lib/hx8_servo/libhx65_protocol.a
+[3/16] Linking CXX executable unit-Hx65PairController
+[4/16] Generating px4 event json file from source
+[5/16] Generating combined event json file
+[6/16] Generating component_general.json and checksums.h
+[7/16] Building CXX object src/modules/logger/CMakeFiles/modules__logger.dir/logger.cpp.o
+[8/16] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_messages.cpp.o
+[9/16] ROMFS: copying extras
+[10/16] Linking CXX static library src/modules/logger/libmodules__logger.a
+[11/16] Linking CXX static library src/modules/mavlink/libmodules__mavlink.a
+[12/16] Linking CXX executable unit-MavlinkStatustextHandler
+[13/16] Building CXX object src/lib/hx8_servo/CMakeFiles/unit-Hx65Protocol.dir/Hx65ProtocolTest.cpp.o
+[14/16] Linking CXX executable unit-Hx65Protocol
+[15/16] Linking CXX executable bin/px4
+[15/16] Running tests
+   Site: crocodile
+   Build name: Linux-c++
+Test project /home/crocodile/PX4-Autopilot-hx8-hx65hm/build/px4_sitl_test
+    Start 16: unit-Hx8BackendPolicy
+1/7 Test #16: unit-Hx8BackendPolicy ............   Passed    0.00 sec
+    Start 17: unit-Hx65BackendPolicy
+2/7 Test #17: unit-Hx65BackendPolicy ...........   Passed    0.00 sec
+    Start 23: unit-Hx8Protocol
+3/7 Test #23: unit-Hx8Protocol .................   Passed    0.01 sec
+    Start 24: unit-Hx8Controller
+4/7 Test #24: unit-Hx8Controller ...............   Passed    0.00 sec
+    Start 25: unit-Hx8CliPolicy
+5/7 Test #25: unit-Hx8CliPolicy ................   Passed    0.01 sec
+    Start 26: unit-Hx65Protocol
+6/7 Test #26: unit-Hx65Protocol ................   Passed    0.00 sec
+    Start 27: unit-Hx65PairController
+7/7 Test #27: unit-Hx65PairController ..........   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 7
+
+Total Test time (real) =   0.11 sec

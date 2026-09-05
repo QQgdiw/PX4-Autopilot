@@ -14,7 +14,7 @@ float Hx8BackendPolicy::wrappedSpanDegrees(float quad_deg, float rover_deg)
 }
 
 bool Hx8BackendPolicy::statusUsable(uint8_t status_id, uint8_t configured_id, bool online, bool healthy,
-		bool config_verified, uint8_t protection_flags, bool fresh, float angle_deg)
+				    bool config_verified, uint8_t protection_flags, bool fresh, float angle_deg)
 {
 	return status_id == configured_id && online && healthy && config_verified && protection_flags == 0 && fresh
 	       && std::isfinite(angle_deg);
@@ -23,7 +23,7 @@ bool Hx8BackendPolicy::statusUsable(uint8_t status_id, uint8_t configured_id, bo
 float Hx8BackendPolicy::normalizeAngle(float angle_deg, float quad_deg, float rover_deg)
 {
 	return normalizeAs5600(angle_deg * static_cast<float>(M_PI / 180.0),
-				quad_deg * static_cast<float>(M_PI / 180.0), rover_deg * static_cast<float>(M_PI / 180.0));
+			       quad_deg * static_cast<float>(M_PI / 180.0), rover_deg * static_cast<float>(M_PI / 180.0));
 }
 
 bool Hx8BackendPolicy::endpointMatches(float normalized, bool driving_target, float tolerance)
@@ -44,28 +44,31 @@ bool Hx8BackendPolicy::endpointAnyMatchesAngleTolerance(float normalized, float 
 		float quad_deg, float rover_deg)
 {
 	const float span = wrappedSpanDegrees(quad_deg, rover_deg) * static_cast<float>(M_PI / 180.0);
+
 	if (!(span > 1e-6f) || !std::isfinite(tolerance_rad) || tolerance_rad < 0.f || tolerance_rad / span >= 0.5f) {
 		return false;
 	}
+
 	const float tol = tolerance_rad / span;
 	return std::isfinite(normalized) && (fabsf(normalized) <= tol || fabsf(normalized - 1.f) <= tol);
 }
 
 bool Hx8BackendPolicy::parametersValid(int32_t id, float quad_deg, float rover_deg, int32_t move, int32_t acc,
-		int32_t dec, int32_t power, float transition_s)
+				       int32_t dec, int32_t power, float transition_s)
 {
 	if (!(id >= 0 && id <= 254 && std::isfinite(quad_deg) && std::isfinite(rover_deg)
-	       && quad_deg >= -180.f && quad_deg <= 180.f && rover_deg >= -180.f && rover_deg <= 180.f
-	       && fabsf(quad_deg - rover_deg) > 1e-4f && move > 0 && acc >= 0 && dec >= 0
-	       && move <= UINT16_MAX && acc <= UINT16_MAX && dec <= UINT16_MAX && power > 0 && power <= UINT16_MAX
-	       && std::isfinite(transition_s) && transition_s > 0.f && static_cast<float>(move) < transition_s * 1000.f)) {
+	      && quad_deg >= -180.f && quad_deg <= 180.f && rover_deg >= -180.f && rover_deg <= 180.f
+	      && fabsf(quad_deg - rover_deg) > 1e-4f && move > 0 && acc >= 0 && dec >= 0
+	      && move <= UINT16_MAX && acc <= UINT16_MAX && dec <= UINT16_MAX && power > 0 && power <= UINT16_MAX
+	      && std::isfinite(transition_s) && transition_s > 0.f && static_cast<float>(move) < transition_s * 1000.f)) {
 		return false;
 	}
+
 	return static_cast<uint32_t>(move) > static_cast<uint32_t>(acc) + static_cast<uint32_t>(dec);
 }
 
 bool Hx8BackendPolicy::commandAccepted(bool accepted, uint8_t result, uint8_t pending_result,
-		uint8_t accepted_result)
+				       uint8_t accepted_result)
 {
 	return (!accepted && result == pending_result) || (accepted && result == accepted_result);
 }
@@ -79,7 +82,8 @@ uint32_t Hx8CommandPolicy::nextSequence()
 	return _sequence;
 }
 
-Hx8CommandDecision Hx8CommandPolicy::update(ActuatorBackend backend, const TransformationOutput &output, uint64_t now_us,
+Hx8CommandDecision Hx8CommandPolicy::update(ActuatorBackend backend, const TransformationOutput &output,
+		uint64_t now_us,
 		bool motion_enabled)
 {
 	const bool motion_enabled_rising = motion_enabled && !_motion_enabled;
@@ -89,7 +93,7 @@ Hx8CommandDecision Hx8CommandPolicy::update(ActuatorBackend backend, const Trans
 		_held_target = HybridTarget::None;
 	}
 
-	if (backend != ActuatorBackend::Hx8) {
+	if (backend != ActuatorBackend::Hx8 && backend != ActuatorBackend::Hx65) {
 		return {};
 	}
 
@@ -119,7 +123,7 @@ Hx8CommandDecision Hx8CommandPolicy::update(ActuatorBackend backend, const Trans
 	}
 
 	const HybridTarget stable_target = output.state == HybridState::Flying ? HybridTarget::Flying
-					  : output.state == HybridState::Driving ? HybridTarget::Driving : HybridTarget::None;
+					   : output.state == HybridState::Driving ? HybridTarget::Driving : HybridTarget::None;
 
 	if (motion_enabled && stable_target != HybridTarget::None
 	    && (motion_enabled_rising || stable_target != _held_target)) {

@@ -16,7 +16,10 @@ constexpr uint64_t Controller::CommandExpiryUs;
 namespace
 {
 
-constexpr uint8_t BootParameters[] {33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 46};
+// The UART is already configured from the shared HX_BAUD parameter. Do not
+// attempt to verify the servo-side baud code: a mismatched servo cannot answer
+// this read in the first place, and the code values differ between protocols.
+constexpr uint8_t BootParameters[] {33, 34, 37, 38, 39, 40, 41, 42, 43, 46};
 constexpr uint8_t WritableParameters[] {33, 37, 38, 39, 40, 41, 42, 43, 46};
 constexpr uint8_t MovingFlag = 1u << 0;
 constexpr uint8_t ErrorAndProtectionFlags = 0xfc;
@@ -39,6 +42,14 @@ void write16(uint8_t *bytes, uint16_t value)
 {
 	bytes[0] = static_cast<uint8_t>(value);
 	bytes[1] = static_cast<uint8_t>(value >> 8);
+}
+
+void write32(uint8_t *bytes, uint32_t value)
+{
+	bytes[0] = static_cast<uint8_t>(value);
+	bytes[1] = static_cast<uint8_t>(value >> 8);
+	bytes[2] = static_cast<uint8_t>(value >> 16);
+	bytes[3] = static_cast<uint8_t>(value >> 24);
 }
 
 float adcToTemperature(uint16_t adc)
@@ -114,13 +125,17 @@ void Controller::setServoId(uint8_t servo_id)
 
 void Controller::setTarget(const MotionCommand &command)
 {
-	if (command.sequence <= _last_target_sequence || (command.type != 0 && command.type != 1 && command.type != 3)
+	const bool multi_turn = command.type == 4 || command.type == 5;
+
+	if (command.sequence <= _last_target_sequence
+	    || (command.type != 0 && command.type != 1 && command.type != 3 && !multi_turn)
 	    || !std::isfinite(command.target_angle_deg)
-	    || command.target_angle_deg < -180.f || command.target_angle_deg > 180.f
+	    || command.target_angle_deg < (multi_turn ? -368640.f : -180.f)
+	    || command.target_angle_deg > (multi_turn ? 368640.f : 180.f)
 	    || command.servo_id > 254 || command.servo_id != _servo_id
 	    || command.power_mw == 0 || command.power_mw > _expected.power_limit_mw
 	    || command.move_time_ms <= static_cast<uint32_t>(command.acceleration_time_ms)
-			+ static_cast<uint32_t>(command.deceleration_time_ms)) {
+	    + static_cast<uint32_t>(command.deceleration_time_ms)) {
 		_status.command_accepted = false;
 		_status.command_result = static_cast<uint8_t>(OperationResult::Rejected);
 		return;
@@ -264,7 +279,7 @@ PendingRequest Controller::update(const ControllerInput &input)
 		return makeParameterRead(BootParameters[_boot_index], input.now_us);
 	}
 
-	const bool transition_move = _target.type == 1;
+	const bool transition_move = _target.type == 1 || _target.type == 4 || _target.type == 5;
 	const bool motion_allowed = (input.armed || input.prearmed || transition_move) && !input.lockdown && !input.failsafe
 				    && _status.online && _status.healthy && _status.config_verified;
 
@@ -275,14 +290,32 @@ PendingRequest Controller::update(const ControllerInput &input)
 			_status.command_result = static_cast<uint8_t>(OperationResult::Rejected);
 
 		} else if (motion_allowed) {
-			uint8_t payload[10] {};
-			write16(payload, static_cast<uint16_t>(static_cast<int16_t>(::lround(_target.target_angle_deg * 10.f))));
-			write16(&payload[2], _target.move_time_ms);
-			write16(&payload[4], _target.acceleration_time_ms);
-			write16(&payload[6], _target.deceleration_time_ms);
-			write16(&payload[8], _target.power_mw);
+			const bool multi_turn = _target.type == 4 || _target.type == 5;
+			uint8_t payload[14] {};
+			const uint8_t position_size = multi_turn ? 4 : 2;
+			const uint8_t interval_size = multi_turn ? 4 : 2;
+
+			if (multi_turn) {
+				write32(payload, static_cast<uint32_t>(static_cast<int32_t>(::lround(_target.target_angle_deg * 10.f))));
+
+			} else {
+				write16(payload, static_cast<uint16_t>(static_cast<int16_t>(::lround(_target.target_angle_deg * 10.f))));
+			}
+
+			if (multi_turn) {
+				write32(&payload[position_size], _target.move_time_ms);
+
+			} else {
+				write16(&payload[position_size], _target.move_time_ms);
+			}
+
+			write16(&payload[position_size + interval_size], _target.acceleration_time_ms);
+			write16(&payload[position_size + interval_size + 2], _target.deceleration_time_ms);
+			write16(&payload[position_size + interval_size + 4], _target.power_mw);
 			_target_pending = false;
-			return makeRequest(RequestPriority::Target, CommandId::TimedMove, payload, sizeof(payload), input.now_us);
+			return makeRequest(RequestPriority::Target,
+					   multi_turn ? CommandId::TimedMultiTurnMove : CommandId::TimedMove,
+					   payload, static_cast<uint8_t>(position_size + interval_size + 6), input.now_us);
 		}
 	}
 
@@ -308,6 +341,7 @@ bool Controller::responseShapeValid(const Frame &frame) const
 
 	case CommandId::ParamWrite:
 	case CommandId::TimedMove:
+	case CommandId::TimedMultiTurnMove:
 	case CommandId::Stop: return frame.payload_length == 1;
 
 	case CommandId::AngleRead: return frame.payload_length == 2;
@@ -347,6 +381,7 @@ void Controller::acceptResponse(const Frame &frame, uint64_t now_us)
 
 	case CommandId::ParamWrite:
 	case CommandId::TimedMove:
+	case CommandId::TimedMultiTurnMove:
 	case CommandId::Stop: handleCommandResponse(frame); break;
 
 	case CommandId::Status: handleStatusResponse(frame); break;
@@ -451,8 +486,6 @@ uint16_t Controller::expectedParameterValue(uint8_t parameter) const
 	case 33: return _expected.response_enabled;
 
 	case 34: return _servo_id;
-
-	case 36: return 5;
 
 	case 37: return _expected.stall_release_enabled;
 

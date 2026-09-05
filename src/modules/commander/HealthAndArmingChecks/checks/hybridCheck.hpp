@@ -51,6 +51,7 @@ private:
 	FRIEND_TEST(HybridCheckTest, AllZeroControllerRejectsDriving);
 	FRIEND_TEST(HybridCheckTest, EnabledSensorsRequireCurrentPositionConfirmation);
 	FRIEND_TEST(HybridCheckTest, NegativeControllerGainRejectsDriving);
+	FRIEND_TEST(HybridCheckTest, Hx65RequiresReadyShapeAndHealthyGear);
 	bool getConfiguration(HybridCheckConfiguration &configuration) const;
 	bool hasSafeServoMapping(const HybridCheckConfiguration &configuration) const;
 	bool hasConfiguredSpeedController(const HybridCheckConfiguration &configuration) const;

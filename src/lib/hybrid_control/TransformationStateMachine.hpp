@@ -9,7 +9,7 @@ namespace hybrid_control
 
 enum class HybridState : uint8_t { Flying, TransitionToRover, Driving, TransitionToQuad, Unknown, Fault };
 enum class HybridTarget : uint8_t { None, Flying, Driving };
-enum class ActuatorBackend : uint8_t { Pwm = 0, Hx8 = 1 };
+enum class ActuatorBackend : uint8_t { Pwm = 0, Hx8 = 1, Hx65 = 2 };
 enum class TransformFault : uint8_t {
 	None = 0,
 	NoSensor = 1,
@@ -53,6 +53,11 @@ struct TransformationConfig {
 	float stall_distance{0.05f};
 	int32_t hx8_id{0}; float hx8_quad_angle{0.f}; float hx8_rover_angle{90.f};
 	int32_t hx8_move_ms{1000}; int32_t hx8_acc_ms{100}; int32_t hx8_dec_ms{100}; int32_t hx8_power{1};
+	int32_t hx65_left_id{1}; int32_t hx65_right_id{2};
+	int32_t hx65_left_quad{-32768}; int32_t hx65_left_rover{-32768};
+	int32_t hx65_right_quad{-32768}; int32_t hx65_right_rover{-32768};
+	int32_t hx65_speed{1000}; int32_t hx65_acceleration{10}; int32_t hx65_tolerance{100};
+	float hx65_max_skew{0.15f};
 };
 
 TransformFault validateTransformationConfig(const TransformationConfig &config);
@@ -126,7 +131,7 @@ struct TransformationOutput {
 
 bool isTransformationFaulted(const TransformationOutput &output);
 bool transformationPwmCommandEffective(ActuatorBackend backend, const TransformationOutput &output,
-		bool manual_override, bool armed, bool prearmed, bool lockdown, bool manual_lockdown, bool force_failsafe);
+				       bool manual_override, bool armed, bool prearmed, bool lockdown, bool manual_lockdown, bool force_failsafe);
 bool stablePositionSafe(const TransformationOutput &output, bool sensors_enabled);
 bool manualCommissioningPermitted(const TransformationOutput &output, bool armed, bool prearmed, bool manual_fresh);
 

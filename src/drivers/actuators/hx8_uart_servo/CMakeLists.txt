@@ -8,6 +8,8 @@ px4_add_module(
 	DEPENDS
 		hx8_protocol
 		hx8_controller
+		hx65_protocol
+		hx65_pair_controller
 		px4_work_queue
 	MODULE_CONFIG module.yaml
 )

@@ -152,5 +152,6 @@ inline bool hybridTransitionMissionReached(uint32_t minimum_sequence, uint8_t ta
 		|| target == hybrid_vehicle_status_s::TARGET_DRIVING)
 	       && status.transition_sequence >= minimum_sequence
 	       && status.target_state == target
-	       && status.current_state == stable_state;
+	       && status.current_state == stable_state
+	       && status.propulsion_ready;
 }

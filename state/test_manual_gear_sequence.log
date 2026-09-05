@@ -1,0 +1,743 @@
+-- PX4_GIT_TAG: v1.16.1-111-g285a9d5716
+CMake Warning (dev) at CMakeLists.txt:176 (find_package):
+  Policy CMP0148 is not set: The FindPythonInterp and FindPythonLibs modules
+  are removed.  Run "cmake --help-policy CMP0148" for policy details.  Use
+  the cmake_policy command to set the policy and suppress this warning.
+
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- PX4 config file: /home/crocodile/PX4-Autopilot-hx8-hx65hm/boards/px4/sitl/test.px4board
+-- PLATFORM posix
+-- NOLOCKSTEP y
+-- ROMFSROOT px4fmu_common
+-- TESTING y
+-- ETHERNET y
+-- ROOT_PATH .
+-- PARAM_FILE /fs/mtd_params
+-- PX4 config: px4_sitl_test
+-- PX4 platform: posix
+-- PX4 lockstep: disabled
+-- cmake build type: RelWithDebInfo
+-- ccache enabled (export CCACHE_DISABLE=1 to disable)
+CMake Warning (dev) at /usr/share/cmake-3.28/Modules/ExternalProject.cmake:3195 (message):
+  The DOWNLOAD_EXTRACT_TIMESTAMP option was not given and policy CMP0135 is
+  not set.  The policy's OLD behavior will be used.  When using a URL
+  download, the timestamps of extracted files should preferably be that of
+  the time of extraction, otherwise code that depends on the extracted
+  contents might not be rebuilt if the URL changes.  The OLD behavior
+  preserves the timestamps from the archive instead, but this is usually not
+  what you want.  Update your project to the NEW behavior or specify the
+  DOWNLOAD_EXTRACT_TIMESTAMP option with a value of true to avoid this
+  robustness issue.
+Call Stack (most recent call first):
+  /usr/share/cmake-3.28/Modules/ExternalProject.cmake:4418 (_ep_add_download_command)
+  CMakeLists.txt:6 (ExternalProject_Add)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/crocodile/PX4-Autopilot-hx8-hx65hm/build/px4_sitl_test/googletest-download
+ninja: no work to do.
+-- ADDING TEST STUBS
+-- Looking for gz-transport13 -- found version 13.5.0
+-- Searching for dependencies of gz-transport13
+-- Config-file not installed for ZeroMQ -- checking for pkg-config
+-- Checking for module 'libzmq >= 4'
+--   Found libzmq, version 4.3.5
+-- Checking for module 'uuid'
+--   Found uuid, version 2.39.3
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Searching for dependencies of gz-utils2
+-- Searching for <gz-utils2> component [cli]
+-- Looking for gz-utils2-cli -- found version 2.2.1
+-- Searching for dependencies of gz-utils2-cli
+-- Looking for gz-msgs10 -- found version 10.3.2
+-- Searching for dependencies of gz-msgs10
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Looking for gz-math7 -- found version 7.5.1
+-- Searching for dependencies of gz-math7
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Checking for module 'tinyxml2'
+--   Found tinyxml2, version 10.0.0
+-- Looking for gz-transport13 -- found version 13.5.0
+-- Searching for dependencies of gz-transport13
+-- Config-file not installed for ZeroMQ -- checking for pkg-config
+-- Checking for module 'libzmq >= 4'
+--   Found libzmq, version 4.3.5
+-- Checking for module 'uuid'
+--   Found uuid, version 2.39.3
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Searching for dependencies of gz-utils2
+-- Searching for <gz-utils2> component [cli]
+-- Looking for gz-utils2-cli -- found version 2.2.1
+-- Searching for dependencies of gz-utils2-cli
+-- Looking for gz-msgs10 -- found version 10.3.2
+-- Searching for dependencies of gz-msgs10
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Looking for gz-math7 -- found version 7.5.1
+-- Searching for dependencies of gz-math7
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Checking for module 'tinyxml2'
+--   Found tinyxml2, version 10.0.0
+-- Looking for gz-sim8 -- found version 8.11.0
+-- Searching for dependencies of gz-sim8
+-- Looking for sdformat14 -- found version 14.9.0
+-- Searching for dependencies of sdformat14
+-- Looking for gz-math7 -- found version 7.5.1
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Looking for gz-plugin2 -- found version 2.0.4
+-- Searching for dependencies of gz-plugin2
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Searching for <gz-plugin2> component [loader]
+-- Looking for gz-plugin2-loader -- found version 2.0.4
+-- Searching for dependencies of gz-plugin2-loader
+-- Searching for <gz-plugin2> component [register]
+-- Looking for gz-plugin2-register -- found version 2.0.4
+-- Searching for dependencies of gz-plugin2-register
+-- Looking for gz-transport13 -- found version 13.5.0
+-- Searching for dependencies of gz-transport13
+-- Config-file not installed for ZeroMQ -- checking for pkg-config
+-- Checking for module 'libzmq >= 4'
+--   Found libzmq, version 4.3.5
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Looking for gz-msgs10 -- found version 10.3.2
+-- Searching for <gz-transport13> component [log]
+-- Looking for gz-transport13-log -- found version 13.5.0
+-- Searching for dependencies of gz-transport13-log
+-- Searching for <gz-transport13> component [parameters]
+-- Looking for gz-transport13-parameters -- found version 13.5.0
+-- Searching for dependencies of gz-transport13-parameters
+-- Looking for gz-msgs10 -- found version 10.3.2
+-- Looking for gz-common5 -- found version 5.8.0
+-- Searching for dependencies of gz-common5
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Looking for dlfcn.h - found
+-- Looking for libdl - found
+-- Searching for <gz-common5> component [av]
+-- Looking for gz-common5-av -- found version 5.8.0
+-- Searching for dependencies of gz-common5-av
+-- Checking for module 'libswscale'
+--   Found libswscale, version 7.5.100
+-- Checking for module 'libavdevice >= 56.4.100'
+--   Found libavdevice, version 60.3.100
+-- Checking for module 'libavformat'
+--   Found libavformat, version 60.16.100
+-- Checking for module 'libavcodec'
+--   Found libavcodec, version 60.31.102
+-- Checking for module 'libavutil'
+--   Found libavutil, version 58.29.100
+-- Searching for <gz-common5> component [events]
+-- Looking for gz-common5-events -- found version 5.8.0
+-- Searching for dependencies of gz-common5-events
+-- Looking for gz-math7 -- found version 7.5.1
+-- Searching for <gz-common5> component [graphics]
+-- Looking for gz-common5-graphics -- found version 5.8.0
+-- Searching for dependencies of gz-common5-graphics
+-- Looking for gz-math7 -- found version 7.5.1
+-- Searching for <gz-common5> component [io]
+-- Looking for gz-common5-io -- found version 5.8.0
+-- Searching for dependencies of gz-common5-io
+-- Searching for <gz-common5> component [profiler]
+-- Looking for gz-common5-profiler -- found version 5.8.0
+-- Searching for dependencies of gz-common5-profiler
+-- Looking for gz-fuel_tools9 -- found version 9.1.1
+-- Searching for dependencies of gz-fuel_tools9
+-- Checking for module 'jsoncpp'
+--   Found jsoncpp, version 1.9.5
+-- Checking for module 'yaml-0.1'
+--   Found yaml-0.1, version 0.2.5
+-- Checking for module 'libzip'
+--   Found libzip, version 1.7.3
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Looking for gz-common5 -- found version 5.8.0
+-- Searching for dependencies of gz-common5
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Looking for dlfcn.h - found
+-- Looking for libdl - found
+-- Searching for <gz-common5> component [testing]
+-- Looking for gz-common5-testing -- found version 5.8.0
+-- Searching for dependencies of gz-common5-testing
+-- Looking for gz-math7 -- found version 7.5.1
+-- Looking for gz-msgs10 -- found version 10.3.2
+-- Looking for gz-gui8 -- found version 8.4.0
+-- Searching for dependencies of gz-gui8
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Looking for gz-math7 -- found version 7.5.1
+-- Looking for gz-common5 -- found version 5.8.0
+-- Looking for gz-plugin2 -- found version 2.0.4
+-- Looking for gz-transport13 -- found version 13.5.0
+-- Looking for gz-rendering8 -- found version 8.2.3
+-- Searching for dependencies of gz-rendering8
+-- Looking for gz-math7 -- found version 7.5.1
+-- Searching for dependencies of gz-math7
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Searching for <gz-math7> component [eigen3]
+-- Looking for gz-math7-eigen3 -- found version 7.5.1
+-- Searching for dependencies of gz-math7-eigen3
+-- Looking for gz-common5 -- found version 5.8.0
+-- Searching for dependencies of gz-common5
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Looking for dlfcn.h - found
+-- Looking for libdl - found
+-- Searching for <gz-common5> component [graphics]
+-- Searching for <gz-common5> component [events]
+-- Searching for <gz-common5> component [geospatial]
+-- Looking for gz-common5-geospatial -- found version 5.8.0
+-- Searching for dependencies of gz-common5-geospatial
+-- Looking for gz-math7 -- found version 7.5.1
+-- Looking for gz-common5 -- found version 5.8.0
+-- Looking for gz-plugin2 -- found version 2.0.4
+-- Searching for dependencies of gz-plugin2
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Searching for <gz-plugin2> component [all]
+-- Looking for all libraries of gz-plugin2 -- found version 2.0.4
+-- Looking for gz-plugin2 -- found version 2.0.4
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Looking for gz-msgs10 -- found version 10.3.2
+-- Looking for gz-physics7 -- found version 7.6.0
+-- Searching for dependencies of gz-physics7
+-- Looking for gz-common5 -- found version 5.8.0
+-- Looking for gz-math7 -- found version 7.5.1
+-- Looking for gz-plugin2 -- found version 2.0.4
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Searching for <gz-physics7> component [heightmap]
+-- Looking for gz-physics7-heightmap -- found version 7.6.0
+-- Searching for dependencies of gz-physics7-heightmap
+-- Looking for gz-common5 -- found version 5.8.0
+-- Searching for <gz-physics7> component [mesh]
+-- Looking for gz-physics7-mesh -- found version 7.6.0
+-- Searching for dependencies of gz-physics7-mesh
+-- Looking for gz-common5 -- found version 5.8.0
+-- Searching for <gz-physics7> component [sdf]
+-- Looking for gz-physics7-sdf -- found version 7.6.0
+-- Searching for dependencies of gz-physics7-sdf
+-- Looking for sdformat14 -- found version 14.9.0
+-- Looking for gz-sensors8 -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8
+-- Looking for gz-math7 -- found version 7.5.1
+-- Looking for gz-common5 -- found version 5.8.0
+-- Looking for gz-transport13 -- found version 13.5.0
+-- Looking for gz-rendering8 -- found version 8.2.3
+-- Looking for gz-msgs10 -- found version 10.3.2
+-- Looking for sdformat14 -- found version 14.9.0
+-- Searching for <gz-sensors8> component [air_pressure]
+-- Looking for gz-sensors8-air_pressure -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-air_pressure
+-- Searching for <gz-sensors8> component [air_speed]
+-- Looking for gz-sensors8-air_speed -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-air_speed
+-- Searching for <gz-sensors8> component [altimeter]
+-- Looking for gz-sensors8-altimeter -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-altimeter
+-- Searching for <gz-sensors8> component [imu]
+-- Looking for gz-sensors8-imu -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-imu
+-- Searching for <gz-sensors8> component [force_torque]
+-- Looking for gz-sensors8-force_torque -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-force_torque
+-- Searching for <gz-sensors8> component [logical_camera]
+-- Looking for gz-sensors8-logical_camera -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-logical_camera
+-- Searching for <gz-sensors8> component [magnetometer]
+-- Looking for gz-sensors8-magnetometer -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-magnetometer
+-- Searching for <gz-sensors8> component [navsat]
+-- Looking for gz-sensors8-navsat -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-navsat
+-- Searching for <gz-sensors8> component [dvl]
+-- Looking for gz-sensors8-dvl -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-dvl
+-- Looking for gz-sensors8 -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8
+-- Looking for gz-math7 -- found version 7.5.1
+-- Looking for gz-common5 -- found version 5.8.0
+-- Looking for gz-transport13 -- found version 13.5.0
+-- Looking for gz-rendering8 -- found version 8.2.3
+-- Looking for gz-msgs10 -- found version 10.3.2
+-- Looking for sdformat14 -- found version 14.9.0
+-- Searching for <gz-sensors8> component [rendering]
+-- Looking for gz-sensors8-rendering -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-rendering
+-- Searching for <gz-sensors8> component [rendering]
+-- Searching for <gz-sensors8> component [lidar]
+-- Looking for gz-sensors8-lidar -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-lidar
+-- Looking for gz-sensors8 -- found version 8.2.2
+-- Searching for <gz-sensors8> component [gpu_lidar]
+-- Looking for gz-sensors8-gpu_lidar -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-gpu_lidar
+-- Looking for gz-sensors8 -- found version 8.2.2
+-- Searching for <gz-sensors8> component [camera]
+-- Looking for gz-sensors8-camera -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-camera
+-- Looking for gz-sensors8 -- found version 8.2.2
+-- Searching for <gz-sensors8> component [boundingbox_camera]
+-- Looking for gz-sensors8-boundingbox_camera -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-boundingbox_camera
+-- Searching for <gz-sensors8> component [segmentation_camera]
+-- Looking for gz-sensors8-segmentation_camera -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-segmentation_camera
+-- Searching for <gz-sensors8> component [depth_camera]
+-- Looking for gz-sensors8-depth_camera -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-depth_camera
+-- Looking for gz-sensors8 -- found version 8.2.2
+-- Searching for <gz-sensors8> component [rgbd_camera]
+-- Looking for gz-sensors8-rgbd_camera -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-rgbd_camera
+-- Looking for gz-sensors8 -- found version 8.2.2
+-- Searching for <gz-sensors8> component [thermal_camera]
+-- Looking for gz-sensors8-thermal_camera -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-thermal_camera
+-- Looking for gz-sensors8 -- found version 8.2.2
+-- Searching for <gz-sensors8> component [wide_angle_camera]
+-- Looking for gz-sensors8-wide_angle_camera -- found version 8.2.2
+-- Searching for dependencies of gz-sensors8-wide_angle_camera
+-- Looking for gz-rendering8 -- found version 8.2.3
+-- Looking for gz-math7 -- found version 7.5.1
+-- Looking for gz-utils2 -- found version 2.2.1
+-- Looking for gz-sensors8 -- found version 8.2.2
+-- Looking for gz-plugin2 -- found version 2.0.4
+-- Found OpenCV: /usr (found version "4.6.0")
+-- Found OpenCV: /usr (found version "4.6.0") found components: core imgproc
+-- ROMFS: ROMFS/px4fmu_common
+Architecture:  amd64
+==> CPACK_INSTALL_PREFIX = @DEB_INSTALL_PREFIX@
+-- Configuring done (3.5s)
+-- Generating done (0.9s)
+-- Build files have been written to: /home/crocodile/PX4-Autopilot-hx8-hx65hm/build/px4_sitl_test
+[1/427] Generating px4 event json file from source
+[2/427] Generating combined event json file
+[3/427] Generating parameters.xml
+[4/427] Generating component_general.json and checksums.h
+[5/427] Generating px4_parameters.hpp
+[6/427] Building CXX object src/lib/control_allocation/control_allocation/CMakeFiles/ControlAllocation.dir/ControlAllocationSequentialDesaturation.cpp.o
+[7/427] Building CXX object src/lib/collision_prevention/CMakeFiles/CollisionPrevention.dir/CollisionPrevention.cpp.o
+[8/427] Building CXX object src/lib/fw_performance_model/CMakeFiles/performance_model.dir/PerformanceModel.cpp.o
+[9/427] Building CXX object src/lib/pure_pursuit/CMakeFiles/pure_pursuit.dir/PurePursuit.cpp.o
+[10/427] Building CXX object src/lib/battery/CMakeFiles/battery.dir/battery.cpp.o
+[11/427] Building CXX object src/lib/pure_pursuit/CMakeFiles/unit-PurePursuit.dir/PurePursuitTest.cpp.o
+[12/427] Building CXX object src/lib/mixer_module/CMakeFiles/mixer_module.dir/mixer_module.cpp.o
+[13/427] Building CXX object src/lib/rtl/CMakeFiles/rtl_time_estimator.dir/rtl_time_estimator.cpp.o
+[14/427] Building CXX object src/lib/control_allocation/control_allocation/CMakeFiles/functional-ControlAllocationSequentialDesaturation.dir/ControlAllocationSequentialDesaturationTest.cpp.o
+[15/427] ROMFS: copying extras
+[16/427] Building CXX object src/lib/mixer_module/CMakeFiles/functional-mixer_module_tests.dir/mixer_module_tests.cpp.o
+[17/427] Building CXX object src/lib/collision_prevention/CMakeFiles/functional-CollisionPrevention.dir/CollisionPreventionTest.cpp.o
+[18/427] Building CXX object src/lib/stick_yaw/CMakeFiles/StickYaw.dir/StickYaw.cpp.o
+[19/427] Building CXX object src/modules/airship_att_control/CMakeFiles/modules__airship_att_control.dir/airship_att_control_main.cpp.o
+[20/427] Building CXX object src/modules/attitude_estimator_q/CMakeFiles/modules__attitude_estimator_q.dir/attitude_estimator_q_main.cpp.o
+[21/427] Building CXX object src/lib/weather_vane/CMakeFiles/WeatherVane.dir/WeatherVane.cpp.o
+[22/427] Building CXX object src/modules/camera_feedback/CMakeFiles/modules__camera_feedback.dir/CameraFeedback.cpp.o
+[23/427] Building CXX object platforms/common/uORB/test/CMakeFiles/functional-uORBMessageFields.dir/uORBMessageFieldsTest.cpp.o
+[24/427] Building CXX object src/drivers/osd/msp_osd/CMakeFiles/drivers__osd__msp_osd.dir/msp_osd.cpp.o
+[25/427] Building CXX object src/modules/airspeed_selector/CMakeFiles/modules__airspeed_selector.dir/airspeed_selector_main.cpp.o
+[26/427] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/ModeManagement.cpp.o
+[27/427] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/UserModeIntention.cpp.o
+[28/427] Building CXX object src/modules/commander/failsafe/CMakeFiles/failsafe.dir/failsafe.cpp.o
+[29/427] Building CXX object src/modules/commander/failsafe/CMakeFiles/failsafe.dir/framework.cpp.o
+[30/427] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/Commander.cpp.o
+[31/427] Building CXX object src/modules/commander/failure_detector/CMakeFiles/failure_detector.dir/FailureDetector.cpp.o
+[32/427] Building CXX object src/modules/commander/CMakeFiles/functional-ModeManagement.dir/ModeManagementTest.cpp.o
+[33/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/baroCheck.cpp.o
+[34/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/accelerometerCheck.cpp.o
+[35/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/Common.cpp.o
+[36/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/HealthAndArmingChecks.cpp.o
+[37/427] Building CXX object src/modules/commander/failsafe/CMakeFiles/functional-failsafe_test.dir/failsafe_test.cpp.o
+[38/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/airspeedCheck.cpp.o
+[39/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/armPermissionCheck.cpp.o
+[40/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/batteryCheck.cpp.o
+[41/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/opticalFlowCheck.cpp.o
+[42/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/cpuResourceCheck.cpp.o
+[43/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/distanceSensorChecks.cpp.o
+[44/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/flightTimeCheck.cpp.o
+[45/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/failureDetectorCheck.cpp.o
+[46/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/estimatorCheck.cpp.o
+[47/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/gyroCheck.cpp.o
+[48/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/escCheck.cpp.o
+[49/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/geofenceCheck.cpp.o
+[50/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/homePositionCheck.cpp.o
+[51/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/imuConsistencyCheck.cpp.o
+[52/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/loggerCheck.cpp.o
+[53/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/magnetometerCheck.cpp.o
+[54/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/missionCheck.cpp.o
+[55/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/modeCheck.cpp.o
+[56/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/navigatorCheck.cpp.o
+[57/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/manualControlCheck.cpp.o
+[58/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/offboardCheck.cpp.o
+[59/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/openDroneIDCheck.cpp.o
+[60/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/parachuteCheck.cpp.o
+[61/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/rcCalibrationCheck.cpp.o
+[62/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/rcAndDataLinkCheck.cpp.o
+[63/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/systemCheck.cpp.o
+[64/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/powerCheck.cpp.o
+[65/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/sdcardCheck.cpp.o
+[66/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/vtolCheck.cpp.o
+[67/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/windCheck.cpp.o
+[68/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/hybridCheck.cpp.o
+[69/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/externalChecks.cpp.o
+[70/427] Building CXX object src/modules/commander/MulticopterThrowLaunch/CMakeFiles/MulticopterThrowLaunch.dir/MulticopterThrowLaunch.cpp.o
+[71/427] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessUUV.cpp.o
+[72/427] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessControlSurfaces.cpp.o
+[73/427] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessFixedWing.cpp.o
+[74/427] Building CXX object src/modules/control_allocator/CMakeFiles/modules__control_allocator.dir/ControlAllocator.cpp.o
+[75/427] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessCustom.cpp.o
+[76/427] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessMCTilt.cpp.o
+[77/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/functional-HealthAndArmingChecks.dir/HealthAndArmingChecksTest.cpp.o
+[78/427] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/functional-hybridCheck.dir/checks/hybridCheckTest.cpp.o
+[79/427] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessHelicopter.cpp.o
+[80/427] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessRotors.cpp.o
+[81/427] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessHelicopterCoaxial.cpp.o
+[82/427] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessMultirotor.cpp.o
+[83/427] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessTilts.cpp.o
+[84/427] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessStandardVTOL.cpp.o
+[85/427] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessTiltrotorVTOL.cpp.o
+[86/427] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/RpmControl.cpp.o
+[87/427] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessTailsitterVTOL.cpp.o
+[88/427] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/functional-ActuatorEffectivenessRotors.dir/ActuatorEffectivenessRotorsTest.cpp.o
+[89/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/control.cpp.o
+[90/427] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/functional-ActuatorEffectivenessHelicopter.dir/ActuatorEffectivenessHelicopterTest.cpp.o
+[91/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/covariance.cpp.o
+[92/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/ekf.cpp.o
+[93/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/ekf_helper.cpp.o
+[94/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/height_control.cpp.o
+[95/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/velocity_fusion.cpp.o
+[96/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/position_fusion.cpp.o
+[97/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/fake_height_control.cpp.o
+[98/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/fake_pos_control.cpp.o
+[99/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/yaw_fusion.cpp.o
+[100/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/ZeroGyroUpdate.cpp.o
+[101/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/ZeroVelocityUpdate.cpp.o
+[102/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/zero_innovation_heading_update.cpp.o
+[103/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/airspeed/airspeed_fusion.cpp.o
+[104/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/aux_global_position/aux_global_position.cpp.o
+[105/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/auxvel/auxvel_fusion.cpp.o
+[106/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/barometer/baro_height_control.cpp.o
+[107/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/drag/drag_fusion.cpp.o
+[108/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/external_vision/ev_control.cpp.o
+[109/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/external_vision/ev_height_control.cpp.o
+[110/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/external_vision/ev_pos_control.cpp.o
+[111/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/external_vision/ev_vel_control.cpp.o
+[112/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/gnss/gnss_height_control.cpp.o
+[113/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/external_vision/ev_yaw_control.cpp.o
+[114/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/gnss/gnss_yaw_control.cpp.o
+[115/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/gnss/gps_checks.cpp.o
+[116/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/magnetometer/mag_fusion.cpp.o
+[117/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/gnss/gps_control.cpp.o
+[118/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/magnetometer/mag_control.cpp.o
+[119/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/gravity/gravity_fusion.cpp.o
+[120/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/optical_flow/optical_flow_fusion.cpp.o
+[121/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/optical_flow/optical_flow_control.cpp.o
+[122/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/range_finder/range_height_control.cpp.o
+[123/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/range_finder/range_height_fusion.cpp.o
+[124/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/aid_sources/sideslip/sideslip_fusion.cpp.o
+[125/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/terrain_control.cpp.o
+[126/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF/wind.cpp.o
+[127/427] Building CXX object src/modules/events/CMakeFiles/modules__events.dir/send_event.cpp.o
+[128/427] Building CXX object src/modules/flight_mode_manager/CMakeFiles/modules__flight_mode_manager.dir/FlightModeManager.cpp.o
+[129/427] Building CXX object src/modules/flight_mode_manager/CMakeFiles/modules__flight_mode_manager.dir/FlightTasks_generated.cpp.o
+[130/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF2.cpp.o
+[131/427] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/EKF2Selector.cpp.o
+[132/427] Building CXX object src/modules/flight_mode_manager/tasks/FlightTask/CMakeFiles/FlightTask.dir/FlightTask.cpp.o
+[133/427] Building CXX object src/modules/flight_mode_manager/tasks/Utility/CMakeFiles/FlightTaskUtility.dir/Sticks.cpp.o
+[134/427] Building CXX object src/modules/flight_mode_manager/tasks/Utility/CMakeFiles/FlightTaskUtility.dir/StickAccelerationXY.cpp.o
+[135/427] Building CXX object src/modules/flight_mode_manager/tasks/Utility/CMakeFiles/FlightTaskUtility.dir/StickTiltXY.cpp.o
+[136/427] Building CXX object src/modules/flight_mode_manager/tasks/Auto/CMakeFiles/FlightTaskAuto.dir/FlightTaskAuto.cpp.o
+[137/427] Building CXX object src/modules/flight_mode_manager/tasks/Utility/CMakeFiles/FlightTaskUtility.dir/Gimbal.cpp.o
+[138/427] Building CXX object src/modules/flight_mode_manager/tasks/Utility/CMakeFiles/functional-StickTiltXY.dir/StickTiltXYTest.cpp.o
+[139/427] Building CXX object src/modules/flight_mode_manager/tasks/Failsafe/CMakeFiles/FlightTaskFailsafe.dir/FlightTaskFailsafe.cpp.o
+[140/427] Building CXX object src/modules/flight_mode_manager/tasks/Descend/CMakeFiles/FlightTaskDescend.dir/FlightTaskDescend.cpp.o
+[141/427] Building CXX object src/modules/flight_mode_manager/tasks/ManualAltitude/CMakeFiles/FlightTaskManualAltitude.dir/FlightTaskManualAltitude.cpp.o
+[142/427] Building CXX object src/modules/flight_mode_manager/tasks/ManualAcceleration/CMakeFiles/FlightTaskManualAcceleration.dir/FlightTaskManualAcceleration.cpp.o
+[143/427] Building CXX object src/modules/flight_mode_manager/tasks/ManualAccelerationSlow/CMakeFiles/FlightTaskManualAccelerationSlow.dir/FlightTaskManualAccelerationSlow.cpp.o
+[144/427] Building CXX object src/modules/flight_mode_manager/tasks/ManualPosition/CMakeFiles/FlightTaskManualPosition.dir/FlightTaskManualPosition.cpp.o
+[145/427] Building CXX object src/modules/flight_mode_manager/tasks/Transition/CMakeFiles/FlightTaskTransition.dir/FlightTaskTransition.cpp.o
+[146/427] Building CXX object src/modules/flight_mode_manager/tasks/ManualAltitudeSmoothVel/CMakeFiles/FlightTaskManualAltitudeSmoothVel.dir/FlightTaskManualAltitudeSmoothVel.cpp.o
+[147/427] Building CXX object src/modules/flight_mode_manager/tasks/AutoFollowTarget/CMakeFiles/FlightTaskAutoFollowTarget.dir/FlightTaskAutoFollowTarget.cpp.o
+[148/427] Building CXX object src/modules/flight_mode_manager/tasks/AutoFollowTarget/follow_target_estimator/CMakeFiles/follow_target_estimator.dir/TargetEstimator.cpp.o
+[149/427] Building CXX object src/modules/flight_mode_manager/tasks/Orbit/CMakeFiles/FlightTaskOrbit.dir/FlightTaskOrbit.cpp.o
+[150/427] Building CXX object src/modules/fw_att_control/CMakeFiles/modules__fw_att_control.dir/FixedwingAttitudeControl.cpp.o
+[151/427] Building CXX object src/modules/fw_autotune_attitude_control/CMakeFiles/fw_autotune_attitude_control.dir/fw_autotune_attitude_control.cpp.o
+[152/427] Building CXX object src/modules/fw_pos_control/launchdetection/CMakeFiles/launchdetection.dir/LaunchDetector.cpp.o
+[153/427] Building CXX object src/modules/fw_pos_control/runway_takeoff/CMakeFiles/runway_takeoff.dir/RunwayTakeoff.cpp.o
+[154/427] Building CXX object src/modules/fw_pos_control/figure_eight/CMakeFiles/figure_eight.dir/FigureEight.cpp.o
+[155/427] Building CXX object src/modules/fw_pos_control/CMakeFiles/modules__fw_pos_control.dir/FixedwingPositionControl.cpp.o
+[156/427] Building CXX object src/modules/gyro_calibration/CMakeFiles/modules__gyro_calibration.dir/GyroCalibration.cpp.o
+[157/427] Building CXX object src/modules/gyro_fft/CMakeFiles/modules__gyro_fft.dir/GyroFFT.cpp.o
+[158/427] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/land_detector_main.cpp.o
+[159/427] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/MulticopterLandDetector.cpp.o
+[160/427] Building CXX object src/modules/fw_rate_control/CMakeFiles/modules__fw_rate_control.dir/FixedwingRateControl.cpp.o
+[161/427] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/VtolLandDetector.cpp.o
+[162/427] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/LandDetector.cpp.o
+[163/427] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/FixedwingLandDetector.cpp.o
+[164/427] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/RoverLandDetector.cpp.o
+[165/427] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/AirshipLandDetector.cpp.o
+[166/427] Building CXX object src/modules/load_mon/CMakeFiles/modules__load_mon.dir/LoadMon.cpp.o
+[167/427] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/sensors/flow.cpp.o
+[168/427] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/BlockLocalPositionEstimator.cpp.o
+[169/427] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/sensors/lidar.cpp.o
+[170/427] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/sensors/sonar.cpp.o
+[171/427] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/sensors/baro.cpp.o
+[172/427] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/sensors/gps.cpp.o
+[173/427] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/sensors/land.cpp.o
+[174/427] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/sensors/landing_target.cpp.o
+[175/427] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/sensors/vision.cpp.o
+[176/427] Building CXX object src/modules/local_position_estimator/CMakeFiles/modules__local_position_estimator.dir/sensors/mocap.cpp.o
+[177/427] Building CXX object src/modules/logger/CMakeFiles/modules__logger.dir/logger.cpp.o
+[178/427] Building CXX object src/modules/mag_bias_estimator/CMakeFiles/modules__mag_bias_estimator.dir/MagBiasEstimator.cpp.o
+[179/427] Building CXX object src/modules/manual_control/CMakeFiles/modules__manual_control.dir/ManualControl.cpp.o
+[180/427] Building CXX object src/modules/manual_control/CMakeFiles/functional-ManualControl.dir/ManualControlTest.cpp.o
+[181/427] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_main.cpp.o
+[182/427] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_parameters.cpp.o
+[183/427] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_ftp.cpp.o
+[184/427] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_log_handler.cpp.o
+[185/427] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_stream.cpp.o
+[186/427] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_timesync.cpp.o
+[187/427] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_events.cpp.o
+[188/427] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_messages.cpp.o
+[189/427] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_mission.cpp.o
+[190/427] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/mavlink_receiver.cpp.o
+[191/427] Building CXX object src/modules/mavlink/mavlink_tests/CMakeFiles/modules__mavlink__mavlink_tests.dir/mavlink_tests.cpp.o
+[192/427] Building CXX object src/modules/mavlink/mavlink_tests/CMakeFiles/modules__mavlink__mavlink_tests.dir/mavlink_ftp_test.cpp.o
+[193/427] Building CXX object src/modules/mavlink/mavlink_tests/CMakeFiles/modules__mavlink__mavlink_tests.dir/__/mavlink_ftp.cpp.o
+[194/427] Building CXX object src/modules/mc_att_control/CMakeFiles/modules__mc_att_control.dir/mc_att_control_main.cpp.o
+[195/427] Building CXX object src/modules/mavlink/mavlink_tests/CMakeFiles/modules__mavlink__mavlink_tests.dir/__/mavlink_stream.cpp.o
+[196/427] Building CXX object src/modules/mc_hover_thrust_estimator/CMakeFiles/modules__mc_hover_thrust_estimator.dir/MulticopterHoverThrustEstimator.cpp.o
+[197/427] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/navigator_mode.cpp.o
+[198/427] Building CXX object src/modules/mc_autotune_attitude_control/CMakeFiles/mc_autotune_attitude_control.dir/mc_autotune_attitude_control.cpp.o
+[199/427] Building CXX object src/modules/mc_rate_control/CMakeFiles/modules__mc_rate_control.dir/MulticopterRateControl.cpp.o
+[200/427] Building CXX object src/modules/mc_pos_control/CMakeFiles/modules__mc_pos_control.dir/MulticopterPositionControl.cpp.o
+[201/427] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/mission_block.cpp.o
+[202/427] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/navigator_main.cpp.o
+[203/427] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/mission.cpp.o
+[204/427] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/mission_base.cpp.o
+[205/427] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/rtl_direct.cpp.o
+[206/427] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/rtl_mission_fast.cpp.o
+[207/427] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/takeoff.cpp.o
+[208/427] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/land.cpp.o
+[209/427] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/loiter.cpp.o
+[210/427] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/rtl.cpp.o
+[211/427] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/precland.cpp.o
+[212/427] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/rtl_direct_mission_land.cpp.o
+[213/427] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/geofence.cpp.o
+[214/427] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/rtl_mission_fast_reverse.cpp.o
+[215/427] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/mission_feasibility_checker.cpp.o
+[216/427] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/vtol_takeoff.cpp.o
+[217/427] Building CXX object src/modules/rc_update/CMakeFiles/modules__rc_update.dir/rc_update.cpp.o
+[218/427] Building CXX object src/modules/navigator/GeofenceBreachAvoidance/CMakeFiles/geofence_breach_avoidance.dir/geofence_breach_avoidance.cpp.o
+[219/427] Building CXX object src/modules/navigator/MissionFeasibility/CMakeFiles/mission_feasibility_checker.dir/FeasibilityChecker.cpp.o
+[220/427] Building CXX object src/modules/payload_deliverer/CMakeFiles/modules__payload_deliverer.dir/payload_deliverer.cpp.o
+[221/427] Building CXX object src/modules/rover_ackermann/AckermannRateControl/CMakeFiles/AckermannRateControl.dir/AckermannRateControl.cpp.o
+[222/427] Building CXX object src/modules/navigator/MissionFeasibility/CMakeFiles/functional-FeasibilityChecker.dir/FeasibilityCheckerTest.cpp.o
+[223/427] Building CXX object src/modules/rc_update/CMakeFiles/functional-RCUpdate.dir/RCUpdateTest.cpp.o
+[224/427] Building CXX object src/modules/navigator/GeofenceBreachAvoidance/CMakeFiles/functional-GeofenceBreachAvoidance.dir/GeofenceBreachAvoidanceTest.cpp.o
+[225/427] Building CXX object src/modules/rover_ackermann/AckermannVelControl/CMakeFiles/AckermannVelControl.dir/AckermannVelControl.cpp.o
+[226/427] Building CXX object src/modules/rover_ackermann/CMakeFiles/modules__rover_ackermann.dir/RoverAckermann.cpp.o
+[227/427] Building CXX object src/modules/rover_ackermann/AckermannAttControl/CMakeFiles/AckermannAttControl.dir/AckermannAttControl.cpp.o
+[228/427] Building CXX object src/modules/rover_differential/CMakeFiles/modules__rover_differential.dir/RoverDifferential.cpp.o
+[229/427] Building CXX object src/modules/rover_ackermann/AckermannPosControl/CMakeFiles/AckermannPosControl.dir/AckermannPosControl.cpp.o
+[230/427] Building CXX object src/modules/rover_differential/DifferentialRateControl/CMakeFiles/DifferentialRateControl.dir/DifferentialRateControl.cpp.o
+[231/427] Building CXX object src/modules/rover_differential/DifferentialVelControl/CMakeFiles/DifferentialVelControl.dir/DifferentialVelControl.cpp.o
+[232/427] Building CXX object src/modules/rover_mecanum/CMakeFiles/modules__rover_mecanum.dir/RoverMecanum.cpp.o
+[233/427] Building CXX object src/modules/rover_differential/DifferentialAttControl/CMakeFiles/DifferentialAttControl.dir/DifferentialAttControl.cpp.o
+[234/427] Building CXX object src/modules/rover_mecanum/MecanumRateControl/CMakeFiles/MecanumRateControl.dir/MecanumRateControl.cpp.o
+[235/427] Building CXX object src/modules/rover_mecanum/MecanumAttControl/CMakeFiles/MecanumAttControl.dir/MecanumAttControl.cpp.o
+[236/427] Building CXX object src/modules/rover_mecanum/MecanumPosVelControl/CMakeFiles/MecanumPosVelControl.dir/MecanumPosVelControl.cpp.o
+[237/427] Building CXX object src/modules/rover_differential/DifferentialPosControl/CMakeFiles/DifferentialPosControl.dir/DifferentialPosControl.cpp.o
+[238/427] Building CXX object src/modules/sensors/vehicle_air_data/CMakeFiles/vehicle_air_data.dir/VehicleAirData.cpp.o
+[239/427] Building CXX object src/modules/rover_pos_control/CMakeFiles/modules__rover_pos_control.dir/RoverPositionControl.cpp.o
+[240/427] Building CXX object src/modules/sensors/CMakeFiles/modules__sensors.dir/sensors.cpp.o
+[241/427] Building CXX object src/modules/sensors/CMakeFiles/modules__sensors.dir/voted_sensors_update.cpp.o
+[242/427] Building CXX object src/modules/sensors/vehicle_acceleration/CMakeFiles/vehicle_acceleration.dir/VehicleAcceleration.cpp.o
+[243/427] Building CXX object src/modules/sensors/vehicle_imu/CMakeFiles/vehicle_imu.dir/VehicleIMU.cpp.o
+[244/427] Building CXX object src/modules/sensors/vehicle_angular_velocity/CMakeFiles/vehicle_angular_velocity.dir/VehicleAngularVelocity.cpp.o
+[245/427] Building CXX object src/modules/sensors/vehicle_gps_position/CMakeFiles/vehicle_gps_position.dir/VehicleGPSPosition.cpp.o
+[246/427] Building CXX object src/modules/sensors/vehicle_optical_flow/test/CMakeFiles/functional-VehicleOpticalFlow.dir/VehicleOpticalFlowTest.cpp.o
+[247/427] Building CXX object src/modules/sensors/vehicle_magnetometer/CMakeFiles/vehicle_magnetometer.dir/VehicleMagnetometer.cpp.o
+[248/427] Building CXX object src/modules/sensors/vehicle_optical_flow/CMakeFiles/vehicle_optical_flow.dir/VehicleOpticalFlow.cpp.o
+[249/427] Building CXX object src/modules/simulation/battery_simulator/CMakeFiles/modules__simulation__battery_simulator.dir/BatterySimulator.cpp.o
+[250/427] Building CXX object src/modules/simulation/sensor_airspeed_sim/CMakeFiles/modules__simulation__sensor_airspeed_sim.dir/SensorAirspeedSim.cpp.o
+[251/427] Building CXX object src/modules/simulation/pwm_out_sim/CMakeFiles/modules__simulation__pwm_out_sim.dir/PWMSim.cpp.o
+[252/427] Building CXX object src/modules/simulation/sensor_agp_sim/CMakeFiles/modules__simulation__sensor_agp_sim.dir/SensorAgpSim.cpp.o
+[253/427] Building CXX object src/modules/simulation/gz_bridge/CMakeFiles/modules__simulation__gz_bridge.dir/GZMixingInterfaceServo.cpp.o
+[254/427] Building CXX object src/modules/simulation/gz_bridge/CMakeFiles/modules__simulation__gz_bridge.dir/GZGimbal.cpp.o
+[255/427] Building CXX object src/modules/simulation/sensor_baro_sim/CMakeFiles/modules__simulation__sensor_baro_sim.dir/SensorBaroSim.cpp.o
+[256/427] Building CXX object src/modules/simulation/sensor_gps_sim/CMakeFiles/modules__simulation__sensor_gps_sim.dir/SensorGpsSim.cpp.o
+[257/427] Building CXX object src/modules/simulation/gz_bridge/CMakeFiles/modules__simulation__gz_bridge.dir/GZMixingInterfaceESC.cpp.o
+[258/427] Building CXX object src/modules/simulation/gz_bridge/CMakeFiles/modules__simulation__gz_bridge.dir/GZMixingInterfaceWheel.cpp.o
+[259/427] Building CXX object src/modules/simulation/simulator_sih/CMakeFiles/modules__simulation__simulator_sih.dir/sih.cpp.o
+[260/427] Building CXX object src/modules/simulation/gz_bridge/CMakeFiles/modules__simulation__gz_bridge.dir/GZBridge.cpp.o
+[261/427] Building CXX object src/modules/simulation/sensor_mag_sim/CMakeFiles/modules__simulation__senosr_mag_sim.dir/SensorMagSim.cpp.o
+[262/427] Building CXX object src/modules/temperature_compensation/CMakeFiles/modules__temperature_compensation.dir/TemperatureCompensationModule.cpp.o
+[263/427] Building CXX object src/modules/uuv_pos_control/CMakeFiles/modules__uuv_pos_control.dir/uuv_pos_control.cpp.o
+[264/427] Building CXX object src/modules/simulation/simulator_mavlink/CMakeFiles/modules__simulation__simulator_mavlink.dir/SimulatorMavlink.cpp.o
+[265/427] Building CXX object src/modules/uuv_att_control/CMakeFiles/modules__uuv_att_control.dir/uuv_att_control.cpp.o
+[266/427] Building CXX object src/modules/vtol_att_control/CMakeFiles/modules__vtol_att_control.dir/vtol_att_control_main.cpp.o
+[267/427] Building CXX object src/modules/uxrce_dds_client/CMakeFiles/modules__uxrce_dds_client.dir/uxrce_dds_client.cpp.o
+[268/427] Building CXX object src/modules/vtol_att_control/CMakeFiles/modules__vtol_att_control.dir/tiltrotor.cpp.o
+[269/427] Building CXX object src/modules/vtol_att_control/CMakeFiles/modules__vtol_att_control.dir/tailsitter.cpp.o
+[270/427] Building CXX object src/modules/vtol_att_control/CMakeFiles/modules__vtol_att_control.dir/vtol_type.cpp.o
+[271/427] Building CXX object src/examples/fake_imu/CMakeFiles/modules__fake_imu.dir/FakeImu.cpp.o
+[272/427] Building CXX object src/modules/vtol_att_control/CMakeFiles/modules__vtol_att_control.dir/standard.cpp.o
+[273/427] Building CXX object src/examples/fake_gps/CMakeFiles/modules__fake_gps.dir/FakeGps.cpp.o
+[274/427] Building CXX object src/examples/fake_magnetometer/CMakeFiles/examples__fake_magnetometer.dir/FakeMagnetometer.cpp.o
+[275/427] Building CXX object src/examples/work_item/CMakeFiles/examples__work_item.dir/WorkItemExample.cpp.o
+[276/427] Building CXX object src/lib/parameters/CMakeFiles/parameters.dir/parameters.cpp.o
+[277/427] Building CXX object src/lib/parameters/CMakeFiles/functional-Parameter.dir/ParameterTest.cpp.o
+[278/427] Linking CXX static library src/lib/parameters/libparameters.a
+[279/427] Linking CXX static library src/lib/pure_pursuit/libpure_pursuit.a
+[280/427] Linking CXX static library src/lib/fw_performance_model/libperformance_model.a
+[281/427] Linking CXX static library src/lib/rtl/librtl_time_estimator.a
+[282/427] Linking CXX static library src/lib/battery/libbattery.a
+[283/427] Building CXX object src/lib/hybrid_control/CMakeFiles/hybrid_control.dir/HybridSequenceCoordinator.cpp.o
+[284/427] Linking CXX static library src/lib/stick_yaw/libStickYaw.a
+[285/427] Linking CXX static library src/lib/weather_vane/libWeatherVane.a
+[286/427] Linking CXX static library src/lib/collision_prevention/libCollisionPrevention.a
+[287/427] Linking CXX static library src/lib/control_allocation/control_allocation/libControlAllocation.a
+[288/427] Linking CXX static library src/lib/mixer_module/libmixer_module.a
+[289/427] Linking CXX static library src/modules/airship_att_control/libmodules__airship_att_control.a
+[290/427] Linking CXX static library src/drivers/osd/msp_osd/libdrivers__osd__msp_osd.a
+[291/427] Linking CXX static library src/modules/attitude_estimator_q/libmodules__attitude_estimator_q.a
+[292/427] Linking CXX static library src/modules/airspeed_selector/libmodules__airspeed_selector.a
+[293/427] Linking CXX static library src/lib/hybrid_control/libhybrid_control.a
+[294/427] Linking CXX static library src/modules/commander/failsafe/libfailsafe.a
+[295/427] Linking CXX static library src/modules/camera_feedback/libmodules__camera_feedback.a
+[296/427] Linking CXX executable unit-ControlAllocationPseudoInverse
+[297/427] Linking CXX executable unit-M2006SpeedController
+[298/427] Linking CXX executable unit-PurePursuit
+[299/427] Linking CXX executable unit-ObstacleMath
+[300/427] Linking CXX executable unit-C610Protocol
+[301/427] Linking CXX executable unit-M2006CommandAdapter
+[302/427] Linking CXX executable unit-M2006DriveGate
+[303/427] Linking CXX executable unit-Hx8BackendPolicy
+[304/427] Linking CXX executable unit-TransformationPosition
+[305/427] Linking CXX executable unit-Hx65BackendPolicy
+[306/427] Linking CXX executable unit-M2006TxPolicy
+[307/427] Linking CXX executable unit-TransformationStateMachine
+[308/427] Linking CXX executable functional-lockstep_scheduler_test
+[309/427] Linking CXX static library src/modules/commander/failure_detector/libfailure_detector.a
+[310/427] Linking CXX executable functional-uORBSubscription
+[311/427] Linking CXX static library src/modules/commander/MulticopterThrowLaunch/libMulticopterThrowLaunch.a
+[312/427] Linking CXX executable functional-CollisionPrevention
+[313/427] Linking CXX executable functional-mixer_module_tests
+[314/427] Linking CXX static library src/modules/flight_mode_manager/tasks/AutoFollowTarget/follow_target_estimator/libfollow_target_estimator.a
+[315/427] Linking CXX executable functional-AdsbConflict
+[316/427] Linking CXX static library src/modules/flight_mode_manager/tasks/FlightTask/libFlightTask.a
+[317/427] Linking CXX static library src/modules/fw_att_control/libmodules__fw_att_control.a
+[318/427] Linking CXX static library src/modules/fw_autotune_attitude_control/libfw_autotune_attitude_control.a
+[319/427] Linking CXX executable functional-uORBMessageFields
+[320/427] Linking CXX static library src/modules/fw_pos_control/launchdetection/liblaunchdetection.a
+[321/427] Linking CXX static library src/modules/events/libmodules__events.a
+[322/427] Linking CXX static library src/modules/fw_pos_control/runway_takeoff/librunway_takeoff.a
+[323/427] Linking CXX static library src/modules/fw_pos_control/figure_eight/libfigure_eight.a
+[324/427] Linking CXX static library src/modules/control_allocator/VehicleActuatorEffectiveness/libVehicleActuatorEffectiveness.a
+[325/427] Linking CXX static library src/modules/flight_mode_manager/tasks/Failsafe/libFlightTaskFailsafe.a
+[326/427] Linking CXX static library src/modules/gyro_calibration/libmodules__gyro_calibration.a
+[327/427] Linking CXX static library src/modules/fw_rate_control/libmodules__fw_rate_control.a
+[328/427] Linking CXX static library src/modules/load_mon/libmodules__load_mon.a
+[329/427] Linking CXX static library src/modules/flight_mode_manager/tasks/Utility/libFlightTaskUtility.a
+[330/427] Linking CXX static library src/modules/commander/HealthAndArmingChecks/libhealth_and_arming_checks.a
+[331/427] Linking CXX static library src/modules/control_allocator/libmodules__control_allocator.a
+[332/427] Linking CXX static library src/modules/fw_pos_control/libmodules__fw_pos_control.a
+[333/427] Linking CXX static library src/modules/land_detector/libmodules__land_detector.a
+[334/427] Linking CXX executable functional-ControlAllocationSequentialDesaturation
+[335/427] Linking CXX static library src/modules/gyro_fft/libmodules__gyro_fft.a
+[336/427] Linking CXX static library src/modules/flight_mode_manager/tasks/Auto/libFlightTaskAuto.a
+[337/427] Linking CXX static library src/modules/flight_mode_manager/tasks/Descend/libFlightTaskDescend.a
+[338/427] Linking CXX static library src/modules/local_position_estimator/libmodules__local_position_estimator.a
+[339/427] Linking CXX static library src/modules/logger/libmodules__logger.a
+[340/427] Linking CXX static library src/modules/flight_mode_manager/tasks/Transition/libFlightTaskTransition.a
+[341/427] Linking CXX static library src/modules/ekf2/libmodules__ekf2.a
+[342/427] Linking CXX static library src/modules/flight_mode_manager/tasks/ManualAltitude/libFlightTaskManualAltitude.a
+[343/427] Linking CXX static library src/modules/flight_mode_manager/tasks/AutoFollowTarget/libFlightTaskAutoFollowTarget.a
+[344/427] Linking CXX static library src/modules/mag_bias_estimator/libmodules__mag_bias_estimator.a
+[345/427] Linking CXX static library src/modules/manual_control/libmodules__manual_control.a
+[346/427] Linking CXX executable functional-failsafe_test
+[347/427] Linking CXX static library src/modules/mavlink/mavlink_tests/libmodules__mavlink__mavlink_tests.a
+[348/427] Linking CXX static library src/modules/flight_mode_manager/tasks/ManualAltitudeSmoothVel/libFlightTaskManualAltitudeSmoothVel.a
+[349/427] Linking CXX static library src/modules/mc_att_control/libmodules__mc_att_control.a
+[350/427] Linking CXX static library src/modules/commander/libmodules__commander.a
+[351/427] Linking CXX static library src/modules/flight_mode_manager/tasks/ManualPosition/libFlightTaskManualPosition.a
+[352/427] Linking CXX static library src/modules/mc_autotune_attitude_control/libmc_autotune_attitude_control.a
+[353/427] Linking CXX static library src/modules/flight_mode_manager/tasks/ManualAcceleration/libFlightTaskManualAcceleration.a
+[354/427] Linking CXX static library src/modules/flight_mode_manager/tasks/Orbit/libFlightTaskOrbit.a
+[355/427] Linking CXX static library src/modules/mc_hover_thrust_estimator/libmodules__mc_hover_thrust_estimator.a
+[356/427] Linking CXX static library src/modules/flight_mode_manager/tasks/ManualAccelerationSlow/libFlightTaskManualAccelerationSlow.a
+[357/427] Linking CXX static library src/modules/mc_pos_control/libmodules__mc_pos_control.a
+[358/427] Linking CXX static library src/modules/mc_rate_control/libmodules__mc_rate_control.a
+[359/427] Linking CXX static library src/modules/mavlink/libmodules__mavlink.a
+[360/427] Linking CXX static library src/modules/flight_mode_manager/libmodules__flight_mode_manager.a
+[361/427] Linking CXX static library src/modules/navigator/GeofenceBreachAvoidance/libgeofence_breach_avoidance.a
+[362/427] Linking CXX executable unit-ManualControlSelector
+[363/427] Linking CXX executable unit-mag_calibration_test
+[364/427] Linking CXX static library src/modules/payload_deliverer/libmodules__payload_deliverer.a
+[365/427] Linking CXX executable functional-ActuatorEffectivenessRotors
+[366/427] Linking CXX static library src/modules/rover_ackermann/AckermannRateControl/libAckermannRateControl.a
+[367/427] Linking CXX static library src/modules/rc_update/libmodules__rc_update.a
+[368/427] Linking CXX executable functional-ActuatorEffectivenessHelicopter
+[369/427] Linking CXX executable functional-hybridCheck
+[370/427] Linking CXX static library src/modules/navigator/MissionFeasibility/libmission_feasibility_checker.a
+[371/427] Linking CXX static library src/modules/rover_ackermann/AckermannAttControl/libAckermannAttControl.a
+[372/427] Linking CXX static library src/modules/rover_ackermann/AckermannVelControl/libAckermannVelControl.a
+[373/427] Linking CXX static library src/modules/rover_differential/DifferentialRateControl/libDifferentialRateControl.a
+[374/427] Linking CXX executable functional-StickTiltXY
+[375/427] Linking CXX static library src/modules/rover_differential/DifferentialAttControl/libDifferentialAttControl.a
+[376/427] Linking CXX static library src/modules/rover_differential/DifferentialPosControl/libDifferentialPosControl.a
+[377/427] Linking CXX static library src/modules/rover_differential/DifferentialVelControl/libDifferentialVelControl.a
+[378/427] Linking CXX static library src/modules/rover_ackermann/AckermannPosControl/libAckermannPosControl.a
+[379/427] Linking CXX static library src/modules/rover_mecanum/MecanumAttControl/libMecanumAttControl.a
+[380/427] Linking CXX static library src/modules/rover_mecanum/MecanumPosVelControl/libMecanumPosVelControl.a
+[381/427] Linking CXX static library src/modules/rover_mecanum/MecanumRateControl/libMecanumRateControl.a
+[382/427] Linking CXX static library src/modules/rover_pos_control/libmodules__rover_pos_control.a
+[383/427] Linking CXX static library src/modules/rover_differential/libmodules__rover_differential.a
+[384/427] Linking CXX static library src/modules/sensors/vehicle_acceleration/libvehicle_acceleration.a
+[385/427] Linking CXX executable functional-HealthAndArmingChecks
+[386/427] Linking CXX static library src/modules/sensors/vehicle_air_data/libvehicle_air_data.a
+[387/427] Linking CXX static library src/modules/rover_ackermann/libmodules__rover_ackermann.a
+[388/427] Linking CXX static library src/modules/sensors/vehicle_magnetometer/libvehicle_magnetometer.a
+[389/427] Linking CXX static library src/modules/rover_mecanum/libmodules__rover_mecanum.a
+[390/427] Linking CXX static library src/modules/sensors/vehicle_optical_flow/libvehicle_optical_flow.a
+[391/427] Linking CXX static library src/modules/sensors/vehicle_angular_velocity/libvehicle_angular_velocity.a
+[392/427] Linking CXX static library src/modules/sensors/vehicle_gps_position/libvehicle_gps_position.a
+[393/427] Linking CXX static library src/modules/sensors/vehicle_imu/libvehicle_imu.a
+[394/427] Linking CXX static library src/modules/simulation/battery_simulator/libmodules__simulation__battery_simulator.a
+[395/427] Linking CXX executable unit-MavlinkStatustextHandler
+[396/427] Linking CXX static library src/modules/navigator/libmodules__navigator.a
+[397/427] Linking CXX static library src/modules/simulation/pwm_out_sim/libmodules__simulation__pwm_out_sim.a
+[398/427] Linking CXX static library src/modules/simulation/sensor_agp_sim/libmodules__simulation__sensor_agp_sim.a
+[399/427] Linking CXX static library src/modules/simulation/sensor_airspeed_sim/libmodules__simulation__sensor_airspeed_sim.a
+[400/427] Linking CXX executable functional-ManualControl
+[401/427] Linking CXX static library src/modules/simulation/sensor_baro_sim/libmodules__simulation__sensor_baro_sim.a
+[402/427] Linking CXX static library src/modules/simulation/sensor_mag_sim/libmodules__simulation__senosr_mag_sim.a
+[403/427] Linking CXX static library src/modules/sensors/libmodules__sensors.a
+[404/427] Linking CXX static library src/modules/simulation/sensor_gps_sim/libmodules__simulation__sensor_gps_sim.a
+[405/427] Linking CXX executable functional-ModeManagement
+[406/427] Linking CXX static library src/modules/simulation/simulator_mavlink/libmodules__simulation__simulator_mavlink.a
+[407/427] Linking CXX static library src/modules/uuv_att_control/libmodules__uuv_att_control.a
+[408/427] Linking CXX static library src/modules/uuv_pos_control/libmodules__uuv_pos_control.a
+[409/427] Linking CXX static library src/modules/simulation/simulator_sih/libmodules__simulation__simulator_sih.a
+[410/427] Linking CXX static library src/examples/fake_gps/libmodules__fake_gps.a
+[411/427] Linking CXX static library src/modules/uxrce_dds_client/libmodules__uxrce_dds_client.a
+[412/427] Linking CXX static library src/modules/simulation/gz_bridge/libmodules__simulation__gz_bridge.a
+[413/427] Linking CXX executable unit-gps_blending_test
+[414/427] Linking CXX static library src/examples/fake_imu/libmodules__fake_imu.a
+[415/427] Linking CXX static library src/examples/fake_magnetometer/libexamples__fake_magnetometer.a
+[416/427] Linking CXX static library src/examples/work_item/libexamples__work_item.a
+[417/427] Linking CXX static library src/modules/temperature_compensation/libmodules__temperature_compensation.a
+[418/427] Linking CXX static library src/modules/vtol_att_control/libmodules__vtol_att_control.a
+[419/427] Linking CXX executable functional-RCUpdate
+[420/427] Linking CXX executable functional-VehicleOpticalFlow
+[421/427] Linking CXX executable functional-GeofenceBreachAvoidance
+[422/427] Linking CXX executable functional-Parameter
+[423/427] Linking CXX executable functional-FeasibilityChecker
+[424/427] Building CXX object src/lib/hybrid_control/CMakeFiles/unit-HybridSequenceCoordinator.dir/HybridSequenceCoordinatorTest.cpp.o
+[425/427] Linking CXX executable unit-HybridSequenceCoordinator
+[426/427] Linking CXX executable bin/px4
+[426/427] Running tests
+   Site: crocodile
+   Build name: Linux-c++
+Test project /home/crocodile/PX4-Autopilot-hx8-hx65hm/build/px4_sitl_test
+    Start 18: unit-HybridSequenceCoordinator
+1/1 Test #18: unit-HybridSequenceCoordinator ...   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.02 sec

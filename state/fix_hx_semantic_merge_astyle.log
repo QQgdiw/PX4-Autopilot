@@ -1,0 +1,13 @@
+Formatted  src/drivers/actuators/hx8_uart_servo/Hx8UartServo.hpp
+Formatted  src/lib/hx8_servo/Hx65ProtocolTest.cpp
+Formatted  src/lib/hx8_servo/Hx8Controller.cpp
+Formatted  src/drivers/actuators/hx8_uart_servo/Hx8UartServo.cpp
+Formatted  src/lib/hx8_servo/Hx8ProtocolTest.cpp
+Formatted  src/lib/hybrid_control/Hx65BackendPolicy.cpp
+Formatted  src/lib/hybrid_control/Hx65BackendPolicy.hpp
+Formatted  src/lib/hybrid_control/Hx8BackendPolicy.cpp
+Formatted  src/lib/hybrid_control/HybridSequenceCoordinator.cpp
+Formatted  src/lib/hybrid_control/TransformationStateMachine.hpp
+Formatted  src/lib/hybrid_control/TransformationStateMachine.cpp
+Formatted  src/lib/hybrid_control/TransformationStateMachineTest.cpp
+Formatted  src/modules/commander/Commander.cpp

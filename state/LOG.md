@@ -1,5 +1,465 @@
 # Test Log
 
+## 2026-09-04 persistent HX8 protection diagnosis
+
+- A full cold start with the manual gear switch centered produced
+  `command_sequence=0`, `status_flags=0`, `protection_flags=0`, and
+  `healthy=true`. Moving the switch in either direction immediately reproduces
+  power protection, proving that the first PX4 multi-turn motion command is the
+  trigger rather than an idle servo condition or a particular endpoint.
+- Comparison against FashionStar's official SDK at commit
+  `772c181ec683252b9aaa360d29cecf2f76022051` found a concrete `0x0e` packing
+  defect: the multi-turn interval field is unsigned 32-bit, but
+  `Hx8Controller` currently emits it as 16-bit. The resulting 12-byte payload
+  is two bytes short; acceleration, deceleration, and power are shifted from
+  the servo's expected offsets. The protocol encoder test contains a correct
+  14-byte example, while the controller test incorrectly requires 12 bytes.
+- `Hx8Controller` now writes the multi-turn interval with `write32`, moves the
+  three 16-bit fields to offsets 8/10/12, and emits all 14 payload bytes. All
+  seven HX unit tests passed in `state/test_hx_all_interval32.log`; target build
+  passed in `state/build_hx8_interval32.log` with FLASH 1,889,984 / 1,966,080
+  bytes. The resulting 1,773,676-byte firmware SHA-256 is
+  `21571592d52922060a727335e74f0a754825e94b210e9cdbcda286fc58d25e87`.
+- Widening the internal angle limits to +500/-500 degrees did not change the
+  `0x40` behavior. This falsifies the earlier leading angle-limit trigger
+  hypothesis; the former -180/+180 mismatch was real but not the cause of this
+  persistent protection report.
+- Hardware returned the bounded first snapshot at 11.841338 s:
+  `flags=0x41`, `protection=0x40`, `seq=1`, angle -399.7 degrees, 11.968 V,
+  0.014 A, and 0.16 W. Sequence 1 plus moving bit 0 shows that protection was
+  first observed during the first post-boot gear command; the low sampled
+  power is after the servo had entered protection and is not the trigger peak.
+- Servo parameters 51/52 use 0.1-degree units. Values +1800/-1800 therefore
+  mean +180/-180 degrees, not +1800/-1800 degrees, and do not cover the
+  observed -399.7-degree position or the configured -400/+200-degree travel.
+- Live HX8 status `0x41` contains moving bit 0 and protection bit 6 (`0x40`).
+  The current U45H-M datasheet defines bit 6 as power protection. PX4 replaces
+  the live flag on every status response and does not latch it, so a persistent
+  live `protection_flags=0x40` is being repeatedly reported by the servo.
+- The prior servo configuration had angle limiting enabled at -180 to +180
+  degrees while the configured travel was -400 to +200 degrees. Although this
+  was a concrete configuration conflict, the owner widened it to -500/+500 and
+  reproduced the same protection, excluding it as the active trigger.
+- Current boot verification does not read parameters 48, 51, or 52, so
+  `config check=0` cannot detect this internal angle-limit conflict.
+- `command_result=2` is downstream: motion scheduling requires live healthy
+  status, so a command queued while bit 6 remains active cannot transmit and
+  expires as rejected. The low power in a later status sample does not reveal
+  the power at the initial protection transition; use the bounded first
+  protection snapshot from `hx8_uart_servo status`.
+
+## 2026-09-04 manual landing-gear sequence audit
+
+- Read-only code audit confirms that `LG_AUTO_EN=0` disables only automatic
+  landing-gear targets. HX8 online/healthy checks and the gear-down,
+  gear-clear, and gear-stowed sequence interlocks remain active.
+- A Rover-to-Quad request therefore enters `SEQUENCE_R2Q_PREPARE` and does not
+  command the HX-65HM pair until the vehicle is disarmed and the manually
+  controlled gear reaches `LG_ANG_DN`. Requests are accepted only from stable
+  Quad or stable Rover states; an in-progress preparation cannot be reversed
+  by another switch edge.
+- `LG_MAN_CH` selects `manual_control_setpoint.aux1` through `aux6`; the actual
+  receiver channel is selected separately by the matching `RC_MAP_AUXn`.
+- Owner decision supersedes the initial retained-angle-interlock policy:
+  `LG_AUTO_EN=0` now skips down/clear/stowed sequence stages and permits
+  concurrent gear/shape motion, while retaining HX8 online/config/protection
+  health, Quad-to-Rover landing/disarm, and Rover-to-Quad disarm gates.
+- The reported rejected HX8 command had `healthy=false`, status flags `0x41`,
+  protection flags `0x40`, and command result 2. The U45H-M datasheet maps
+  status bit 6 (`0x40`) to power protection. Why it triggered at this physical
+  installation remains unidentified; the condition remains intentionally
+  blocking after the sequence change.
+- Tests passed: `unit-HybridSequenceCoordinator`, `unit-CommanderHybridStatus`,
+  `functional-hybridCheck`, and all seven Hx tests. `git diff --check` passed.
+- `make zeroone_x6_hybrid` passed with FLASH 1,889,984 / 1,966,080 bytes
+  (96.13%). The 1,773,656-byte PX4 artifact SHA-256 is
+  `7c99c8242e24d2acd7001404b26aaaf5ac369e792d2ed85bc574d4c5a9ffbdea`.
+
+## 2026-09-04 asymmetric HX8-to-H65 recovery guard
+
+- Implemented a fixed 40 ms H65-not-before deadline after every HX8 TX and each
+  HX8 RX chunk. Repeated HX8 traffic restarts the deadline. Once it expires,
+  pending H65 work is attempted before ordinary HX8 work so the latter cannot
+  immediately destroy the recovery window.
+- HX8 emergency release remains allowed to preempt the H65 preference; its TX
+  restarts the 40 ms deadline. The existing 5 ms general bus quiet interval is
+  retained after H65 responses and response-less broadcasts.
+- Trace metadata and raw data now print on separate lines, with raw bytes split
+  into 16-byte chunks. This remains below the PX4 console line limit and avoids
+  the truncated 21-byte responses observed in the previous target output.
+- Focused Hx tests passed 7/7 and `make zeroone_x6_hybrid` passed. FLASH is
+  1,890,024 bytes (96.13%). The 1,773,612-byte artifact SHA-256 is
+  `ae2adcd53983d87dd927809ea89a5cf01c16a088d9424eea301fc60bbba1b6e4`.
+- Hardware validation is pending. The guard is accepted only if both H65
+  timeout/retry counters have zero growth over at least 60 seconds.
+
+## 2026-09-04 cross-protocol pre-trigger result
+
+- The ring froze on an ID-2 Monitor timeout with no RX bytes. The retained
+  history provides a controlled comparison: an H65 request 34,660 us after a
+  valid HX8 response succeeded, while an otherwise normal ID-2 Monitor sent
+  only 9,629 us after the next valid HX8 response received no bytes and timed
+  out 30,394 us later.
+- All intervening H65-only Monitor transactions succeeded. The preceding HX8
+  status response contains consecutive `ff ff` bytes near its tail, which can
+  be misrecognized as an H65 header by the actuator's protocol parser. The
+  timing comparison strongly supports an H65 internal parser recovery timeout
+  between approximately 10 and 35 ms after foreign HX8 traffic; the existing
+  5 ms cross-protocol quiet interval is insufficient.
+- The observed target state remained healthy and every timeout still scheduled
+  a retry: left timeout/retry 21/21, right 24/24, aggregate 45/45, and protocol
+  error count 0. Raising response timeout or retry count would mask rather than
+  correct the protocol-switch defect.
+- PX4 console line length truncated the tail of 21-byte RX hex strings even
+  though the ring retained their full length. Future trace output must print
+  event metadata separately and split raw bytes into bounded chunks.
+- This evidence led to the implemented asymmetric fixed 40 ms H65-not-before
+  guard after HX8 traffic while retaining the 5 ms general bus gap in the other
+  direction. The guard is a protocol-interoperability invariant, not a user
+  tuning parameter.
+
+## 2026-09-04 cross-protocol Monitor pre-trigger trace
+
+- Replaced the per-Monitor linear trace with a 16-entry circular history. Each
+  entry stores an absolute HRT timestamp, protocol/direction, servo ID, command
+  code, parser result, and up to 32 raw bytes; total retained raw data is capped
+  at 512 bytes. Frozen output is reordered oldest-to-newest and timestamps are
+  relative to the oldest retained event.
+- The ring records HX8 TX/RX/timeout and HX-65HM TX/RX/parser/timeout events.
+  It begins after successful boot verification and overwrites only the oldest
+  history until the first H65 Monitor timeout freezes outcome 4. The retry can
+  no longer overwrite the causally relevant pre-trigger window.
+- Focused Hx tests passed 7/7 and `make zeroone_x6_hybrid` passed. FLASH is
+  1,889,800 bytes (96.12%). The 1,773,492-byte artifact SHA-256 is
+  `e4ad65f5db48a10cf44198ed5fcd09a50856d6f632dfe5fe2644454d992dba17`.
+- Hardware capture remains pending; no claim is yet made that a preceding HX8
+  frame causes the H65 no-response transaction.
+
+## 2026-09-04 first steady-state Monitor timeout
+
+- The no-Ping firmware passed target configuration verification (`config
+  check` returned 0); both HX-65HM devices were online, healthy, verified, and
+  reporting valid positions. This confirms targeted identity-register Reads
+  replaced Ping successfully.
+- The frozen first failed Monitor transaction contains only the exact ID-1 Read
+  request `ff ff 01 04 02 38 0f b1` followed by a timeout at +34,567 us. No RX
+  byte and no parser error occurred during that transaction.
+- Later counters were left timeout/retry 236/236 and right 236/236; the uORB
+  aggregate reached timeout/retry 484/484 with protocol_error_count 0 while both
+  devices remained healthy. Every observed miss therefore recovered on retry,
+  and the defect is symmetric, repeatable no-response on an initial Monitor
+  attempt rather than damaged responses or a particular actuator branch.
+- Boot uses consecutive HX-65HM Reads and succeeds, while steady operation
+  interleaves HX8 status traffic. A plausible but unproven cause is that foreign
+  HX8 traffic leaves the HX-65HM device parser in a partial state, causing the
+  first following Read to be discarded; its retry then runs without intervening
+  HX8 traffic and succeeds. The current trace starts at Monitor TX and cannot
+  prove this because it excludes the immediately preceding HX8 TX/RX.
+- The next diagnostic should retain a circular pre-trigger history of both
+  protocols and freeze the last HX8 transaction, switch gap, failed Monitor,
+  and timeout together. Do not hide the issue by raising retry count or timeout.
+
+## 2026-09-04 remove multidrop Ping and capture Monitor timeout
+
+- Removed Ping from the HX-65HM pair controller's boot state machine. Each side
+  now starts with a targeted Read of address 5 length 4, which validates the
+  response-frame ID, stored ID, response level, and adjacent identity fields.
+  The low-level protocol encoder retains Ping only as protocol completeness;
+  no production controller path references it.
+- Added a regression requiring the first boot request to be the ID-1 identity
+  Read and every boot request to differ from Ping. Boot retry and post-emergency-
+  release tests now also require Identity rather than Ping.
+- A successful boot trace is discarded and the same 512-byte buffer is armed
+  for runtime Monitor diagnosis. Every valid Monitor response discards its
+  transaction and rearms the buffer; the first Monitor timeout freezes its TX,
+  raw RX, parser results, and timeout marker with outcome 4. HX8 traffic is not
+  captured because the buffer is active only while a Monitor transaction is
+  outstanding.
+- Focused Hx tests passed 7/7 and `make zeroone_x6_hybrid` passed. FLASH is
+  1,889,592 bytes (96.11%). The 1,773,364-byte artifact SHA-256 is
+  `7bb077f56b4f3624b59c8c2d2ef6614b4a3c475cb16fe85203f6719f8e2c9ea8`.
+- Hardware verification of zero startup contention and the first runtime
+  Monitor timeout trace remains pending.
+
+## 2026-09-04 HX-65HM targeted-Ping bus collision confirmed
+
+- Oscilloscope evidence is stored at
+  `docs/picture/HX串口调试波形图0904.jpg`. The captured request is the ID-1
+  Ping `ff ff 01 02 01 fb`; the decoder reports the same corrupt response
+  `ff ff ff ff 01 fb 00 fc` previously captured by PX4.
+- With both HX-65HM servos attached, the response contains intermediate analog
+  voltage levels. With either servo attached alone, the same ID-1 Ping causes
+  that servo to respond using its own configured ID: ID 1 returns
+  `ff ff 01 02 00 fc`, while ID 2 returns `ff ff 02 02 00 fb`.
+- The two devices begin responding at the same approximately 43.2 us delay.
+  Their common header/length/error bits agree, while differing ID/checksum bits
+  drive opposing levels and create the observed contention and invalid UART
+  bytes. This confirms that HX-65HM firmware treats Ping as bus-wide despite
+  the targeted ID field.
+- The vendor SDK constructs a targeted Ping and assumes only a matching-ID
+  response, but the observed HX-65HM behavior contradicts that assumption on a
+  multidrop bus. Ping must therefore not be used for discovery or health checks
+  with both actuators connected. A targeted identity-register Read already
+  validates presence, returned ID, baud-code field, and response level without
+  the collision seen in the boot trace.
+- Runtime Monitor retries remain a separate unresolved issue: boot Ping can
+  account for only one timeout per side, not the later 21/21 and 22/22 totals.
+  A steady-state targeted-Read capture is still required before attributing
+  those retries to the same cause.
+
+## 2026-09-04 frozen HX-65HM boot bus trace
+
+- Target capture succeeded without truncation: outcome 1, 31 events and 146
+  data bytes. Both HX-65HM devices completed identity, protection, and mode
+  verification, proving the exclusive boot scheduler can recover them.
+- The first Ping attempt to each side was corrupt before parsing. ID 1 expected
+  `ff ff 01 02 00 fc` but `read()` returned `ff ff ff 02 02 fc`; ID 2 expected
+  `ff ff 02 02 00 fb` but returned `ff ff ff ff 01 fb 00 fc`. Neither byte
+  sequence contains a complete valid response. Both second Ping attempts were
+  exact and parsed successfully about 5 ms after transmission.
+- Runtime status later showed left timeout/retry 21/21 and right 22/22 while
+  both remained online, healthy, and verified. Therefore all counted misses
+  recovered on retry; the defect is intermittent first-attempt RX corruption,
+  not persistent addressing failure. Since corruption also occurs before any
+  HX8 traffic, mixed-protocol boot interleaving is excluded as its cause.
+- Software cannot distinguish bus-level contention, converter turnaround, or
+  UART framing from byte values alone. The next decisive evidence is a logic-
+  analyzer capture at flight-controller TX, RX, and the one-wire servo bus,
+  triggered on an HX-65HM request and including its response.
+- The exclusive-boot target still failed left ID 1 Ping with the bounded first
+  parser error `ff ff 02 ff`. A diagnostic capture was therefore added before
+  making any further protocol or timing assumptions.
+- Capture starts after UART configuration/flush but before the driver's first
+  read. It records exact HX-65HM boot TX and all UART RX chunks, relative
+  microsecond timestamps, parser terminal/error results, and timeout events.
+  It freezes on verification success, terminal boot failure, or 512 captured
+  data bytes. `hx8_uart_servo trace` is the only output path, so capture does not
+  perform synchronous logging in the receive scheduler.
+- The trace is a one-shot boot diagnostic and adds approximately 1.2 KiB to the
+  dynamically allocated driver instance. It does not change parameters or uORB
+  messages.
+- Existing focused Hx tests passed 7/7 and `make zeroone_x6_hybrid` passed.
+  FLASH is 1,889,392 bytes (96.10%). The 1,773,152-byte artifact SHA-256 is
+  `78fcc3313ea386adff6db45aca16c7846cf65e05b71a26421f4b96cdbd75dbb0`.
+- Boot byte-level diagnosis is complete; electrical waveform diagnosis and a
+  steady-state monitor-failure capture remain pending.
+
+## 2026-09-04 HX-65HM-exclusive mixed-bus startup
+
+- After repeated-header recovery, the target captured `result=2 expected_id=1
+  kind=1 bytes=ffff02ff`. This is not an ID-1 Ping response; parsed literally it
+  starts with ID 2 and an impossible length 255. A valid ID-1 Ping response is
+  `ff ff 01 02 00 fc`, while a clean ID-2 Ping response would be
+  `ff ff 02 02 00 fb`.
+- Scheduler inspection found that HX8 boot-configuration reads were allowed
+  between HX-65HM boot Ping attempts. The HX-65HM discovery/configuration boot
+  phase is now exclusive: it completes or exhausts its attempts before the
+  driver sends any HX8 request. Steady-state mixed-protocol arbitration remains
+  unchanged.
+- Focused Hx tests passed 7/7 and `make zeroone_x6_hybrid` passed. FLASH is
+  1,888,168 bytes (96.04%). The 1,772,244-byte artifact SHA-256 is
+  `4cc986fa6cad70c09b8e0eb8af5eaef360e558397732d9db567e8738cbad6fcf`.
+- Hardware verification remains pending. If the first H65 boot capture remains
+  corrupt in this build, HX8 interleaving cannot be its cause because no HX8
+  bytes have yet been transmitted; inspect the flight-controller UART waveform,
+  SN74LVC125 direction timing, and wiring with a logic analyzer.
+
+## 2026-09-04 HX-65HM repeated-header resynchronization
+
+- The bounded target capture reported `result=2 expected_id=1 kind=1
+  bytes=ffffffff`: the left Ping RX stream begins with at least four 0xff
+  bytes, and the parser rejected the fourth byte as an impossible length 255.
+- The old parser consumed the first two bytes as the header and the next two as
+  ID/length. If the valid tail `01 02 00 fc` followed, it could no longer be
+  recognized because its two header bytes had already been consumed.
+- HX-65HM response IDs are limited to 0..253; 0xff can only be another header
+  byte. The parser now holds the last two bytes of any 0xff run as its header
+  and waits for the first non-0xff ID.
+- Added the captured-equivalent vector `ff ff ff ff 01 02 00 fc` as a unit
+  regression. The bounded snapshot also records the first ordinary timeout as
+  diagnostic result 5, so a stream containing only repeated headers remains
+  observable after parser recovery. All focused Hx tests passed 7/7 and
+  `make zeroone_x6_hybrid` passed. FLASH is 1,888,136 bytes (96.04%). The
+  1,772,224-byte artifact SHA-256 is
+  `0faf05a738d83d980e72f28064de2d08b653f92f7a43b6eded0003b798c2fdea`.
+- The extra preamble's electrical origin is not yet proven; parser acceptance
+  is nevertheless protocol-safe because 0xff is not a valid response ID.
+
+## 2026-09-04 bounded HX-65HM raw RX diagnosis
+
+- The RX-resynchronization target still failed at the left-ID-1 boot Ping.
+  Exactly three protocol errors accompanied three timed-out attempts; right
+  remained unqueried. This strongly indicates one repeatable invalid RX byte
+  sequence per Ping rather than general bus silence.
+- Added a first-error-only diagnostic snapshot containing at most 16 RX bytes
+  in wire order, the parser result, expected ID, and outstanding request kind.
+  It is exposed only by `hx8_uart_servo status`, avoiding log spam and uORB ABI
+  changes.
+- Parser-result values are 2=bad length, 3=bad checksum, and 4=wrong ID;
+  request kind 1 is Ping. A valid ID-1 Ping response should be
+  `ff ff 01 02 00 fc`.
+- All focused Hx tests passed 7/7 and `make zeroone_x6_hybrid` passed. FLASH is
+  1,888,024 bytes (96.03%). The 1,772,100-byte artifact SHA-256 is
+  `0ea834a7f248aa6d430543a718c3c3b4cf692c9091609d6b278273a6dae5de7e`.
+
+## 2026-09-04 HX-65HM mixed-protocol RX resynchronization
+
+- Target boot failed exclusively at the left-ID-1 ping: left timeout=3,
+  retry=2, right timeout=0, both valid-response timestamps zero, and 49
+  protocol errors. HX8 remained healthy on the same physical bus.
+- The owner confirmed that all three servos and the SN74LVC125-based converter
+  are unchanged and stable with either vendor PC application. The key
+  difference is that each PC application generates only one wire protocol,
+  while PX4 interleaves both.
+- Code audit found that any bad-length, bad-checksum, or wrong-ID H65 frame
+  aborted the outstanding transaction and disabled H65 parsing for the rest of
+  that receive batch. A valid expected response following stale/unrelated
+  bytes was therefore discarded, causing repeated ping churn and eventual
+  timeout failure.
+- RX protocol errors now remain non-terminal: the parser resynchronizes and
+  continues waiting for the expected response until the existing 30 ms
+  timeout/retry policy expires. Actual transmit failures still abort.
+- All focused Hx tests passed 7/7, including a regression that a protocol error
+  cannot discard an outstanding Ping. `make zeroone_x6_hybrid` passed; FLASH
+  is 1,887,504 bytes (96.00%). The 1,771,724-byte artifact SHA-256 is
+  `17303dfadf6f34878f8e79fbe6763e02fc216866ee272f6538ce1ac1525aae29`.
+- Hardware validation remains pending; persistent protocol errors after this
+  revision require a bounded raw-byte capture rather than further timing
+  changes.
+
+## 2026-09-04 per-side HX-65HM timeout diagnosis
+
+- After adding 5 ms shared-bus spacing, a new 60-second target sample remained
+  Ready but timeout/retry counters rose from 25 to 98: 73 recovered misses, or
+  1.22/s. This is about 32% lower than the previous 1.8/s, so cross-protocol
+  spacing helped but did not eliminate the underlying issue.
+- Protocol errors stayed at 2, confirming the new failures were absent replies
+  rather than malformed frames. Since the vehicle was stationary after boot,
+  the interval's new misses were HX-65HM monitor reads.
+- The supplied HX-65HM V3.7 register workbook has no address-7 configuration;
+  address 6 is baud and address 8 is response level. There is no documented
+  persistent response-delay setting to tune in ServoStudio.
+- Added per-servo timeout/retry counters internally and thread-safe atomic CLI
+  snapshots. `hx8_uart_servo status` now prints left and right counts without
+  changing the uORB message ABI.
+- All focused Hx tests passed 7/7 and `make zeroone_x6_hybrid` passed. FLASH is
+  1,887,496 bytes (96.00%). The 1,771,632-byte artifact SHA-256 is
+  `5fad73521c346d7996ef75fd641a81f474b36acc7a6a8ff8aa654b9b6d390dba`.
+
+## 2026-09-04 persistent recovered HX-65HM first-packet loss
+
+- A 60-second target sample remained Ready and fault-free, but HX-65HM timeout
+  and retry counters both rose from 231 to 339: 108 recovered first-attempt
+  misses, or 1.8/s. Protocol errors stayed at 47, so the new data indicates no
+  response rather than malformed responses.
+- Inspection found only per-controller request spacing. After receiving one
+  protocol's response, the driver could send the other protocol's request in
+  the same 5 ms scheduler cycle, leaving no shared-bus turnaround interval.
+- Added a 5 ms bus-wide quiet interval after every valid response and after
+  response-less HX-65HM broadcasts. This addresses the cross-protocol timing
+  defect without lengthening the 30 ms response timeout or suppressing error
+  counters.
+- All focused Hx tests passed 7/7 and `make zeroone_x6_hybrid` passed. FLASH is
+  1,887,264 bytes (95.99%). The 1,771,480-byte artifact SHA-256 is
+  `50806038a2c59ed076186c088c31214c7746e2de60834433dfeffc551447c02c`.
+- The timing hypothesis still requires target verification. If timeouts keep
+  growing after this firmware, logic-analyzer capture and per-side/request
+  diagnostics are required before changing timeout thresholds.
+
+## 2026-09-04 HX-65HM retryable-timeout fault latch
+
+- Hardware evidence showed all three servos currently online, healthy, and
+  verified, with HX8 at -399.7 deg and HX-65HM at 0/2050 steps. Nevertheless,
+  transformation fault 8 and sequence fault 3 remained latched.
+- HX-65HM counters were timeout=336 and retry=336 while both servos were still
+  online. Each initial miss therefore recovered on its first retry; there was
+  no exhausted retry sequence in the captured interval.
+- The pair controller incorrectly set a servo offline on every first 30 ms
+  timeout before scheduling its retry. The transformation state machine could
+  observe that transient false value and immediately latch actuator
+  communication fault 8.
+- The controller now preserves the last verified online/healthy state during
+  its two allowed retries and marks offline only when the third attempt also
+  times out. The existing 500 ms status freshness gate remains unchanged.
+- Hx65 focused tests passed 3/3, including first-timeout and exhausted-retry
+  assertions. `make zeroone_x6_hybrid` passed; FLASH is 1,887,168 bytes
+  (95.99%). The 1,771,464-byte artifact SHA-256 is
+  `e49b7a5113354dca9bee565a8deb877760722a83ccf15855cf72fa7ee4652e46`.
+- Hardware verification of the revised retry behavior and explicit disarmed
+  fault clear remains pending.
+
+## 2026-09-03 target Not Ready diagnosis and HX8 baud-check fix
+
+- Target evidence showed HX8 online at -399.7 deg and correctly inside the
+  configured down endpoint (-400 +/- 5 deg), but configuration verification
+  still failed although the reported persistent protection values matched.
+- Root cause was a leftover HX8 parameter-36 check hard-coded to baud code 5.
+  The target correctly reports HX8 code 8 for 1 Mbps, so the check made every
+  otherwise-correct 1 Mbps setup fail closed. Parameter 36 is now excluded
+  from boot verification, matching the already-approved shared-bus design.
+- `TESTFILTER=Hx8` passed 4/4, including an assertion that parameter 36 is not
+  read. `make zeroone_x6_hybrid` passed; FLASH is 1,887,168 bytes (95.99%) and
+  the 1,771,468-byte artifact SHA-256 is
+  `b4c86dcc5a04387f6056ad8285f8538c298ef3ce71060177bc08b214c9a158a6`.
+- Both HX-65HM status timestamps remained zero and the left-ID-1 boot ping
+  exhausted its retries. This is loss of protocol response, not an endpoint,
+  skew, or tolerance failure. Hardware revalidation remains required.
+
+## 2026-09-03 shared HX bus baud parameter
+
+- Replaced the former HX8-only, guard-only baud parameter and hard-coded UART
+  rate with one `HX_BAUD` parameter in the `Hybrid Control` group.
+- `HX_BAUD` defaults to 1 Mbps and exposes the standard PX4 serial-rate enum
+  from 50 through 3,000,000 baud, excluding `Auto` because neither wire
+  protocol implements baud discovery.
+- The driver maps the selected parameter to termios when it opens the one UART.
+  HX-65HM boot verification no longer compares its readable baud-code byte;
+  absence of replies already detects a device operating at another rate.
+- Hx8 regression tests passed 4/4 and Hx65 tests passed 3/3. The final target
+  build completed without compiler warnings; FLASH usage is 1,887,176 bytes
+  (95.99%). The 1,771,472-byte PX4 artifact has SHA-256
+  `aa5855b510bcd335a86d75ab049c9cef06d94e4802539367705c03feed03b500`.
+- Added `docs/hybrid/hx-shared-bus-commissioning.zh-CN.md` as the concise field
+  procedure. It does not invent the seven mechanical endpoints or landing-gear
+  power limit; those remain explicit measured-value placeholders.
+- Documentation validation matched all 46 referenced PX4 parameters against
+  generated metadata/source, confirmed balanced code fences and consistent
+  Markdown table columns, and passed `git diff --check`. No firmware rebuild
+  was required because this change only adds documentation and state records.
+
+## 2026-09-02 mixed UART servo protocol audit
+
+- Created `/home/crocodile/PX4-Autopilot-hx8-hx65hm` on
+  `feat/hybrid-landing-gear-servos` from the verified remote commit
+  `285a9d5716e6f2935545532350645044a52ad11b`.
+- The existing HX8 implementation owns one UART and one FashionStar controller;
+  it accepts only 115200 baud, one ID, single-turn advanced time-based command
+  `0x0b`, single-turn angle read `0x0a`, monitor `0x16`, stop, ping, and selected
+  configuration reads/writes. Its monitor response already decodes a signed
+  32-bit multi-turn angle.
+- FashionStar's public protocol defines multi-turn commands `0x0d`, `0x0e`, and
+  `0x0f`, multi-turn read `0x10`, and reset-turn-count `0x11`; advanced
+  time-based `0x0e` is the direct multi-turn counterpart needed by the landing
+  gear.
+- HX-65HM uses an incompatible `0xff 0xff` packet protocol. Local protocol v1.0
+  states a 1 Mbps default, while the user manual also says 115200 and later tells
+  the PC tool to use 1 Mbps. Register 0x06 confirms selectable rates including
+  115200. Both units must be commissioned individually to one shared rate and
+  unique IDs before they join the HX8 bus.
+- HX-65HM position mode supports absolute targets approximately +/-7.5 turns,
+  speed, one symmetric acceleration-rate parameter, synchronous/asynchronous
+  multi-servo start, and position/speed/load/voltage/temperature/current/error
+  feedback. It does not expose FashionStar's separate acceleration/deceleration
+  times or time-based position trajectory semantics.
+- The requested sequence needs separate mechanism, landing-gear, propulsion
+  ownership, and readiness state. The existing five-state hybrid status cannot
+  distinguish airborne Quad control during gear deployment from a propulsion-
+  disabled Quad/Rover Not Ready phase.
+- The untouched baseline `make zeroone_x6_hybrid` completed successfully. The
+  artifact is 1,757,312 bytes with SHA-256
+  `06a74494864148b250dc277f03f269012d7036ddafbd04344ab0f1791b72fcf7`.
+  The ELF linker reported FLASH at 1,872,640 bytes of 1,920 KiB (95.25%).
+
 ## 2026-08-25 multicopter idle-output investigation
 
 - The supplied quad sample showed `vehicle_control_mode.flag_armed=True`,
@@ -964,3 +1424,64 @@
   `MulticopterRateControl.cpp` and one missing blank line in
   `MulticopterPositionControl.cpp`. Both were corrected mechanically with no
   control-flow change before the final successful style check and rebuild.
+
+## 2026-09-02 mixed UART servo implementation
+
+- HX8 advanced multi-turn time/acceleration command `0x0e` is implemented with
+  signed 32-bit 0.1-degree targets; the existing status monitor already returns
+  the matching multi-turn position domain.
+- HX-65HM uses its distinct `0xff 0xff` protocol on the same shared UART. The
+  single driver scheduler permits exactly one outstanding protocol transaction.
+  Pair motion stages torque-enable plus target/speed to both unique IDs using
+  REG_WRITE and executes both with broadcast ACTION.
+- HX-65HM position does not become valid from boot/config replies; each side
+  must complete the documented register-56 runtime monitor read. Undocumented
+  register 65 is not interpreted as an error byte; only the status-frame error
+  byte is used.
+- `HybridSequenceCoordinator` separates physical shape, logical propulsion
+  owner, readiness, gear command, and sequence fault. Manual gear disables only
+  automatic commands; gear-down and wheel-clear interlocks stay active.
+- A gear failure during an already airborne Quad-to-Rover preparation preserves
+  Quad control ownership while latching a fault that blocks later arming or
+  transformation. No-owner transition faults still inhibit all propulsion.
+- Focused Hx8 (4 targets), Hx65 (3 targets), transformation, sequence,
+  Commander status, and hybrid arming-check suites passed. Final target build
+  passed with no compiler warnings in `state/build_final.log`; artifact details
+  are recorded in `state/README.md`.
+- Target hardware has not been tested. ACTION simultaneity, shared-bus electrical
+  timing, endpoint directions, under-load skew, and protection behavior remain
+  explicit acceptance items.
+
+## 2026-09-05 semantic merge into testc4 Rover tuning baseline
+
+- Verified that `23d274ea60a7b7d9c408dc9866de905f84b1ff98` has the requested
+  parent `285a9d5716e6f2935545532350645044a52ad11b`; only that integration
+  commit is inside the requested source range. The target work started from
+  exact commit `96f3b716585996d5b5aeeca4d2d509b2451cceca` in an isolated worktree.
+- Conflict resolution retained both protocol layers: testc4 command 50000 ACK,
+  transition sequence/completion timestamp and Rover Offboard epoch fields,
+  plus the source sequence-state, propulsion-owner/readiness and gear-health
+  fields. Mission completion now also requires a ready propulsion owner.
+- The source Commander status-refresh helper was not copied because the target
+  `Commander::vtolStatusUpdate()` already consumes every updated Hybrid status
+  and marks status changed. Its safe-owner sequence-fault behavior and HX65
+  arming checks were retained.
+- The HX source does not modify the MAVLink gitlink, MAVLink XML/streams, or
+  uXRCE-DDS topic list. QGC consumes MAVLink rather than uORB, so the new
+  Hx65/gear/sequence uORB details remain flight-controller-internal. Existing
+  QGC command 50000, message 60000 and Rover tuning message compatibility is
+  preserved through unchanged MAVLink commit `21922689c6fb113884df0f66582d8e602286fdc1`.
+- A fresh worktree initially lacked generated NuttX apps Kconfig files and two
+  nested DroneCAN/NuttX submodules. The first target builds failed before
+  compiling merged code. Restoring the exact locked submodule revisions,
+  regenerating the ignored Kconfig files, and removing only the failed target
+  build cache produced a clean successful build; no dependency gitlink changed.
+- Source AStyle checks initially found 13 formatting-only issues. The project
+  formatter corrected them, after which the complete 171-test suite passed
+  again. Focused HX/Hybrid/Commander/Mission tests pass 14/14, the Hybrid
+  contract passes, and `git diff --check` is empty.
+- Final target build is successful at 1,869,480 bytes FLASH (95.09%). The
+  `.px4` is 1,748,844 bytes with SHA-256
+  `48f3980bace8f7df77c97e24bd38ba4d81b56729833db3fb11a10d499d89849b`;
+  the `.bin` SHA-256 is
+  `8f13ce277f4ec2063bddea1777f2a1d76f93c8cfc0779bb4941da2415cc0f95f`.

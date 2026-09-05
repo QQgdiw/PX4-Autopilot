@@ -113,6 +113,40 @@ TEST_F(HybridCheckTest, FlyingDoesNotRequireM2006)
 	EXPECT_TRUE(canArm(checks, _vehicle_status));
 }
 
+TEST_F(HybridCheckTest, Hx65RequiresReadyShapeAndHealthyGear)
+{
+	hybrid_vehicle_status_s status{};
+	status.timestamp = hrt_absolute_time();
+	status.current_state = hybrid_vehicle_status_s::HYBRID_STATE_FLYING;
+	status.actuator_backend = hybrid_vehicle_status_s::ACTUATOR_HX65;
+	status.position_confirmed = true;
+	status.position_valid = true;
+	status.position_normalized = 0.f;
+	status.actuator_online = true;
+	status.actuator_healthy = true;
+	status.actuator_config_verified = true;
+	status.gear_online = true;
+	status.gear_healthy = true;
+	_configuration.actuator_backend = hybrid_vehicle_status_s::ACTUATOR_HX65;
+	_configuration.servo_function = 0;
+	HybridChecks checks;
+	checks.setConfigurationForTesting(_configuration);
+
+	status.propulsion_ready = false;
+	publishHybridStatus(status);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
+
+	status.timestamp = hrt_absolute_time();
+	status.propulsion_ready = true;
+	publishHybridStatus(status);
+	EXPECT_TRUE(canArm(checks, _vehicle_status));
+
+	status.timestamp = hrt_absolute_time();
+	status.gear_healthy = false;
+	publishHybridStatus(status);
+	EXPECT_FALSE(canArm(checks, _vehicle_status));
+}
+
 TEST_F(HybridCheckTest, DrivingRequiresBothM2006Online)
 {
 	publishHybridStatus(hybrid_vehicle_status_s::HYBRID_STATE_DRIVING);

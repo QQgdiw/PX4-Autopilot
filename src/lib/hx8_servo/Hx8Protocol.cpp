@@ -23,6 +23,7 @@ bool isSupportedCommand(uint8_t command)
 	case CommandId::ParamWrite:
 	case CommandId::AngleRead:
 	case CommandId::TimedMove:
+	case CommandId::TimedMultiTurnMove:
 	case CommandId::Status:
 	case CommandId::Stop:
 		return true;

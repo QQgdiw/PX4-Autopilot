@@ -17,10 +17,10 @@ bench item below remains pending until its measurement artifacts are recorded.
   sides of an external automatic-direction half-duplex TTL adapter. Connect the
   adapter's half-duplex side to the servo with one bus wire. The flight
   controller uses normal TX/RX UART mode; there is no DIR/OE GPIO.
-- The default port is EXT2 (`/dev/ttyS3`), 115200 baud, 8N1. `HX8_SER_CFG` may
-  select another conflict-free serial port; `rc.serial` is the sole driver
-  startup owner. Do not hard-code EXT2 or start a second driver instance from
-  `rc.hybrid_apps`.
+- The default port is EXT2 (`/dev/ttyS3`) and the default `HX_BAUD` is 1 Mbps,
+  8N1. `HX8_SER_CFG` may select another conflict-free serial port; `rc.serial`
+  is the sole driver startup owner. Do not hard-code EXT2 or start a second
+  driver instance from `rc.hybrid_apps`.
 - There is no flight-controller-controlled servo power switch. A complete UART
   failure prevents PX4 from commanding release or removing HX8 power. The
   previously verified internal protection is then the only safety mechanism;
@@ -245,7 +245,7 @@ blind-region data over full travel.
 ## Pending HX8 physical acceptance matrix
 
 1. Capture FC TX, FC RX, and the one-wire bus with a logic analyzer. Verify
-   adapter turnaround, optional echo handling, TX drain, 115200 8N1 timing,
+   adapter turnaround, optional echo handling, TX drain, selected `HX_BAUD` 8N1 timing,
    request spacing, response deadlines, and recovery after corrupt/partial
    traffic.
 2. Record `config check`, an intentional disarmed `config write`, mandatory

@@ -14,6 +14,7 @@ enum class CommandId : uint8_t {
 	ParamWrite = 0x04,
 	AngleRead = 0x0A,
 	TimedMove = 0x0B,
+	TimedMultiTurnMove = 0x0E,
 	Status = 0x16,
 	Stop = 0x18
 };

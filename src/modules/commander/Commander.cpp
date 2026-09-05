@@ -561,6 +561,16 @@ transition_result_t Commander::arm(arm_disarm_reason_t calling_reason, bool run_
 
 	if (run_preflight_checks) {
 		if (_vehicle_control_mode.flag_control_manual_enabled) {
+			if (_vehicle_status.is_quad_rover
+			    && _current_hybrid_state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING
+			    && !_failsafe_flags.manual_control_signal_lost && !_is_rover_throttle_centered) {
+				mavlink_log_critical(&_mavlink_log_pub, "Arming denied: Rover pitch stick not centered\t");
+				events::send(events::ID("commander_arm_denied_rover_pitch"),
+				{events::Log::Critical, events::LogInternal::Info},
+				"Arming denied: Rover pitch stick not centered");
+				tune_negative(true);
+				return TRANSITION_DENIED;
+			}
 
 			if (_vehicle_control_mode.flag_control_climb_rate_enabled &&
 			    !_failsafe_flags.manual_control_signal_lost && _is_throttle_above_center) {
@@ -3051,6 +3061,7 @@ void Commander::manualControlCheck()
 
 		_is_throttle_above_center = (manual_control_setpoint.throttle > 0.2f);
 		_is_throttle_low = (manual_control_setpoint.throttle < -0.8f);
+		_is_rover_throttle_centered = fabsf(manual_control_setpoint.pitch) < 0.1f;
 
 		if (isArmed()) {
 			// Abort autonomous mode and switch to position mode if sticks are moved significantly

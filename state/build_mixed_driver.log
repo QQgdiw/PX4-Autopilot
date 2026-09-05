@@ -1,0 +1,1250 @@
+[0/1] Re-running CMake...
+-- PX4_GIT_TAG: v1.16.1-111-g285a9d5716
+CMake Warning (dev) at CMakeLists.txt:176 (find_package):
+  Policy CMP0148 is not set: The FindPythonInterp and FindPythonLibs modules
+  are removed.  Run "cmake --help-policy CMP0148" for policy details.  Use
+  the cmake_policy command to set the policy and suppress this warning.
+
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Found PythonInterp: /usr/bin/python3 (found suitable version "3.12.3", minimum required is "3")
+-- PX4 config file: /home/crocodile/PX4-Autopilot-hx8-hx65hm/boards/zeroone/x6/hybrid.px4board
+-- PLATFORM nuttx
+-- TOOLCHAIN arm-none-eabi
+-- ARCHITECTURE cortex-m7
+-- ROMFSROOT px4fmu_common
+-- IO px4_io-v2_default
+-- ETHERNET y
+-- SERIAL_GPS1 /dev/ttyS0
+-- SERIAL_GPS2 /dev/ttyS7
+-- SERIAL_TEL1 /dev/ttyS6
+-- SERIAL_TEL2 /dev/ttyS4
+-- SERIAL_TEL3 /dev/ttyS1
+-- SERIAL_EXT2 /dev/ttyS3
+-- ROOT_PATH /fs/microsd
+-- PARAM_FILE /fs/mtd_params
+-- UAVCAN_INTERFACES 2
+-- UAVCAN_TIMER_OVERRIDE 2
+-- PX4 config: zeroone_x6_hybrid
+-- PX4 platform: nuttx
+-- Enabling double FP precision hardware instructions
+-- cmake build type: MinSizeRel
+-- ccache enabled (export CCACHE_DISABLE=1 to disable)
+-- drivers/px4io: ROMFS including px4_io-v2_default
+CMake Warning (dev) at src/drivers/uavcan/libdronecan/libuavcan/CMakeLists.txt:24 (find_package):
+  Policy CMP0148 is not set: The FindPythonInterp and FindPythonLibs modules
+  are removed.  Run "cmake --help-policy CMP0148" for policy details.  Use
+  the cmake_policy command to set the policy and suppress this warning.
+
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Found PythonInterp: /usr/bin/python3 (found version "3.12.3")
+-- Release build type: MinSizeRel
+-- ROMFS: ROMFS/px4fmu_common
+-- ROMFS:  Adding platforms/nuttx/init/stm32h7/rc.board_arch_defaults -> /etc/init.d/rc.board_arch_defaults
+-- ROMFS:  Adding boards/zeroone/x6/init/rc.board_defaults -> /etc/init.d/rc.board_defaults
+-- ROMFS:  Adding boards/zeroone/x6/init/rc.board_sensors -> /etc/init.d/rc.board_sensors
+-- ROMFS:  Adding boards/zeroone/x6/init/rc.board_mavlink -> /etc/init.d/rc.board_mavlink
+-- ROMFS:  Adding boards/zeroone/x6/extras/px4_io-v2_default.bin -> /etc/extras/px4_io-v2_default.bin
+-- Configuring done (6.1s)
+-- Generating done (0.6s)
+-- Build files have been written to: /home/crocodile/PX4-Autopilot-hx8-hx65hm/build/zeroone_x6_hybrid
+[1/1185] Generating ../romfs_files.tar
+[2/1185] Generating actuators.json
+[3/1185] ROMFS: copying, generating airframes
+[4/1185] Generating serial_params.c
+[5/1185] Generating uORB json files
+[6/1185] Generating uORB topic headers
+[7/1185] Generating /home/crocodile/PX4-Autopilot-hx8-hx65hm/platforms/nuttx/NuttX/nuttx/.config
+[8/1185] Generating parameters.xml
+[9/1185] Generating px4_parameters.hpp
+[10/1185] Generating /home/crocodile/PX4-Autopilot-hx8-hx65hm/platforms/nuttx/NuttX/nuttx/include/nuttx/config.h, /home/crocodile/PX4-Autopilot-hx8-hx65hm/platforms/nuttx/NuttX/nuttx/include/arch/chip
+[11/1185] Building C object src/lib/crc/CMakeFiles/crc.dir/crc.c.obj
+[12/1185] Building C object src/drivers/ins/vectornav/libvnc/CMakeFiles/libvnc.dir/src/vn/xplat/event.c.obj
+[13/1185] Building C object src/drivers/ins/vectornav/libvnc/CMakeFiles/libvnc.dir/src/vn/xplat/thread.c.obj
+[14/1185] Building C object src/drivers/ins/vectornav/libvnc/CMakeFiles/libvnc.dir/src/vn/xplat/criticalsection.c.obj
+[15/1185] Building C object src/drivers/ins/vectornav/libvnc/CMakeFiles/libvnc.dir/src/vn/xplat/serialport.c.obj
+[16/1185] Building CXX object src/lib/lat_lon_alt/CMakeFiles/lat_lon_alt.dir/lat_lon_alt.cpp.obj
+[17/1185] Building CXX object src/lib/perf/CMakeFiles/perf.dir/perf_counter.cpp.obj
+[18/1185] Building CXX object src/lib/tinybson/CMakeFiles/tinybson.dir/tinybson.cpp.obj
+[19/1185] Building CXX object src/lib/world_magnetic_model/CMakeFiles/world_magnetic_model.dir/geo_mag_declination.cpp.obj
+[20/1185] Building CXX object src/lib/geo/CMakeFiles/geo.dir/geo.cpp.obj
+[21/1185] Building C object src/lib/version/CMakeFiles/version.dir/version.c.obj
+[22/1185] Building C object src/drivers/ins/vectornav/libvnc/CMakeFiles/libvnc.dir/src/vn/error.c.obj
+[23/1185] Building C object src/drivers/ins/vectornav/libvnc/CMakeFiles/libvnc.dir/src/vn/xplat/time.c.obj
+[24/1185] Building C object src/drivers/ins/vectornav/libvnc/CMakeFiles/libvnc.dir/src/vn/error_detection.c.obj
+[25/1185] Building C object src/drivers/ins/vectornav/libvnc/CMakeFiles/libvnc.dir/src/vn/util.c.obj
+[26/1185] Building C object src/drivers/ins/vectornav/libvnc/CMakeFiles/libvnc.dir/src/vn/math/matrix.c.obj
+[27/1185] Building C object src/drivers/ins/vectornav/libvnc/CMakeFiles/libvnc.dir/src/vn/math/vector.c.obj
+[28/1185] Building C object src/drivers/ins/vectornav/libvnc/CMakeFiles/libvnc.dir/src/vn/protocol/upackf.c.obj
+[29/1185] Linking C static library src/lib/crc/libcrc.a
+[30/1185] Linking CXX static library src/lib/perf/libperf.a
+[31/1185] Linking CXX static library src/lib/world_magnetic_model/libworld_magnetic_model.a
+[32/1185] Linking CXX static library src/lib/geo/libgeo.a
+[33/1185] Linking CXX static library src/lib/lat_lon_alt/liblat_lon_alt.a
+[34/1185] Linking CXX static library src/lib/tinybson/libtinybson.a
+[35/1185] Linking C static library src/lib/version/libversion.a
+[36/1185] Building C object src/drivers/ins/vectornav/libvnc/CMakeFiles/libvnc.dir/src/vn/protocol/upack.c.obj
+[37/1185] Building C object src/drivers/ins/vectornav/libvnc/CMakeFiles/libvnc.dir/src/vn/protocol/spi.c.obj
+[38/1185] Building C object src/drivers/ins/vectornav/libvnc/CMakeFiles/libvnc.dir/src/vn/sensors/compositedata.c.obj
+[39/1185] Building C object src/drivers/ins/vectornav/libvnc/CMakeFiles/libvnc.dir/src/vn/sensors/searcher.c.obj
+[40/1185] Building C object src/drivers/ins/vectornav/libvnc/CMakeFiles/libvnc.dir/src/vn/sensors.c.obj
+[41/1185] Building C object src/drivers/ins/vectornav/libvnc/CMakeFiles/libvnc.dir/src/vn/sensors/ezasyncdata.c.obj
+[42/1185] Building C object src/drivers/ins/vectornav/libvnc/CMakeFiles/libvnc.dir/src/vn/conv.c.obj
+[43/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/driver/uc_can.cpp.obj
+[44/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/marshal/uc_bit_array_copy.cpp.obj
+[45/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/marshal/uc_bit_stream.cpp.obj
+[46/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/marshal/uc_float_spec.cpp.obj
+[47/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/node/uc_generic_subscriber.cpp.obj
+[48/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/marshal/uc_scalar_codec.cpp.obj
+[49/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/node/uc_generic_publisher.cpp.obj
+[50/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/node/uc_global_data_type_registry.cpp.obj
+[51/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/node/uc_scheduler.cpp.obj
+[52/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/node/uc_timer.cpp.obj
+[53/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/node/uc_service_client.cpp.obj
+[54/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/transport/uc_can_io.cpp.obj
+[55/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/protocol/uc_dynamic_node_id_client.cpp.obj
+[56/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/transport/uc_can_acceptance_filter_configurator.cpp.obj
+[57/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/transport/uc_crc.cpp.obj
+[58/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/protocol/uc_node_status_provider.cpp.obj
+[59/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/transport/uc_dispatcher.cpp.obj
+[60/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/transport/uc_frame.cpp.obj
+[61/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/transport/uc_outgoing_transfer_registry.cpp.obj
+[62/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/transport/uc_transfer.cpp.obj
+[63/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/transport/uc_transfer_buffer.cpp.obj
+[64/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/transport/uc_transfer_receiver.cpp.obj
+[65/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/transport/uc_transfer_listener.cpp.obj
+[66/1185] Linking C static library src/drivers/ins/vectornav/libvnc/liblibvnc.a
+[67/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/uc_data_type.cpp.obj
+[68/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/uc_dynamic_memory.cpp.obj
+[69/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/uc_error.cpp.obj
+[70/1185] Building CXX object src/drivers/uavcan/libdronecan/libuavcan/CMakeFiles/uavcan.dir/src/transport/uc_transfer_sender.cpp.obj
+[71/1185] Building CXX object src/modules/commander/ModeUtil/CMakeFiles/mode_util.dir/control_mode.cpp.obj
+[72/1185] Building CXX object src/modules/commander/ModeUtil/CMakeFiles/mode_util.dir/mode_requirements.cpp.obj
+[73/1185] Building CXX object src/drivers/uavcan/libuavcan_drivers/CMakeFiles/uavcan_stm32h7_driver.dir/src/uc_stm32h7_can.cpp.obj
+[74/1185] Building CXX object src/drivers/uavcan/libuavcan_drivers/CMakeFiles/uavcan_stm32h7_driver.dir/src/uc_stm32h7_clock.cpp.obj
+[75/1185] Building CXX object src/drivers/uavcan/libuavcan_drivers/CMakeFiles/uavcan_stm32h7_driver.dir/src/uc_stm32h7_thread.cpp.obj
+[76/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/control.cpp.obj
+[77/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/ekf_helper.cpp.obj
+[78/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/covariance.cpp.obj
+[79/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/ekf.cpp.obj
+[80/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/velocity_fusion.cpp.obj
+[81/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/height_control.cpp.obj
+[82/1185] Linking CXX static library src/modules/commander/ModeUtil/libmode_util.a
+[83/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/estimator_interface.cpp.obj
+[84/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/position_fusion.cpp.obj
+[85/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/yaw_fusion.cpp.obj
+[86/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/fake_height_control.cpp.obj
+[87/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/fake_pos_control.cpp.obj
+[88/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/ZeroGyroUpdate.cpp.obj
+[89/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/ZeroVelocityUpdate.cpp.obj
+[90/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/imu_down_sampler/imu_down_sampler.cpp.obj
+[91/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/zero_innovation_heading_update.cpp.obj
+[92/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/airspeed/airspeed_fusion.cpp.obj
+[93/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/external_vision/ev_control.cpp.obj
+[94/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/auxvel/auxvel_fusion.cpp.obj
+[95/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/barometer/baro_height_control.cpp.obj
+[96/1185] Linking CXX static library src/drivers/uavcan/libdronecan/libuavcan/libuavcan.a
+[97/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/aux_global_position/aux_global_position.cpp.obj
+[98/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/external_vision/ev_height_control.cpp.obj
+[99/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/external_vision/ev_vel_control.cpp.obj
+[100/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/drag/drag_fusion.cpp.obj
+[101/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/external_vision/ev_pos_control.cpp.obj
+[102/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/external_vision/ev_yaw_control.cpp.obj
+[103/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/gnss/gps_checks.cpp.obj
+[104/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/gnss/gps_control.cpp.obj
+[105/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/gnss/gnss_height_control.cpp.obj
+[106/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/magnetometer/mag_control.cpp.obj
+[107/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/gravity/gravity_fusion.cpp.obj
+[108/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/gnss/gnss_yaw_control.cpp.obj
+[109/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/magnetometer/mag_fusion.cpp.obj
+[110/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/range_finder/range_finder_consistency_check.cpp.obj
+[111/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/optical_flow/optical_flow_fusion.cpp.obj
+[112/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/range_finder/range_height_fusion.cpp.obj
+[113/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/optical_flow/optical_flow_control.cpp.obj
+[114/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/range_finder/range_height_control.cpp.obj
+[115/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/range_finder/sensor_range_finder.cpp.obj
+[116/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/terrain_control.cpp.obj
+[117/1185] Linking CXX static library src/drivers/uavcan/libuavcan_drivers/libuavcan_stm32h7_driver.a
+[118/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/wind.cpp.obj
+[119/1185] Building CXX object src/modules/ekf2/EKF/bias_estimator/CMakeFiles/bias_estimator.dir/bias_estimator.cpp.obj
+[120/1185] Building CXX object src/modules/ekf2/EKF/output_predictor/CMakeFiles/output_predictor.dir/output_predictor.cpp.obj
+[121/1185] Building CXX object src/modules/ekf2/EKF/CMakeFiles/ecl_EKF.dir/aid_sources/sideslip/sideslip_fusion.cpp.obj
+[122/1185] Building CXX object src/modules/ekf2/EKF/yaw_estimator/CMakeFiles/yaw_estimator.dir/EKFGSF_yaw.cpp.obj
+[123/1185] Linking CXX static library src/modules/ekf2/EKF/output_predictor/liboutput_predictor.a
+[124/1185] Linking CXX static library src/modules/ekf2/EKF/yaw_estimator/libyaw_estimator.a
+[125/1185] Linking CXX static library src/modules/ekf2/EKF/bias_estimator/libbias_estimator.a
+[126/1185] Generating nuttx/crypto/libcrypto.a
+[127/1185] Linking CXX static library src/modules/ekf2/EKF/libecl_EKF.a
+[128/1185] Generating nuttx/boards/libboards.a
+[129/1185] Generating nuttx/libs/libxx/libxx.a
+[130/1185] Generating nuttx/binfmt/libbinfmt.a
+[131/1185] Generating uORB topic sources
+[132/1185] Generating px4 event json file from source
+[133/1185] Generating nuttx/mm/libmm.a
+[134/1185] Generating combined event json file
+[135/1185] Generating nuttx/fs/libfs.a
+[136/1185] Generating nuttx/drivers/libdrivers.a
+[137/1185] Generating component_general.json and checksums.h
+[138/1185] ROMFS: copying /home/crocodile/PX4-Autopilot-hx8-hx65hm/boards/zeroone/x6/extras/px4_io-v2_default.bin
+[139/1185] ROMFS: copying rc.board_defaults
+[140/1185] ROMFS: copying rc.board_arch_defaults
+[141/1185] ROMFS: copying rc.board_mavlink
+[142/1185] ROMFS: copying rc.board_sensors
+[143/1185] ROMFS: copying extras
+[144/1185] Generating nuttx/arch/arm/src/libarch.a
+chip/stm32_gpio.c:47:11: note: #pragma message: CONFIG_STM32H7_USE_LEGACY_PINMAP will be deprecated migrate board.h see tools/stm32_pinmap_tool.py
+   47 | #  pragma message "CONFIG_STM32H7_USE_LEGACY_PINMAP will be deprecated migrate board.h see tools/stm32_pinmap_tool.py"
+      |           ^~~~~~~
+[145/1185] ROMFS: pruning
+[146/1185] ROMFS: generating image
+[147/1185] Generating nuttx/net/libnet.a
+[148/1185] Building C object ROMFS/CMakeFiles/romfs.dir/nsh_romfsimg.c.obj
+[149/1185] Linking C static library ROMFS/libromfs.a
+[150/1185] Generating uORB topic ucdr headers
+[151/1185] Generating nuttx/sched/libsched.a
+[152/1185] Generating apps/libapps.a
+[153/1185] Generating uORB compressed fields
+[154/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/actuator_servos_trim.cpp.obj
+[155/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/adc_report.cpp.obj
+[156/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/action_request.cpp.obj
+[157/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/airspeed_wind.cpp.obj
+[158/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/camera_capture.cpp.obj
+[159/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/ackermann_velocity_setpoint.cpp.obj
+[160/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/actuator_test.cpp.obj
+[161/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/button_event.cpp.obj
+[162/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/airspeed.cpp.obj
+[163/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/actuator_outputs.cpp.obj
+[164/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/actuator_armed.cpp.obj
+[165/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/actuator_controls_status.cpp.obj
+[166/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/autotune_attitude_control_status.cpp.obj
+[167/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/collision_constraints.cpp.obj
+[168/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/cellular_status.cpp.obj
+[169/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/camera_trigger.cpp.obj
+[170/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/can_interface_status.cpp.obj
+[171/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/control_allocator_status.cpp.obj
+[172/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/cpuload.cpp.obj
+[173/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/dataman_response.cpp.obj
+[174/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/debug_array.cpp.obj
+[175/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/camera_status.cpp.obj
+[176/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/debug_value.cpp.obj
+[177/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/dataman_request.cpp.obj
+[178/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/debug_vect.cpp.obj
+[179/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/debug_key_value.cpp.obj
+[180/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/differential_velocity_setpoint.cpp.obj
+[181/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/distance_sensor.cpp.obj
+[182/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/differential_pressure.cpp.obj
+[183/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/ekf2_timestamps.cpp.obj
+[184/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/distance_sensor_mode_change_request.cpp.obj
+[185/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/estimator_aid_source2d.cpp.obj
+[186/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/esc_report.cpp.obj
+[187/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/esc_status.cpp.obj
+[188/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/estimator_aid_source1d.cpp.obj
+[189/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/estimator_aid_source3d.cpp.obj
+[190/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/estimator_bias.cpp.obj
+[191/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/estimator_event_flags.cpp.obj
+[192/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/estimator_bias3d.cpp.obj
+[193/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/estimator_gps_status.cpp.obj
+[194/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/estimator_selector_status.cpp.obj
+[195/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/estimator_states.cpp.obj
+[196/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/estimator_sensor_bias.cpp.obj
+[197/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/event.cpp.obj
+[198/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/estimator_innovations.cpp.obj
+[199/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/estimator_status.cpp.obj
+[200/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/estimator_status_flags.cpp.obj
+[201/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/failsafe_flags.cpp.obj
+[202/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/failure_detector_status.cpp.obj
+[203/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/flight_phase_estimation.cpp.obj
+[204/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/figure_eight_status.cpp.obj
+[205/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/follow_target.cpp.obj
+[206/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/follow_target_estimator.cpp.obj
+[207/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/follow_target_status.cpp.obj
+[208/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/generator_status.cpp.obj
+[209/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/fuel_tank_status.cpp.obj
+[210/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/gimbal_device_information.cpp.obj
+[211/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/geofence_status.cpp.obj
+[212/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/gimbal_controls.cpp.obj
+[213/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/gimbal_device_attitude_status.cpp.obj
+[214/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/geofence_result.cpp.obj
+[215/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/gimbal_device_set_attitude.cpp.obj
+[216/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/gimbal_manager_information.cpp.obj
+[217/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/gimbal_manager_set_attitude.cpp.obj
+[218/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/gimbal_manager_set_manual_control.cpp.obj
+[219/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/gimbal_manager_status.cpp.obj
+[220/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/gpio_in.cpp.obj
+[221/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/gpio_config.cpp.obj
+[222/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/gpio_out.cpp.obj
+[223/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/gpio_request.cpp.obj
+[224/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/gps_inject_data.cpp.obj
+[225/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/health_report.cpp.obj
+[226/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/gripper.cpp.obj
+[227/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/gps_dump.cpp.obj
+[228/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/heater_status.cpp.obj
+[229/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/hx65_servo_command.cpp.obj
+[230/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/hover_thrust_estimate.cpp.obj
+[231/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/hx8_servo_command.cpp.obj
+[232/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/input_rc.cpp.obj
+[233/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/hybrid_vehicle_status.cpp.obj
+[234/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/hx65_servo_status.cpp.obj
+[235/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/hx8_servo_status.cpp.obj
+[236/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/internal_combustion_engine_control.cpp.obj
+[237/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/internal_combustion_engine_status.cpp.obj
+[238/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/irlock_report.cpp.obj
+[239/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/landing_gear.cpp.obj
+[240/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/iridiumsbd_status.cpp.obj
+[241/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/landing_target_innovations.cpp.obj
+[242/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/launch_detection_status.cpp.obj
+[243/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/landing_target_pose.cpp.obj
+[244/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/led_control.cpp.obj
+[245/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/log_message.cpp.obj
+[246/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/logger_status.cpp.obj
+[247/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/landing_gear_wheel.cpp.obj
+[248/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/magnetometer_bias_estimate.cpp.obj
+[249/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/m2006_motor_status.cpp.obj
+[250/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/manual_control_switches.cpp.obj
+[251/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/mag_worker_data.cpp.obj
+[252/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/mavlink_log.cpp.obj
+[253/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/mavlink_tunnel.cpp.obj
+[254/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/magnetic_sensor.cpp.obj
+[255/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/mission.cpp.obj
+[256/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/message_format_request.cpp.obj
+[257/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/message_format_response.cpp.obj
+[258/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/mission_result.cpp.obj
+[259/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/navigator_mission_item.cpp.obj
+[260/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/navigator_status.cpp.obj
+[261/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/mount_orientation.cpp.obj
+[262/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/normalized_unsigned_setpoint.cpp.obj
+[263/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/open_drone_id_arm_status.cpp.obj
+[264/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/obstacle_distance.cpp.obj
+[265/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/offboard_control_mode.cpp.obj
+[266/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/onboard_computer_status.cpp.obj
+[267/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/npfg_status.cpp.obj
+[268/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/open_drone_id_operator_id.cpp.obj
+[269/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/open_drone_id_system.cpp.obj
+[270/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/open_drone_id_self_id.cpp.obj
+[271/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/orb_test.cpp.obj
+[272/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/orb_test_large.cpp.obj
+[273/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/orbit_status.cpp.obj
+[274/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/parameter_reset_request.cpp.obj
+[275/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/parameter_set_used_request.cpp.obj
+[276/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/parameter_set_value_response.cpp.obj
+[277/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/orb_test_medium.cpp.obj
+[278/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/parameter_update.cpp.obj
+[279/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/parameter_set_value_request.cpp.obj
+[280/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/ping.cpp.obj
+[281/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/position_controller_landing_status.cpp.obj
+[282/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/position_setpoint_triplet.cpp.obj
+[283/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/position_controller_status.cpp.obj
+[284/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/power_button_state.cpp.obj
+[285/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/position_setpoint.cpp.obj
+[286/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/power_monitor.cpp.obj
+[287/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/pps_capture.cpp.obj
+[288/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/pwm_input.cpp.obj
+[289/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/qshell_req.cpp.obj
+[290/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/pure_pursuit_status.cpp.obj
+[291/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/radio_status.cpp.obj
+[292/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/px4io_status.cpp.obj
+[293/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/rate_ctrl_status.cpp.obj
+[294/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/qshell_retval.cpp.obj
+[295/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/rc_parameter_map.cpp.obj
+[296/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/rc_channels.cpp.obj
+[297/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/rover_position_setpoint.cpp.obj
+[298/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/rover_attitude_setpoint.cpp.obj
+[299/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/rover_rate_setpoint.cpp.obj
+[300/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/rover_rate_status.cpp.obj
+[301/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/rover_throttle_setpoint.cpp.obj
+[302/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/rover_attitude_status.cpp.obj
+[303/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/rover_steering_setpoint.cpp.obj
+[304/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/rover_velocity_status.cpp.obj
+[305/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/rpm.cpp.obj
+[306/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/satellite_info.cpp.obj
+[307/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/rtl_time_estimate.cpp.obj
+[308/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensor_accel.cpp.obj
+[309/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensor_accel_fifo.cpp.obj
+[310/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/rtl_status.cpp.obj
+[311/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensor_airflow.cpp.obj
+[312/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensor_combined.cpp.obj
+[313/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensor_encoder.cpp.obj
+[314/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensor_baro.cpp.obj
+[315/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensor_gps.cpp.obj
+[316/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensor_gyro_fft.cpp.obj
+[317/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensor_gyro.cpp.obj
+[318/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensor_correction.cpp.obj
+[319/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensor_hygrometer.cpp.obj
+[320/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensor_gyro_fifo.cpp.obj
+[321/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensor_gnss_relative.cpp.obj
+[322/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensor_optical_flow.cpp.obj
+[323/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensor_preflight_mag.cpp.obj
+[324/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensor_mag.cpp.obj
+[325/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensor_uwb.cpp.obj
+[326/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensors_status_imu.cpp.obj
+[327/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensors_status.cpp.obj
+[328/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/sensor_selection.cpp.obj
+[329/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/takeoff_status.cpp.obj
+[330/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/system_power.cpp.obj
+[331/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/telemetry_status.cpp.obj
+[332/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/task_stack_info.cpp.obj
+[333/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/tiltrotor_extra_controls.cpp.obj
+[334/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/tecs_status.cpp.obj
+[335/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/timesync_status.cpp.obj
+[336/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/trajectory_setpoint6dof.cpp.obj
+[337/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/transponder_report.cpp.obj
+[338/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/uavcan_parameter_request.cpp.obj
+[339/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/ulog_stream_ack.cpp.obj
+[340/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/ulog_stream.cpp.obj
+[341/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_air_data.cpp.obj
+[342/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/tune_control.cpp.obj
+[343/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_acceleration.cpp.obj
+[344/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_constraints.cpp.obj
+[345/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_angular_acceleration_setpoint.cpp.obj
+[346/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_imu_status.cpp.obj
+[347/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/uavcan_parameter_value.cpp.obj
+[348/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_local_position_setpoint.cpp.obj
+[349/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_imu.cpp.obj
+[350/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_magnetometer.cpp.obj
+[351/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_optical_flow.cpp.obj
+[352/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_thrust_setpoint.cpp.obj
+[353/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_roi.cpp.obj
+[354/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_optical_flow_vel.cpp.obj
+[355/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/velocity_limits.cpp.obj
+[356/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/yaw_estimator_status.cpp.obj
+[357/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/actuator_servos.cpp.obj
+[358/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/wind.cpp.obj
+[359/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/wheel_encoders.cpp.obj
+[360/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/actuator_motors.cpp.obj
+[361/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_torque_setpoint.cpp.obj
+[362/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/arming_check_reply.cpp.obj
+[363/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/airspeed_validated.cpp.obj
+[364/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/arming_check_request.cpp.obj
+[365/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/goto_setpoint.cpp.obj
+[366/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/config_overrides.cpp.obj
+[367/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/battery_status.cpp.obj
+[368/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/register_ext_component_request.cpp.obj
+[369/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/manual_control_setpoint.cpp.obj
+[370/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/mode_completed.cpp.obj
+[371/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/register_ext_component_reply.cpp.obj
+[372/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/trajectory_setpoint.cpp.obj
+[373/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/unregister_ext_component.cpp.obj
+[374/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_angular_velocity.cpp.obj
+[375/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/home_position.cpp.obj
+[376/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_attitude.cpp.obj
+[377/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_attitude_setpoint.cpp.obj
+[378/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_command_ack.cpp.obj
+[379/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_control_mode.cpp.obj
+[380/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_global_position.cpp.obj
+[381/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_command.cpp.obj
+[382/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_land_detected.cpp.obj
+[383/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_rates_setpoint.cpp.obj
+[384/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_local_position.cpp.obj
+[385/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/uORBMessageFieldsGenerated.cpp.obj
+[386/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vtol_vehicle_status.cpp.obj
+[387/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_status.cpp.obj
+[388/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/vehicle_odometry.cpp.obj
+[389/1185] Building CXX object msg/CMakeFiles/uorb_msgs.dir/topics_sources/uORBTopics.cpp.obj
+[390/1185] Linking CXX static library msg/libuorb_msgs.a
+[391/1185] Generating nuttx/libs/libc/libc.a
+[392/1185] Building CXX object src/lib/airspeed/CMakeFiles/airspeed.dir/airspeed.cpp.obj
+[393/1185] Building CXX object src/lib/cdev/CMakeFiles/cdev.dir/CDev.cpp.obj
+[394/1185] Building CXX object src/lib/atmosphere/CMakeFiles/atmosphere.dir/atmosphere.cpp.obj
+[395/1185] Building CXX object src/lib/cdev/CMakeFiles/cdev.dir/nuttx/cdev_platform.cpp.obj
+[396/1185] Building CXX object src/lib/controllib/CMakeFiles/controllib.dir/block/Block.cpp.obj
+[397/1185] Building CXX object src/lib/circuit_breaker/CMakeFiles/circuit_breaker.dir/circuit_breaker.cpp.obj
+[398/1185] Building CXX object src/lib/collision_prevention/CMakeFiles/CollisionPrevention.dir/ObstacleMath.cpp.obj
+[399/1185] Building CXX object src/lib/control_allocation/actuator_effectiveness/CMakeFiles/ActuatorEffectiveness.dir/ActuatorEffectiveness.cpp.obj
+[400/1185] Building CXX object src/lib/control_allocation/control_allocation/CMakeFiles/ControlAllocation.dir/ControlAllocation.cpp.obj
+[401/1185] Building CXX object src/lib/control_allocation/control_allocation/CMakeFiles/ControlAllocation.dir/ControlAllocationPseudoInverse.cpp.obj
+[402/1185] Building CXX object src/lib/controllib/CMakeFiles/controllib.dir/block/BlockParam.cpp.obj
+[403/1185] Building CXX object src/lib/controllib/CMakeFiles/controllib.dir/BlockHighPass.cpp.obj
+[404/1185] Building CXX object src/lib/controllib/CMakeFiles/controllib.dir/BlockDerivative.cpp.obj
+[405/1185] Building CXX object src/lib/controllib/CMakeFiles/controllib.dir/BlockIntegral.cpp.obj
+[406/1185] Building CXX object src/lib/controllib/CMakeFiles/controllib.dir/BlockIntegralTrap.cpp.obj
+[407/1185] Building CXX object src/lib/controllib/CMakeFiles/controllib.dir/BlockLimit.cpp.obj
+[408/1185] Building CXX object src/lib/controllib/CMakeFiles/controllib.dir/BlockLimitSym.cpp.obj
+[409/1185] Building CXX object src/lib/conversion/CMakeFiles/conversion.dir/rotation.cpp.obj
+[410/1185] Building CXX object src/lib/controllib/CMakeFiles/controllib.dir/BlockLowPass.cpp.obj
+[411/1185] Building CXX object src/lib/controllib/CMakeFiles/controllib.dir/BlockLowPass2.cpp.obj
+[412/1185] Building CXX object src/lib/drivers/device/CMakeFiles/drivers__device.dir/nuttx/I2C.cpp.obj
+[413/1185] Building CXX object src/lib/drivers/device/CMakeFiles/drivers__device.dir/CDev.cpp.obj
+[414/1185] Building CXX object src/lib/drivers/device/CMakeFiles/drivers__device.dir/nuttx/SPI.cpp.obj
+[415/1185] Building C object src/lib/heatshrink/CMakeFiles/heatshrink.dir/heatshrink/heatshrink_decoder.c.obj
+[416/1185] Building CXX object src/lib/drivers/led/CMakeFiles/drivers__led.dir/led.cpp.obj
+[417/1185] Building CXX object src/lib/hybrid_control/CMakeFiles/hybrid_control.dir/C610Protocol.cpp.obj
+[418/1185] Building CXX object src/lib/hybrid_control/CMakeFiles/hybrid_control.dir/M2006CommandAdapter.cpp.obj
+[419/1185] Building CXX object src/lib/hybrid_control/CMakeFiles/hybrid_control.dir/M2006DriveGate.cpp.obj
+[420/1185] Building CXX object src/lib/hybrid_control/CMakeFiles/hybrid_control.dir/TransformationPosition.cpp.obj
+[421/1185] Building CXX object src/lib/hybrid_control/CMakeFiles/hybrid_control.dir/M2006SpeedController.cpp.obj
+[422/1185] Building CXX object src/lib/hybrid_control/CMakeFiles/hybrid_control.dir/Hx8BackendPolicy.cpp.obj
+[423/1185] Building CXX object src/lib/hybrid_control/CMakeFiles/hybrid_control.dir/TransformationStateMachine.cpp.obj
+[424/1185] Building CXX object src/lib/hx8_servo/CMakeFiles/hx8_protocol.dir/Hx8Protocol.cpp.obj
+[425/1185] Building CXX object src/lib/hysteresis/CMakeFiles/hysteresis.dir/hysteresis.cpp.obj
+[426/1185] Building CXX object src/lib/drivers/magnetometer/CMakeFiles/drivers_magnetometer.dir/PX4Magnetometer.cpp.obj
+[427/1185] Building CXX object src/lib/hx8_servo/CMakeFiles/hx65_protocol.dir/Hx65Protocol.cpp.obj
+[428/1185] Building CXX object src/lib/l1/CMakeFiles/l1.dir/ECL_L1_Pos_Controller.cpp.obj
+[429/1185] Building CXX object src/lib/mathlib/CMakeFiles/mathlib.dir/math/test/test.cpp.obj
+[430/1185] Building CXX object src/lib/drivers/gyroscope/CMakeFiles/drivers_gyroscope.dir/PX4Gyroscope.cpp.obj
+[431/1185] Building CXX object src/lib/hx8_servo/CMakeFiles/hx8_controller.dir/Hx8Controller.cpp.obj
+[432/1185] Building CXX object src/lib/hx8_servo/CMakeFiles/hx65_pair_controller.dir/Hx65PairController.cpp.obj
+[433/1185] Building CXX object src/lib/motion_planning/CMakeFiles/motion_planning.dir/HeadingSmoothing.cpp.obj
+[434/1185] Building CXX object src/lib/motion_planning/CMakeFiles/motion_planning.dir/ManualVelocitySmoothingXY.cpp.obj
+[435/1185] Building CXX object src/lib/motion_planning/CMakeFiles/motion_planning.dir/ManualVelocitySmoothingZ.cpp.obj
+[436/1185] Building CXX object src/lib/drivers/accelerometer/CMakeFiles/drivers_accelerometer.dir/PX4Accelerometer.cpp.obj
+[437/1185] Building CXX object src/lib/adsb/CMakeFiles/adsb.dir/AdsbConflict.cpp.obj
+[438/1185] Building CXX object src/lib/motion_planning/CMakeFiles/motion_planning.dir/PositionSmoothing.cpp.obj
+[439/1185] Building CXX object src/lib/motion_planning/CMakeFiles/motion_planning.dir/VelocitySmoothing.cpp.obj
+[440/1185] Building CXX object src/lib/pid/CMakeFiles/PID.dir/PID.cpp.obj
+[441/1185] Building CXX object src/lib/rate_control/CMakeFiles/RateControl.dir/rate_control.cpp.obj
+[442/1185] Building CXX object src/lib/rc/CMakeFiles/rc.dir/ghst.cpp.obj
+[443/1185] Building CXX object src/lib/rc/CMakeFiles/rc.dir/crsf.cpp.obj
+[444/1185] Building CXX object src/lib/button/CMakeFiles/button_publisher.dir/ButtonPublisher.cpp.obj
+[445/1185] Building CXX object src/lib/rc/CMakeFiles/rc.dir/st24.cpp.obj
+[446/1185] Building CXX object src/lib/rc/CMakeFiles/rc.dir/sbus.cpp.obj
+[447/1185] Building CXX object src/lib/rc/CMakeFiles/rc.dir/sumd.cpp.obj
+[448/1185] Building CXX object src/lib/rc/CMakeFiles/rc.dir/dsm.cpp.obj
+[449/1185] Building CXX object src/lib/ringbuffer/CMakeFiles/ringbuffer.dir/Ringbuffer.cpp.obj
+[450/1185] Building CXX object src/lib/rc/CMakeFiles/rc.dir/common_rc.cpp.obj
+[451/1185] Building CXX object src/lib/rover_control/CMakeFiles/rover_control.dir/RoverControl.cpp.obj
+[452/1185] Building CXX object src/lib/drivers/rangefinder/CMakeFiles/drivers_rangefinder.dir/PX4Rangefinder.cpp.obj
+[453/1185] Linking CXX static library src/lib/rc/librc.a
+[454/1185] Building CXX object src/lib/sensor_calibration/CMakeFiles/sensor_calibration.dir/Utilities.cpp.obj
+[455/1185] Building CXX object src/lib/slew_rate/CMakeFiles/SlewRate.dir/dummy.cpp.obj
+[456/1185] Building CXX object src/lib/dataman_client/CMakeFiles/dataman_client.dir/DatamanClient.cpp.obj
+[457/1185] Building CXX object src/lib/systemlib/CMakeFiles/systemlib.dir/mavlink_log.cpp.obj
+[458/1185] Building C object src/lib/systemlib/CMakeFiles/systemlib.dir/otp.c.obj
+[459/1185] Building CXX object src/lib/system_identification/CMakeFiles/SystemIdentification.dir/system_identification.cpp.obj
+[460/1185] Building CXX object src/lib/control_allocation/control_allocation/CMakeFiles/ControlAllocation.dir/ControlAllocationSequentialDesaturation.cpp.obj
+[461/1185] Building CXX object src/lib/tunes/CMakeFiles/tunes.dir/default_tunes.cpp.obj
+[462/1185] Building CXX object src/lib/tunes/CMakeFiles/tunes.dir/tunes.cpp.obj
+[463/1185] Building CXX object src/lib/variable_length_ringbuffer/CMakeFiles/variable_length_ringbuffer.dir/VariableLengthRingbuffer.cpp.obj
+[464/1185] Building CXX object src/lib/mixer_module/CMakeFiles/mixer_module.dir/actuator_test.cpp.obj
+[465/1185] Building C object platforms/nuttx/src/px4/common/CMakeFiles/px4_layer.dir/board_crashdump.c.obj
+[466/1185] Building CXX object src/lib/battery/CMakeFiles/battery.dir/battery.cpp.obj
+[467/1185] Building C object platforms/nuttx/src/px4/common/CMakeFiles/px4_layer.dir/board_dma_alloc.c.obj
+[468/1185] Building C object platforms/nuttx/src/px4/common/CMakeFiles/px4_layer.dir/board_fat_dma_alloc.c.obj
+[469/1185] Building CXX object platforms/nuttx/src/px4/common/CMakeFiles/px4_layer.dir/console_buffer.cpp.obj
+[470/1185] Building CXX object platforms/nuttx/src/px4/common/CMakeFiles/px4_layer.dir/cpuload.cpp.obj
+[471/1185] Building CXX object src/lib/led/CMakeFiles/led.dir/led.cpp.obj
+[472/1185] Building CXX object platforms/nuttx/src/px4/common/CMakeFiles/px4_layer.dir/print_load.cpp.obj
+[473/1185] Building C object platforms/nuttx/src/px4/common/CMakeFiles/px4_layer.dir/gpio.c.obj
+[474/1185] Building CXX object platforms/nuttx/src/px4/common/CMakeFiles/px4_layer.dir/px4_nuttx_impl.cpp.obj
+[475/1185] Building CXX object platforms/nuttx/src/px4/common/CMakeFiles/px4_layer.dir/px4_manifest.cpp.obj
+[476/1185] Building CXX object platforms/nuttx/src/px4/common/CMakeFiles/px4_layer.dir/tasks.cpp.obj
+[477/1185] Building CXX object platforms/nuttx/src/px4/common/CMakeFiles/px4_layer.dir/px4_init.cpp.obj
+[478/1185] Building CXX object src/lib/sensor_calibration/CMakeFiles/sensor_calibration.dir/Barometer.cpp.obj
+[479/1185] Building C object platforms/nuttx/src/px4/common/CMakeFiles/px4_layer.dir/px4_24xxxx_mtd.c.obj
+[480/1185] Building CXX object platforms/nuttx/src/px4/common/CMakeFiles/px4_layer.dir/px4_mtd.cpp.obj
+[481/1185] Building CXX object platforms/nuttx/src/px4/common/CMakeFiles/px4_layer.dir/px4_crypto.cpp.obj
+[482/1185] Building C object platforms/nuttx/src/px4/common/CMakeFiles/px4_layer.dir/progmem_dump.c.obj
+[483/1185] Building CXX object platforms/nuttx/src/px4/stm/stm32h7/adc/CMakeFiles/arch_adc.dir/adc.cpp.obj
+[484/1185] Building CXX object platforms/nuttx/src/px4/common/CMakeFiles/px4_layer.dir/SerialImpl.cpp.obj
+[485/1185] Building CXX object platforms/nuttx/src/px4/common/CMakeFiles/px4_layer.dir/__/__/__/__/common/Serial.cpp.obj
+[486/1185] Building C object platforms/nuttx/src/px4/stm/stm32h7/board_critmon/CMakeFiles/arch_board_critmon.dir/board_critmon.c.obj
+[487/1185] Building C object platforms/nuttx/src/px4/stm/stm32h7/board_hw_info/CMakeFiles/arch_board_hw_info.dir/board_hw_rev_ver.c.obj
+[488/1185] Building CXX object platforms/nuttx/src/px4/stm/stm32h7/board_reset/CMakeFiles/arch_board_reset.dir/board_reset.cpp.obj
+[489/1185] Building C object platforms/nuttx/src/px4/stm/stm32h7/dshot/CMakeFiles/arch_dshot.dir/dshot.c.obj
+[490/1185] Building C object platforms/nuttx/src/px4/stm/stm32h7/io_pins/CMakeFiles/arch_io_pins.dir/input_capture.c.obj
+[491/1185] Building CXX object src/lib/timesync/CMakeFiles/timesync.dir/Timesync.cpp.obj
+[492/1185] Building C object platforms/nuttx/src/px4/stm/stm32h7/io_pins/CMakeFiles/arch_io_pins.dir/pwm_trigger.c.obj
+[493/1185] Building C object platforms/nuttx/src/px4/stm/stm32h7/hrt/CMakeFiles/arch_hrt.dir/hrt.c.obj
+[494/1185] Building CXX object src/lib/pure_pursuit/CMakeFiles/pure_pursuit.dir/PurePursuit.cpp.obj
+[495/1185] Building C object platforms/nuttx/src/px4/stm/stm32h7/io_pins/CMakeFiles/arch_io_pins.dir/pwm_servo.c.obj
+[496/1185] Building C object platforms/nuttx/src/px4/stm/stm32h7/io_pins/CMakeFiles/arch_io_pins.dir/io_timer.c.obj
+[497/1185] Building CXX object platforms/nuttx/src/px4/stm/stm32h7/spi/CMakeFiles/arch_spi.dir/spi.cpp.obj
+[498/1185] Building CXX object platforms/nuttx/src/px4/stm/stm32h7/tone_alarm/CMakeFiles/arch_tone_alarm.dir/ToneAlarmInterface.cpp.obj
+[499/1185] Building C object platforms/nuttx/src/px4/stm/stm32h7/version/CMakeFiles/arch_version.dir/board_identity.c.obj
+[500/1185] Building CXX object src/lib/collision_prevention/CMakeFiles/CollisionPrevention.dir/CollisionPrevention.cpp.obj
+[501/1185] Building C object platforms/nuttx/src/px4/stm/stm32h7/version/CMakeFiles/arch_version.dir/board_mcu_version.c.obj
+[502/1185] Building CXX object platforms/nuttx/src/px4/stm/stm32h7/px4io_serial/CMakeFiles/arch_px4io_serial.dir/px4io_serial.cpp.obj
+[503/1185] Building C object platforms/common/CMakeFiles/px4_platform.dir/board_identity.c.obj
+[504/1185] Building C object platforms/common/CMakeFiles/px4_platform.dir/board_common.c.obj
+[505/1185] Building CXX object platforms/common/CMakeFiles/px4_platform.dir/i2c.cpp.obj
+[506/1185] Building C object platforms/common/CMakeFiles/px4_platform.dir/px4_getopt.c.obj
+[507/1185] Building CXX object platforms/common/CMakeFiles/px4_platform.dir/external_reset_lockout.cpp.obj
+[508/1185] Building CXX object platforms/common/CMakeFiles/px4_platform.dir/module.cpp.obj
+[509/1185] Building CXX object platforms/common/CMakeFiles/px4_platform.dir/px4_cli.cpp.obj
+[510/1185] Building CXX object platforms/common/CMakeFiles/px4_platform.dir/i2c_spi_buses.cpp.obj
+[511/1185] Building CXX object platforms/common/CMakeFiles/px4_platform.dir/shutdown.cpp.obj
+[512/1185] Building CXX object platforms/common/CMakeFiles/px4_platform.dir/spi.cpp.obj
+[513/1185] Building CXX object platforms/common/CMakeFiles/px4_platform.dir/Serial.cpp.obj
+[514/1185] Building C object platforms/common/CMakeFiles/px4_platform.dir/pab_manifest.c.obj
+[515/1185] Building CXX object platforms/common/CMakeFiles/px4_platform.dir/px4_log.cpp.obj
+[516/1185] Building CXX object platforms/common/CMakeFiles/px4_platform.dir/px4_log_history.cpp.obj
+[517/1185] Building CXX object platforms/common/uORB/CMakeFiles/uORB.dir/uORBUtils.cpp.obj
+[518/1185] Building CXX object src/lib/stick_yaw/CMakeFiles/StickYaw.dir/StickYaw.cpp.obj
+[519/1185] Building CXX object src/lib/rtl/CMakeFiles/rtl_time_estimator.dir/rtl_time_estimator.cpp.obj
+[520/1185] Building CXX object platforms/common/px4_work_queue/CMakeFiles/px4_work_queue.dir/ScheduledWorkItem.cpp.obj
+[521/1185] Building CXX object platforms/common/px4_work_queue/CMakeFiles/px4_work_queue.dir/WorkItem.cpp.obj
+[522/1185] Building CXX object platforms/common/px4_work_queue/CMakeFiles/px4_work_queue.dir/WorkItemSingleShot.cpp.obj
+[523/1185] Building CXX object platforms/common/uORB/CMakeFiles/uORB.dir/uORBMessageFields.cpp.obj
+[524/1185] Building CXX object platforms/common/px4_work_queue/CMakeFiles/px4_work_queue.dir/WorkQueue.cpp.obj
+[525/1185] Building CXX object platforms/common/px4_work_queue/CMakeFiles/px4_work_queue.dir/WorkQueueManager.cpp.obj
+[526/1185] Building CXX object src/lib/sensor_calibration/CMakeFiles/sensor_calibration.dir/Accelerometer.cpp.obj
+[527/1185] Building CXX object src/lib/sensor_calibration/CMakeFiles/sensor_calibration.dir/Gyroscope.cpp.obj
+[528/1185] Building CXX object src/lib/sensor_calibration/CMakeFiles/sensor_calibration.dir/Magnetometer.cpp.obj
+[529/1185] Building CXX object platforms/common/uORB/CMakeFiles/uORB.dir/SubscriptionInterval.cpp.obj
+[530/1185] Building CXX object src/lib/weather_vane/CMakeFiles/WeatherVane.dir/WeatherVane.cpp.obj
+[531/1185] Building CXX object platforms/common/uORB/CMakeFiles/uORB.dir/Subscription.cpp.obj
+[532/1185] Building CXX object platforms/common/uORB/CMakeFiles/uORB.dir/uORBManager.cpp.obj
+[533/1185] Building CXX object platforms/common/uORB/CMakeFiles/uORB.dir/uORBDeviceNode.cpp.obj
+[534/1185] Building CXX object src/drivers/adc/ads1115/CMakeFiles/drivers__ads1115.dir/ADS1115.cpp.obj
+[535/1185] Building CXX object platforms/common/uORB/CMakeFiles/uORB.dir/uORBDeviceMaster.cpp.obj
+[536/1185] Building CXX object src/drivers/actuators/hx8_uart_servo/CMakeFiles/drivers__actuators__hx8_uart_servo.dir/hx8_uart_servo_main.cpp.obj
+[537/1185] Building CXX object src/drivers/adc/ads1115/CMakeFiles/drivers__ads1115.dir/ads1115_main.cpp.obj
+[538/1185] Building CXX object platforms/common/uORB/CMakeFiles/uORB.dir/uORB.cpp.obj
+[539/1185] Building CXX object src/drivers/barometer/invensense/icp201xx/CMakeFiles/drivers__invensense__icp201xx.dir/icp201xx_main.cpp.obj
+[540/1185] Building CXX object src/lib/mixer_module/CMakeFiles/mixer_module.dir/mixer_module.cpp.obj
+[541/1185] Building CXX object src/drivers/differential_pressure/ms4525do/CMakeFiles/drivers__differential_pressure__ms4525do.dir/ms4525do_main.cpp.obj
+[542/1185] Building CXX object src/drivers/adc/board_adc/CMakeFiles/drivers__board_adc.dir/ADC.cpp.obj
+[543/1185] Building CXX object src/drivers/distance_sensor/lightware_laser_serial/CMakeFiles/drivers__distance_sensor__lightware_laser_serial.dir/parser.cpp.obj
+[544/1185] Building CXX object src/drivers/differential_pressure/ms5525dso/CMakeFiles/drivers__differential_pressure__ms5525dso.dir/ms5525dso_main.cpp.obj
+[545/1185] Building CXX object src/drivers/barometer/invensense/icp201xx/CMakeFiles/drivers__invensense__icp201xx.dir/ICP201XX.cpp.obj
+[546/1185] Building CXX object src/drivers/differential_pressure/sdp3x/CMakeFiles/drivers__differential_pressure__sdp3x.dir/sdp3x_main.cpp.obj
+[547/1185] Building CXX object src/drivers/distance_sensor/cm8jl65/CMakeFiles/drivers__cm8jl65.dir/cm8jl65_main.cpp.obj
+[548/1185] Building CXX object src/drivers/differential_pressure/ms4525do/CMakeFiles/drivers__differential_pressure__ms4525do.dir/MS4525DO.cpp.obj
+[549/1185] Building CXX object src/drivers/distance_sensor/cm8jl65/CMakeFiles/drivers__cm8jl65.dir/CM8JL65.cpp.obj
+[550/1185] Building CXX object src/drivers/actuators/hx8_uart_servo/CMakeFiles/drivers__actuators__hx8_uart_servo.dir/Hx8UartServo.cpp.obj
+[551/1185] Building CXX object src/drivers/cdcacm_autostart/CMakeFiles/drivers__cdcacm_autostart.dir/cdcacm_autostart.cpp.obj
+[552/1185] Building CXX object src/drivers/differential_pressure/sdp3x/CMakeFiles/drivers__differential_pressure__sdp3x.dir/SDP3X.cpp.obj
+[553/1185] Building CXX object src/drivers/distance_sensor/lightware_laser_serial/CMakeFiles/drivers__distance_sensor__lightware_laser_serial.dir/lightware_laser_serial_main.cpp.obj
+[554/1185] Building CXX object src/drivers/distance_sensor/tfmini/CMakeFiles/drivers__tfmini.dir/tfmini_parser.cpp.obj
+[555/1185] Building CXX object src/drivers/differential_pressure/ms5525dso/CMakeFiles/drivers__differential_pressure__ms5525dso.dir/MS5525DSO.cpp.obj
+[556/1185] Building CXX object src/drivers/distance_sensor/lightware_laser_serial/CMakeFiles/drivers__distance_sensor__lightware_laser_serial.dir/lightware_laser_serial.cpp.obj
+[557/1185] Building CXX object src/drivers/distance_sensor/ll40ls/CMakeFiles/drivers__ll40ls.dir/ll40ls.cpp.obj
+[558/1185] Building CXX object src/drivers/dshot/CMakeFiles/drivers__dshot.dir/DShotTelemetry.cpp.obj
+[559/1185] Building CXX object src/drivers/distance_sensor/ll40ls/CMakeFiles/drivers__ll40ls.dir/LidarLiteI2C.cpp.obj
+[560/1185] Building CXX object src/drivers/distance_sensor/teraranger/CMakeFiles/drivers__distance_sensor__teraranger.dir/teraranger_main.cpp.obj
+[561/1185] Building CXX object src/drivers/distance_sensor/tfmini/CMakeFiles/drivers__tfmini.dir/TFMINI.cpp.obj
+[562/1185] Building CXX object src/drivers/distance_sensor/tf02pro/CMakeFiles/drivers__distance_sensor__tf02pro.dir/TF02PRO.cpp.obj
+[563/1185] Building CXX object src/drivers/gps/CMakeFiles/drivers__gps.dir/devices/src/crc.cpp.obj
+[564/1185] Building CXX object src/drivers/gps/CMakeFiles/drivers__gps.dir/devices/src/gps_helper.cpp.obj
+[565/1185] Building CXX object src/drivers/gps/CMakeFiles/drivers__gps.dir/devices/src/mtk.cpp.obj
+[566/1185] Building CXX object src/drivers/gps/CMakeFiles/drivers__gps.dir/devices/src/ashtech.cpp.obj
+[567/1185] Building CXX object src/drivers/gps/CMakeFiles/drivers__gps.dir/devices/src/ubx.cpp.obj
+[568/1185] Building CXX object src/drivers/gps/CMakeFiles/drivers__gps.dir/devices/src/emlid_reach.cpp.obj
+[569/1185] Building CXX object src/drivers/distance_sensor/teraranger/CMakeFiles/drivers__distance_sensor__teraranger.dir/TERARANGER.cpp.obj
+[570/1185] Building CXX object src/drivers/gps/CMakeFiles/drivers__gps.dir/devices/src/rtcm.cpp.obj
+[571/1185] Building CXX object src/drivers/gps/CMakeFiles/drivers__gps.dir/devices/src/nmea.cpp.obj
+[572/1185] Building CXX object src/drivers/gps/CMakeFiles/drivers__gps.dir/devices/src/femtomes.cpp.obj
+[573/1185] Building CXX object src/drivers/gps/CMakeFiles/drivers__gps.dir/devices/src/unicore.cpp.obj
+[574/1185] Building CXX object src/drivers/distance_sensor/lightware_laser_i2c/CMakeFiles/drivers__distance_sensor__lightware_laser_i2c.dir/lightware_laser_i2c.cpp.obj
+[575/1185] Building CXX object src/drivers/distance_sensor/tf02pro/CMakeFiles/drivers__distance_sensor__tf02pro.dir/tf02pro_main.cpp.obj
+[576/1185] Building CXX object src/drivers/imu/bosch/bmi088/CMakeFiles/drivers__imu__bosch__bmi088.dir/bmi088_main.cpp.obj
+[577/1185] Building CXX object src/drivers/distance_sensor/ulanding_radar/CMakeFiles/drivers__distance_sensor__ulanding_radar.dir/AerotennaULanding.cpp.obj
+[578/1185] Building CXX object src/drivers/distance_sensor/tfmini/CMakeFiles/drivers__tfmini.dir/tfmini_main.cpp.obj
+[579/1185] Building CXX object src/drivers/distance_sensor/ulanding_radar/CMakeFiles/drivers__distance_sensor__ulanding_radar.dir/ulanding_radar_main.cpp.obj
+[580/1185] Building CXX object src/drivers/distance_sensor/vl53l0x/CMakeFiles/drivers__distance_sensor__vl53l0x.dir/VL53L0X.cpp.obj
+[581/1185] Building CXX object src/drivers/encoder_sensor/as5600/CMakeFiles/drivers__encoder_sensor__as5600.dir/as5600.cpp.obj
+[582/1185] Building CXX object src/drivers/imu/bosch/bmi088/CMakeFiles/drivers__imu__bosch__bmi088.dir/BMI088.cpp.obj
+[583/1185] Building CXX object src/drivers/distance_sensor/vl53l1x/CMakeFiles/drivers__distance_sensor__vl53l1x.dir/vl53l1x.cpp.obj
+[584/1185] Building CXX object src/drivers/imu/invensense/icm45686/CMakeFiles/drivers__imu__invensense__icm45686.dir/icm45686_main.cpp.obj
+[585/1185] Building CXX object src/drivers/imu/bosch/bmi088/CMakeFiles/drivers__imu__bosch__bmi088.dir/BMI088_Accelerometer.cpp.obj
+[586/1185] Building CXX object src/drivers/imu/bosch/bmi088/CMakeFiles/drivers__imu__bosch__bmi088.dir/BMI088_Gyroscope.cpp.obj
+[587/1185] Building CXX object src/drivers/heater/CMakeFiles/drivers__heater.dir/heater.cpp.obj
+[588/1185] Building CXX object src/drivers/lights/rgbled_is31fl3195/CMakeFiles/drivers__rgbled_is31fl3195.dir/rgbled_is31fl3195.cpp.obj
+[589/1185] Building CXX object src/drivers/magnetometer/akm/ak09916/CMakeFiles/drivers__magnetometer__akm__ak09916.dir/ak09916_main.cpp.obj
+[590/1185] Building CXX object src/drivers/magnetometer/akm/ak8963/CMakeFiles/drivers__magnetometer__akm__ak8963.dir/ak8963_main.cpp.obj
+[591/1185] Building CXX object src/drivers/gps/CMakeFiles/drivers__gps.dir/gps.cpp.obj
+[592/1185] Building CXX object src/drivers/magnetometer/hmc5883/CMakeFiles/drivers__hmc5883.dir/hmc5883_i2c.cpp.obj
+[593/1185] Building CXX object src/drivers/dshot/CMakeFiles/drivers__dshot.dir/DShot.cpp.obj
+[594/1185] Building CXX object src/drivers/magnetometer/hmc5883/CMakeFiles/drivers__hmc5883.dir/hmc5883_spi.cpp.obj
+[595/1185] Building CXX object src/drivers/magnetometer/akm/ak09916/CMakeFiles/drivers__magnetometer__akm__ak09916.dir/AK09916.cpp.obj
+[596/1185] Building CXX object src/drivers/imu/invensense/icm45686/CMakeFiles/drivers__imu__invensense__icm45686.dir/ICM45686.cpp.obj
+[597/1185] Building CXX object src/drivers/magnetic_sensor/tmag5273/CMakeFiles/drivers__magnetic_sensor__tmag5273.dir/tmag5273.cpp.obj
+[598/1185] Building CXX object src/drivers/lights/rgbled/CMakeFiles/drivers__rgbled.dir/rgbled.cpp.obj
+[599/1185] Building CXX object src/drivers/lights/rgbled_lp5562/CMakeFiles/drivers__rgbled_lp5562.dir/rgbled_lp5562.cpp.obj
+[600/1185] Building CXX object src/drivers/lights/rgbled_ncp5623c/CMakeFiles/drivers__rgbled_ncp5623c.dir/rgbled_ncp5623c.cpp.obj
+[601/1185] Building CXX object src/drivers/magnetometer/bosch/bmm150/CMakeFiles/drivers__magnetometer__bosch__bmm150.dir/bmm150_main.cpp.obj
+[602/1185] Building CXX object src/drivers/magnetometer/hmc5883/CMakeFiles/drivers__hmc5883.dir/hmc5883_main.cpp.obj
+[603/1185] Building CXX object src/drivers/magnetometer/isentek/ist8308/CMakeFiles/drivers__magnetometer__isentek__ist8308.dir/ist8308_main.cpp.obj
+[604/1185] Building CXX object src/drivers/magnetometer/bosch/bmm150/CMakeFiles/drivers__magnetometer__bosch__bmm150.dir/BMM150.cpp.obj
+[605/1185] Building CXX object src/drivers/magnetometer/lis3mdl/CMakeFiles/drivers__magnetometer__lis3mdl.dir/lis3mdl_i2c.cpp.obj
+[606/1185] Building CXX object src/drivers/magnetometer/hmc5883/CMakeFiles/drivers__hmc5883.dir/HMC5883.cpp.obj
+[607/1185] Building CXX object src/drivers/magnetometer/isentek/ist8310/CMakeFiles/drivers__magnetometer__isentek__ist8310.dir/ist8310_main.cpp.obj
+[608/1185] Building CXX object src/drivers/ins/vectornav/CMakeFiles/drivers__ins__vectornav.dir/VectorNav.cpp.obj
+[609/1185] Building CXX object src/drivers/magnetometer/akm/ak8963/CMakeFiles/drivers__magnetometer__akm__ak8963.dir/AK8963.cpp.obj
+[610/1185] Building CXX object src/drivers/magnetometer/isentek/ist8308/CMakeFiles/drivers__magnetometer__isentek__ist8308.dir/IST8308.cpp.obj
+[611/1185] Building CXX object src/drivers/magnetometer/lis3mdl/CMakeFiles/drivers__magnetometer__lis3mdl.dir/lis3mdl_main.cpp.obj
+[612/1185] Building CXX object src/drivers/magnetometer/lis3mdl/CMakeFiles/drivers__magnetometer__lis3mdl.dir/lis3mdl_spi.cpp.obj
+[613/1185] Building CXX object src/drivers/magnetometer/lsm303agr/CMakeFiles/drivers__magnetometer__lsm303agr.dir/lsm303agr_main.cpp.obj
+[614/1185] Building CXX object src/drivers/magnetometer/memsic/mmc5983ma/CMakeFiles/drivers__magnetometer__memsic__mmc5983ma.dir/mmc5983ma_i2c.cpp.obj
+[615/1185] Building CXX object src/drivers/magnetometer/isentek/ist8310/CMakeFiles/drivers__magnetometer__isentek__ist8310.dir/IST8310.cpp.obj
+[616/1185] Building CXX object src/drivers/magnetometer/memsic/mmc5983ma/CMakeFiles/drivers__magnetometer__memsic__mmc5983ma.dir/mmc5983ma_main.cpp.obj
+[617/1185] Building CXX object src/drivers/magnetometer/qmc5883l/CMakeFiles/drivers__magnetometer__qmc5883l.dir/qmc5883l_main.cpp.obj
+[618/1185] Building CXX object src/drivers/magnetometer/lis3mdl/CMakeFiles/drivers__magnetometer__lis3mdl.dir/lis3mdl.cpp.obj
+[619/1185] Building CXX object src/drivers/magnetometer/memsic/mmc5983ma/CMakeFiles/drivers__magnetometer__memsic__mmc5983ma.dir/mmc5983ma_spi.cpp.obj
+[620/1185] Building CXX object src/drivers/osd/msp_osd/CMakeFiles/drivers__osd__msp_osd.dir/MspV1.cpp.obj
+[621/1185] Building CXX object src/drivers/osd/msp_osd/MessageDisplay/CMakeFiles/message_display.dir/MessageDisplay.cpp.obj
+[622/1185] Building CXX object src/drivers/osd/msp_osd/CMakeFiles/drivers__osd__msp_osd.dir/uorb_to_msp.cpp.obj
+[623/1185] Building CXX object src/drivers/magnetometer/memsic/mmc5983ma/CMakeFiles/drivers__magnetometer__memsic__mmc5983ma.dir/mmc5983ma.cpp.obj
+[624/1185] Building CXX object src/drivers/magnetometer/lsm303agr/CMakeFiles/drivers__magnetometer__lsm303agr.dir/LSM303AGR.cpp.obj
+[625/1185] Building CXX object src/drivers/magnetometer/qmc5883l/CMakeFiles/drivers__magnetometer__qmc5883l.dir/QMC5883L.cpp.obj
+[626/1185] Building CXX object src/drivers/magnetometer/rm3100/CMakeFiles/drivers__rm3100.dir/rm3100_i2c.cpp.obj
+[627/1185] Building CXX object src/drivers/magnetometer/rm3100/CMakeFiles/drivers__rm3100.dir/rm3100_spi.cpp.obj
+[628/1185] Building CXX object src/drivers/magnetometer/rm3100/CMakeFiles/drivers__rm3100.dir/rm3100_main.cpp.obj
+[629/1185] Building CXX object src/drivers/magnetometer/rm3100/CMakeFiles/drivers__rm3100.dir/rm3100.cpp.obj
+[630/1185] Building CXX object src/drivers/px4io/CMakeFiles/drivers__px4io.dir/px4io_serial.cpp.obj
+[631/1185] Building CXX object src/drivers/magnetometer/st/iis2mdc/CMakeFiles/drivers__magnetometer__st__iis2mdc.dir/iis2mdc_i2c.cpp.obj
+[632/1185] Building CXX object src/drivers/magnetometer/st/iis2mdc/CMakeFiles/drivers__magnetometer__st__iis2mdc.dir/iis2mdc_main.cpp.obj
+[633/1185] Building CXX object src/drivers/px4io/CMakeFiles/drivers__px4io.dir/px4io_uploader.cpp.obj
+[634/1185] Building CXX object src/drivers/magnetometer/st/iis2mdc/CMakeFiles/drivers__magnetometer__st__iis2mdc.dir/iis2mdc.cpp.obj
+[635/1185] Building CXX object src/drivers/power_monitor/ina228/CMakeFiles/drivers__ina228.dir/ina228_main.cpp.obj
+[636/1185] Building CXX object src/drivers/power_monitor/ina238/CMakeFiles/drivers__ina238.dir/ina238_main.cpp.obj
+[637/1185] Building CXX object src/drivers/uavcan/CMakeFiles/uavcan_can_ownership.dir/CanOwnership.cpp.obj
+[638/1185] Building CXX object src/drivers/power_monitor/ina226/CMakeFiles/drivers__ina226.dir/ina226_main.cpp.obj
+[639/1185] Building CXX object src/drivers/power_monitor/pm_selector_auterion/CMakeFiles/drivers__power_monitor_pm_selector_auterion.dir/PowerMonitorSelectorAuterion.cpp.obj
+[640/1185] Building CXX object src/drivers/rc_input/CMakeFiles/drivers__rc_input.dir/ghst_telemetry.cpp.obj
+[641/1185] Building CXX object src/drivers/power_monitor/ina238/CMakeFiles/drivers__ina238.dir/ina238.cpp.obj
+[642/1185] Building CXX object src/drivers/rc_input/CMakeFiles/drivers__rc_input.dir/crsf_telemetry.cpp.obj
+[643/1185] Building CXX object src/drivers/power_monitor/ina228/CMakeFiles/drivers__ina228.dir/ina228.cpp.obj
+[644/1185] Building CXX object src/drivers/osd/msp_osd/CMakeFiles/drivers__osd__msp_osd.dir/msp_osd.cpp.obj
+[645/1185] Building CXX object src/drivers/power_monitor/ina226/CMakeFiles/drivers__ina226.dir/ina226.cpp.obj
+[646/1185] Building CXX object src/drivers/safety_button/CMakeFiles/drivers__safety_button.dir/SafetyButton.cpp.obj
+[647/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/actuators/hardpoint.cpp.obj
+[648/1185] Building CXX object src/drivers/pwm_out/CMakeFiles/drivers__pwm_out.dir/PWMOut.cpp.obj
+[649/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/differential_pressure.cpp.obj
+[650/1185] Building CXX object src/drivers/tone_alarm/CMakeFiles/drivers__tone_alarm.dir/ToneAlarm.cpp.obj
+[651/1185] Building CXX object src/drivers/rc_input/CMakeFiles/drivers__rc_input.dir/RCInput.cpp.obj
+[652/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/airspeed.cpp.obj
+[653/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/flow.cpp.obj
+[654/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/fuel_tank_status.cpp.obj
+[655/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/gnss_relative.cpp.obj
+[656/1185] Building CXX object src/drivers/px4io/CMakeFiles/drivers__px4io.dir/px4io.cpp.obj
+[657/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/beep.cpp.obj
+[658/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/arming_status.cpp.obj
+[659/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/safety_state.cpp.obj
+[660/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/rgbled.cpp.obj
+[661/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/ice_status.cpp.obj
+[662/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/hygrometer.cpp.obj
+[663/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/actuators/servo.cpp.obj
+[664/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/baro.cpp.obj
+[665/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/mag.cpp.obj
+[666/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/rangefinder.cpp.obj
+[667/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/safety_button.cpp.obj
+[668/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/actuators/esc.cpp.obj
+[669/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/accel.cpp.obj
+[670/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/sensor_bridge.cpp.obj
+[671/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/battery.cpp.obj
+[672/1185] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/commander_helper.cpp.obj
+[673/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/gyro.cpp.obj
+[674/1185] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/factory_calibration_storage.cpp.obj
+[675/1185] Building CXX object src/modules/battery_status/CMakeFiles/modules__battery_status.dir/battery_status.cpp.obj
+[676/1185] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/airspeed_calibration.cpp.obj
+[677/1185] Building CXX object src/modules/battery_status/CMakeFiles/modules__battery_status.dir/analog_battery.cpp.obj
+[678/1185] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/esc_calibration.cpp.obj
+[679/1185] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/lm_fit.cpp.obj
+[680/1185] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/baro_calibration.cpp.obj
+[681/1185] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/calibration_routines.cpp.obj
+[682/1185] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/HomePosition.cpp.obj
+[683/1185] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/gyro_calibration.cpp.obj
+[684/1185] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/rc_calibration.cpp.obj
+[685/1185] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/accelerometer_calibration.cpp.obj
+[686/1185] Building CXX object src/drivers/uavcan/m2006_can/CMakeFiles/drivers__m2006_can.dir/M2006Can.cpp.obj
+[687/1185] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/Safety.cpp.obj
+[688/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/sensors/gnss.cpp.obj
+[689/1185] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/worker_thread.cpp.obj
+[690/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/remoteid.cpp.obj
+[691/1185] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/level_calibration.cpp.obj
+[692/1185] Building CXX object src/modules/commander/Arming/ArmAuthorization/CMakeFiles/ArmAuthorization.dir/ArmAuthorization.cpp.obj
+[693/1185] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/UserModeIntention.cpp.obj
+[694/1185] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/ModeManagement.cpp.obj
+[695/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/armPermissionCheck.cpp.obj
+[696/1185] Building CXX object src/modules/commander/failsafe/CMakeFiles/failsafe.dir/failsafe.cpp.obj
+[697/1185] Building CXX object src/modules/commander/failsafe/CMakeFiles/failsafe.dir/framework.cpp.obj
+[698/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/Common.cpp.obj
+[699/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/airspeedCheck.cpp.obj
+[700/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/accelerometerCheck.cpp.obj
+[701/1185] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/mag_calibration.cpp.obj
+[702/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/cpuResourceCheck.cpp.obj
+[703/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/baroCheck.cpp.obj
+[704/1185] Building CXX object src/modules/commander/failure_detector/CMakeFiles/failure_detector.dir/FailureDetector.cpp.obj
+[705/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/escCheck.cpp.obj
+[706/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/batteryCheck.cpp.obj
+[707/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/opticalFlowCheck.cpp.obj
+[708/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/failureDetectorCheck.cpp.obj
+[709/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/flightTimeCheck.cpp.obj
+[710/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/geofenceCheck.cpp.obj
+[711/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/distanceSensorChecks.cpp.obj
+[712/1185] Building CXX object src/modules/commander/CMakeFiles/modules__commander.dir/Commander.cpp.obj
+[713/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/homePositionCheck.cpp.obj
+[714/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/HealthAndArmingChecks.cpp.obj
+[715/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/gyroCheck.cpp.obj
+[716/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/loggerCheck.cpp.obj
+[717/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/estimatorCheck.cpp.obj
+[718/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/manualControlCheck.cpp.obj
+[719/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/magnetometerCheck.cpp.obj
+[720/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/imuConsistencyCheck.cpp.obj
+[721/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/missionCheck.cpp.obj
+[722/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/modeCheck.cpp.obj
+[723/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/openDroneIDCheck.cpp.obj
+[724/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/parachuteCheck.cpp.obj
+[725/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/offboardCheck.cpp.obj
+[726/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/navigatorCheck.cpp.obj
+[727/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/rcAndDataLinkCheck.cpp.obj
+[728/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/sdcardCheck.cpp.obj
+[729/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/uavcan_servers.cpp.obj
+[730/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/rcCalibrationCheck.cpp.obj
+[731/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/vtolCheck.cpp.obj
+[732/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/powerCheck.cpp.obj
+[733/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/windCheck.cpp.obj
+[734/1185] Building CXX object src/modules/commander/MulticopterThrowLaunch/CMakeFiles/MulticopterThrowLaunch.dir/MulticopterThrowLaunch.cpp.obj
+[735/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/systemCheck.cpp.obj
+[736/1185] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessUUV.cpp.obj
+[737/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/hybridCheck.cpp.obj
+[738/1185] Building CXX object src/modules/commander/HealthAndArmingChecks/CMakeFiles/health_and_arming_checks.dir/checks/externalChecks.cpp.obj
+[739/1185] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessControlSurfaces.cpp.obj
+[740/1185] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessCustom.cpp.obj
+[741/1185] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessRoverAckermann.cpp.obj
+[742/1185] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessFixedWing.cpp.obj
+[743/1185] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessHelicopterCoaxial.cpp.obj
+[744/1185] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessHelicopter.cpp.obj
+[745/1185] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessStandardVTOL.cpp.obj
+[746/1185] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessMultirotor.cpp.obj
+[747/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/estimator_interface.cpp.obj
+[748/1185] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessMCTilt.cpp.obj
+[749/1185] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessTilts.cpp.obj
+[750/1185] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/RpmControl.cpp.obj
+[751/1185] Building CXX object src/modules/dataman/CMakeFiles/modules__dataman.dir/dataman.cpp.obj
+[752/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/imu_down_sampler/imu_down_sampler.cpp.obj
+[753/1185] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessRotors.cpp.obj
+[754/1185] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessTailsitterVTOL.cpp.obj
+[755/1185] Building CXX object src/modules/control_allocator/VehicleActuatorEffectiveness/CMakeFiles/VehicleActuatorEffectiveness.dir/ActuatorEffectivenessTiltrotorVTOL.cpp.obj
+[756/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/control.cpp.obj
+[757/1185] Building CXX object src/modules/control_allocator/CMakeFiles/modules__control_allocator.dir/ControlAllocator.cpp.obj
+[758/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/height_control.cpp.obj
+[759/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/velocity_fusion.cpp.obj
+[760/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/fake_pos_control.cpp.obj
+[761/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/fake_height_control.cpp.obj
+[762/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/zero_innovation_heading_update.cpp.obj
+[763/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/ZeroGyroUpdate.cpp.obj
+[764/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/ZeroVelocityUpdate.cpp.obj
+[765/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/position_fusion.cpp.obj
+[766/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/yaw_fusion.cpp.obj
+[767/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/airspeed/airspeed_fusion.cpp.obj
+[768/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/aux_global_position/aux_global_position.cpp.obj
+[769/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/auxvel/auxvel_fusion.cpp.obj
+[770/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/barometer/baro_height_control.cpp.obj
+[771/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/drag/drag_fusion.cpp.obj
+[772/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/external_vision/ev_yaw_control.cpp.obj
+[773/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/covariance.cpp.obj
+[774/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/external_vision/ev_pos_control.cpp.obj
+[775/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/gnss/gnss_height_control.cpp.obj
+[776/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/ekf.cpp.obj
+[777/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/gnss/gps_checks.cpp.obj
+[778/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/external_vision/ev_vel_control.cpp.obj
+[779/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/range_finder/range_finder_consistency_check.cpp.obj
+[780/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/range_finder/sensor_range_finder.cpp.obj
+[781/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/external_vision/ev_height_control.cpp.obj
+[782/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/gnss/gnss_yaw_control.cpp.obj
+[783/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/ekf_helper.cpp.obj
+[784/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/terrain_control.cpp.obj
+[785/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/external_vision/ev_control.cpp.obj
+[786/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/gnss/gps_control.cpp.obj
+[787/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/gravity/gravity_fusion.cpp.obj
+[788/1185] Building CXX object src/drivers/uavcan/CMakeFiles/drivers__uavcan.dir/uavcan_main.cpp.obj
+[789/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/sideslip/sideslip_fusion.cpp.obj
+[790/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/range_finder/range_height_fusion.cpp.obj
+[791/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/magnetometer/mag_fusion.cpp.obj
+[792/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/optical_flow/optical_flow_fusion.cpp.obj
+[793/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/wind.cpp.obj
+[794/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/range_finder/range_height_control.cpp.obj
+[795/1185] Building CXX object src/modules/events/CMakeFiles/modules__events.dir/rc_loss_alarm.cpp.obj
+[796/1185] Building CXX object src/modules/events/CMakeFiles/modules__events.dir/status_display.cpp.obj
+[797/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/optical_flow/optical_flow_control.cpp.obj
+[798/1185] Building CXX object src/modules/events/CMakeFiles/modules__events.dir/set_leds.cpp.obj
+[799/1185] Building CXX object src/modules/esc_battery/CMakeFiles/modules__esc_battery.dir/EscBattery.cpp.obj
+[800/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF/aid_sources/magnetometer/mag_control.cpp.obj
+[801/1185] Building CXX object src/modules/events/CMakeFiles/modules__events.dir/send_event.cpp.obj
+[802/1185] Building CXX object src/modules/flight_mode_manager/tasks/Utility/CMakeFiles/FlightTaskUtility.dir/Sticks.cpp.obj
+[803/1185] Building CXX object src/modules/flight_mode_manager/tasks/FlightTask/CMakeFiles/FlightTask.dir/FlightTask.cpp.obj
+[804/1185] Building CXX object src/modules/flight_mode_manager/tasks/Utility/CMakeFiles/FlightTaskUtility.dir/StickTiltXY.cpp.obj
+[805/1185] Building CXX object src/modules/flight_mode_manager/CMakeFiles/modules__flight_mode_manager.dir/FlightTasks_generated.cpp.obj
+[806/1185] Building CXX object src/modules/flight_mode_manager/tasks/Utility/CMakeFiles/FlightTaskUtility.dir/Gimbal.cpp.obj
+[807/1185] Building CXX object src/modules/flight_mode_manager/CMakeFiles/modules__flight_mode_manager.dir/FlightModeManager.cpp.obj
+[808/1185] Building CXX object src/modules/flight_mode_manager/tasks/Descend/CMakeFiles/FlightTaskDescend.dir/FlightTaskDescend.cpp.obj
+[809/1185] Building CXX object src/modules/flight_mode_manager/tasks/Failsafe/CMakeFiles/FlightTaskFailsafe.dir/FlightTaskFailsafe.cpp.obj
+[810/1185] Building CXX object src/modules/gimbal/CMakeFiles/drivers__gimbal.dir/input.cpp.obj
+[811/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF2Selector.cpp.obj
+[812/1185] Building CXX object src/modules/gimbal/CMakeFiles/drivers__gimbal.dir/input_rc.cpp.obj
+[813/1185] Building CXX object src/modules/gimbal/CMakeFiles/drivers__gimbal.dir/input_test.cpp.obj
+[814/1185] Building CXX object src/modules/flight_mode_manager/tasks/ManualAcceleration/CMakeFiles/FlightTaskManualAcceleration.dir/FlightTaskManualAcceleration.cpp.obj
+[815/1185] Building CXX object src/modules/flight_mode_manager/tasks/Utility/CMakeFiles/FlightTaskUtility.dir/StickAccelerationXY.cpp.obj
+[816/1185] Building CXX object src/modules/flight_mode_manager/tasks/ManualAltitudeSmoothVel/CMakeFiles/FlightTaskManualAltitudeSmoothVel.dir/FlightTaskManualAltitudeSmoothVel.cpp.obj
+[817/1185] Building CXX object src/modules/flight_mode_manager/tasks/ManualAltitude/CMakeFiles/FlightTaskManualAltitude.dir/FlightTaskManualAltitude.cpp.obj
+[818/1185] Building CXX object src/modules/flight_mode_manager/tasks/ManualPosition/CMakeFiles/FlightTaskManualPosition.dir/FlightTaskManualPosition.cpp.obj
+[819/1185] Building CXX object src/modules/flight_mode_manager/tasks/Transition/CMakeFiles/FlightTaskTransition.dir/FlightTaskTransition.cpp.obj
+[820/1185] Building CXX object src/modules/flight_mode_manager/tasks/ManualAccelerationSlow/CMakeFiles/FlightTaskManualAccelerationSlow.dir/FlightTaskManualAccelerationSlow.cpp.obj
+[821/1185] Building CXX object src/modules/gimbal/CMakeFiles/drivers__gimbal.dir/output_rc.cpp.obj
+[822/1185] Building CXX object src/modules/gimbal/CMakeFiles/drivers__gimbal.dir/input_mavlink.cpp.obj
+[823/1185] Building CXX object src/modules/flight_mode_manager/tasks/Auto/CMakeFiles/FlightTaskAuto.dir/FlightTaskAuto.cpp.obj
+[824/1185] Building CXX object src/modules/gimbal/CMakeFiles/drivers__gimbal.dir/output.cpp.obj
+[825/1185] Building CXX object src/modules/gimbal/CMakeFiles/drivers__gimbal.dir/output_mavlink.cpp.obj
+[826/1185] Building CXX object src/modules/gimbal/CMakeFiles/drivers__gimbal.dir/gimbal.cpp.obj
+[827/1185] Building CXX object src/modules/flight_mode_manager/tasks/AutoFollowTarget/follow_target_estimator/CMakeFiles/follow_target_estimator.dir/TargetEstimator.cpp.obj
+[828/1185] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/land_detector_main.cpp.obj
+[829/1185] Building CXX object src/modules/flight_mode_manager/tasks/AutoFollowTarget/CMakeFiles/FlightTaskAutoFollowTarget.dir/FlightTaskAutoFollowTarget.cpp.obj
+[830/1185] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/VtolLandDetector.cpp.obj
+[831/1185] Building CXX object src/modules/logger/CMakeFiles/modules__logger.dir/log_writer_file.cpp.obj
+[832/1185] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/FixedwingLandDetector.cpp.obj
+[833/1185] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/AirshipLandDetector.cpp.obj
+[834/1185] Building CXX object src/modules/logger/CMakeFiles/modules__logger.dir/watchdog.cpp.obj
+[835/1185] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/RoverLandDetector.cpp.obj
+[836/1185] Building CXX object src/modules/flight_mode_manager/tasks/Orbit/CMakeFiles/FlightTaskOrbit.dir/FlightTaskOrbit.cpp.obj
+[837/1185] Building CXX object src/modules/manual_control/CMakeFiles/modules__manual_control.dir/ManualControlSelector.cpp.obj
+[838/1185] Building C object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink.c.obj
+[839/1185] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/LandDetector.cpp.obj
+[840/1185] Building CXX object src/modules/land_detector/CMakeFiles/modules__land_detector.dir/MulticopterLandDetector.cpp.obj
+[841/1185] Building CXX object src/modules/logger/CMakeFiles/modules__logger.dir/log_writer.cpp.obj
+[842/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_command_sender.cpp.obj
+[843/1185] Building CXX object src/modules/gyro_calibration/CMakeFiles/modules__gyro_calibration.dir/GyroCalibration.cpp.obj
+[844/1185] Building CXX object src/modules/logger/CMakeFiles/modules__logger.dir/logged_topics.cpp.obj
+[845/1185] Building CXX object src/modules/load_mon/CMakeFiles/modules__load_mon.dir/LoadMon.cpp.obj
+[846/1185] Building CXX object src/modules/logger/CMakeFiles/modules__logger.dir/log_writer_mavlink.cpp.obj
+[847/1185] Building CXX object src/modules/logger/CMakeFiles/modules__logger.dir/util.cpp.obj
+[848/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_rate_limiter.cpp.obj
+[849/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_shell.cpp.obj
+[850/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_simple_analyzer.cpp.obj
+[851/1185] Building CXX object src/modules/hybrid_vehicle_control/CMakeFiles/modules__hybrid_vehicle_control.dir/hybrid_vehicle_control.cpp.obj
+[852/1185] Building CXX object src/modules/mag_bias_estimator/CMakeFiles/modules__mag_bias_estimator.dir/MagBiasEstimator.cpp.obj
+[853/1185] Building CXX object src/modules/manual_control/CMakeFiles/modules__manual_control.dir/ManualControl.cpp.obj
+[854/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/MavlinkStatustextHandler.cpp.obj
+[855/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/open_drone_id_translations.cpp.obj
+[856/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/tune_publisher.cpp.obj
+[857/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_events.cpp.obj
+[858/1185] Building CXX object src/modules/mc_att_control/AttitudeControl/CMakeFiles/AttitudeControl.dir/AttitudeControl.cpp.obj
+[859/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_log_handler.cpp.obj
+[860/1185] Building CXX object src/modules/mc_hover_thrust_estimator/CMakeFiles/zero_order_hover_thrust_ekf.dir/zero_order_hover_thrust_ekf.cpp.obj
+[861/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_ftp.cpp.obj
+[862/1185] Building CXX object src/modules/logger/CMakeFiles/modules__logger.dir/logger.cpp.obj
+[863/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_timesync.cpp.obj
+[864/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2_original.dir/EKF2.cpp.obj
+[865/1185] Building CXX object src/modules/mc_pos_control/PositionControl/CMakeFiles/PositionControl.dir/ControlMath.cpp.obj
+[866/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_parameters.cpp.obj
+[867/1185] Building CXX object src/modules/mc_pos_control/PositionControl/CMakeFiles/PositionControl.dir/PositionControl.cpp.obj
+[868/1185] Building CXX object src/modules/mc_pos_control/Takeoff/CMakeFiles/Takeoff.dir/Takeoff.cpp.obj
+[869/1185] Building CXX object src/modules/mc_pos_control/GotoControl/CMakeFiles/GotoControl.dir/GotoControl.cpp.obj
+[870/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_stream.cpp.obj
+[871/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_ulog.cpp.obj
+[872/1185] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/navigator_mode.cpp.obj
+[873/1185] Building CXX object src/modules/mc_att_control/CMakeFiles/modules__mc_att_control.dir/mc_att_control_main.cpp.obj
+[874/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_mission.cpp.obj
+[875/1185] Building CXX object src/modules/mc_hover_thrust_estimator/CMakeFiles/modules__mc_hover_thrust_estimator.dir/MulticopterHoverThrustEstimator.cpp.obj
+[876/1185] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/loiter.cpp.obj
+[877/1185] Building CXX object src/modules/mc_autotune_attitude_control/CMakeFiles/mc_autotune_attitude_control.dir/mc_autotune_attitude_control.cpp.obj
+[878/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_main.cpp.obj
+[879/1185] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/mission_block.cpp.obj
+[880/1185] Building CXX object src/modules/mc_rate_control/CMakeFiles/modules__mc_rate_control.dir/MulticopterRateControl.cpp.obj
+[881/1185] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/mission.cpp.obj
+[882/1185] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/mission_base.cpp.obj
+[883/1185] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/navigator_main.cpp.obj
+[884/1185] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/rtl.cpp.obj
+[885/1185] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/rtl_direct.cpp.obj
+[886/1185] Building CXX object src/modules/mc_pos_control/CMakeFiles/modules__mc_pos_control.dir/MulticopterPositionControl.cpp.obj
+[887/1185] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/rtl_mission_fast.cpp.obj
+[888/1185] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/takeoff.cpp.obj
+[889/1185] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/rtl_mission_fast_reverse.cpp.obj
+[890/1185] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/land.cpp.obj
+[891/1185] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/mission_feasibility_checker.cpp.obj
+[892/1185] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/rtl_direct_mission_land.cpp.obj
+[893/1185] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/precland.cpp.obj
+[894/1185] Building CXX object src/modules/navigator/GeofenceBreachAvoidance/CMakeFiles/geofence_breach_avoidance.dir/geofence_breach_avoidance.cpp.obj
+[895/1185] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/vtol_takeoff.cpp.obj
+[896/1185] Building CXX object src/modules/sensors/data_validator/CMakeFiles/data_validator.dir/DataValidator.cpp.obj
+[897/1185] Building CXX object src/modules/sensors/data_validator/CMakeFiles/data_validator.dir/DataValidatorGroup.cpp.obj
+[898/1185] Building CXX object src/modules/navigator/MissionFeasibility/CMakeFiles/mission_feasibility_checker.dir/FeasibilityChecker.cpp.obj
+[899/1185] Building CXX object src/modules/navigator/CMakeFiles/modules__navigator.dir/geofence.cpp.obj
+[900/1185] Building CXX object src/modules/rover_differential/DifferentialAttControl/CMakeFiles/DifferentialAttControl.dir/DifferentialAttControl.cpp.obj
+[901/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_receiver.cpp.obj
+[902/1185] Building CXX object src/modules/rover_differential/DifferentialRateControl/CMakeFiles/DifferentialRateControl.dir/DifferentialRateControl.cpp.obj
+[903/1185] Building CXX object src/modules/sensors/vehicle_gps_position/CMakeFiles/vehicle_gps_position.dir/gps_blending.cpp.obj
+[904/1185] Building CXX object src/modules/rover_differential/CMakeFiles/modules__rover_differential.dir/RoverDifferential.cpp.obj
+[905/1185] Building CXX object src/modules/rover_differential/DifferentialVelControl/CMakeFiles/DifferentialVelControl.dir/DifferentialVelControl.cpp.obj
+[906/1185] Building CXX object src/modules/rc_update/CMakeFiles/modules__rc_update.dir/rc_update.cpp.obj
+[907/1185] Building CXX object src/modules/temperature_compensation/CMakeFiles/modules__temperature_compensation.dir/TemperatureCompensation.cpp.obj
+[908/1185] Building CXX object src/modules/temperature_compensation/CMakeFiles/modules__temperature_compensation.dir/temperature_calibration/accel.cpp.obj
+[909/1185] Building CXX object src/modules/temperature_compensation/CMakeFiles/modules__temperature_compensation.dir/temperature_calibration/baro.cpp.obj
+[910/1185] Building CXX object src/modules/temperature_compensation/CMakeFiles/modules__temperature_compensation.dir/temperature_calibration/gyro.cpp.obj
+[911/1185] Building CXX object src/modules/rover_differential/DifferentialPosControl/CMakeFiles/DifferentialPosControl.dir/DifferentialPosControl.cpp.obj
+[912/1185] Building CXX object src/modules/temperature_compensation/CMakeFiles/modules__temperature_compensation.dir/temperature_calibration/mag.cpp.obj
+[913/1185] Building CXX object src/modules/sensors/vehicle_air_data/CMakeFiles/vehicle_air_data.dir/VehicleAirData.cpp.obj
+[914/1185] Building CXX object src/modules/rover_pos_control/CMakeFiles/modules__rover_pos_control.dir/RoverPositionControl.cpp.obj
+[915/1185] Building CXX object src/modules/sensors/CMakeFiles/modules__sensors.dir/voted_sensors_update.cpp.obj
+[916/1185] Building CXX object src/modules/uxrce_dds_client/CMakeFiles/modules__uxrce_dds_client.dir/srv_base.cpp.obj
+[917/1185] Building CXX object src/systemcmds/bsondump/CMakeFiles/systemcmds__bsondump.dir/bsondump.cpp.obj
+[918/1185] Building CXX object src/modules/sensors/CMakeFiles/modules__sensors.dir/sensors.cpp.obj
+[919/1185] Building CXX object src/modules/sensors/vehicle_gps_position/CMakeFiles/vehicle_gps_position.dir/VehicleGPSPosition.cpp.obj
+[920/1185] Building CXX object src/systemcmds/dmesg/CMakeFiles/systemcmds__dmesg.dir/dmesg.cpp.obj
+[921/1185] Building CXX object src/systemcmds/gpio/CMakeFiles/systemcmds__gpio.dir/gpio.cpp.obj
+[922/1185] Building CXX object src/systemcmds/i2cdetect/CMakeFiles/systemcmds__i2cdetect.dir/i2cdetect.cpp.obj
+[923/1185] Building CXX object src/modules/temperature_compensation/CMakeFiles/modules__temperature_compensation.dir/TemperatureCompensationModule.cpp.obj
+[924/1185] Building CXX object src/systemcmds/mft/CMakeFiles/systemcmds__mft.dir/mft.cpp.obj
+[925/1185] Building CXX object src/systemcmds/mtd/CMakeFiles/systemcmds__mtd.dir/mtd.cpp.obj
+[926/1185] Building CXX object src/systemcmds/netman/CMakeFiles/modules__netman.dir/netman.cpp.obj
+[927/1185] Building CXX object src/systemcmds/nshterm/CMakeFiles/systemcmds__nshterm.dir/nshterm.cpp.obj
+[928/1185] Building CXX object src/systemcmds/param/CMakeFiles/systemcmds__param.dir/param.cpp.obj
+[929/1185] Building CXX object src/systemcmds/perf/CMakeFiles/systemcmds__perf.dir/perf.cpp.obj
+[930/1185] Building CXX object src/systemcmds/reboot/CMakeFiles/systemcmds__reboot.dir/reboot.cpp.obj
+[931/1185] Building CXX object src/systemcmds/actuator_test/CMakeFiles/systemcmds__actuator_test.dir/actuator_test.cpp.obj
+[932/1185] Building CXX object src/systemcmds/system_time/CMakeFiles/systemcmds__system_time.dir/system_time.cpp.obj
+[933/1185] Building CXX object src/systemcmds/top/CMakeFiles/systemcmds__top.dir/top.cpp.obj
+[934/1185] Building CXX object src/modules/sensors/vehicle_acceleration/CMakeFiles/vehicle_acceleration.dir/VehicleAcceleration.cpp.obj
+[935/1185] Building CXX object src/systemcmds/led_control/CMakeFiles/systemcmds__led_control.dir/led_control.cpp.obj
+[936/1185] Building CXX object src/systemcmds/uorb/CMakeFiles/systemcmds__uorb.dir/uorb.cpp.obj
+[937/1185] Building CXX object src/systemcmds/work_queue/CMakeFiles/systemcmds__work_queue.dir/work_queue_main.cpp.obj
+[938/1185] Building C object boards/zeroone/x6/src/CMakeFiles/drivers_board.dir/can.c.obj
+[939/1185] Building CXX object boards/zeroone/x6/src/CMakeFiles/drivers_board.dir/i2c.cpp.obj
+[940/1185] Building C object boards/zeroone/x6/src/CMakeFiles/drivers_board.dir/init.c.obj
+[941/1185] Building C object boards/zeroone/x6/src/CMakeFiles/drivers_board.dir/led.c.obj
+[942/1185] Building CXX object boards/zeroone/x6/src/CMakeFiles/drivers_board.dir/mtd.cpp.obj
+[943/1185] Building C object boards/zeroone/x6/src/CMakeFiles/drivers_board.dir/sdio.c.obj
+[944/1185] Building CXX object src/modules/uxrce_dds_client/CMakeFiles/modules__uxrce_dds_client.dir/vehicle_command_srv.cpp.obj
+[945/1185] Building CXX object boards/zeroone/x6/src/CMakeFiles/drivers_board.dir/spi.cpp.obj
+[946/1185] Building CXX object boards/zeroone/x6/src/CMakeFiles/drivers_board.dir/timer_config.cpp.obj
+[947/1185] Building C object boards/zeroone/x6/src/CMakeFiles/drivers_board.dir/usb.c.obj
+[948/1185] Building CXX object src/modules/temperature_compensation/CMakeFiles/modules__temperature_compensation.dir/temperature_calibration/task.cpp.obj
+[949/1185] Building CXX object src/lib/events/CMakeFiles/events.dir/events.cpp.obj
+[950/1185] Building CXX object src/modules/sensors/vehicle_optical_flow/CMakeFiles/vehicle_optical_flow.dir/VehicleOpticalFlow.cpp.obj
+[951/1185] Building CXX object src/lib/parameters/CMakeFiles/parameters.dir/atomic_transaction.cpp.obj
+[952/1185] Building CXX object src/systemcmds/topic_listener/CMakeFiles/systemcmds__topic_listener.dir/listener_main.cpp.obj
+[953/1185] Building CXX object src/lib/parameters/CMakeFiles/parameters.dir/param_translation.cpp.obj
+[954/1185] Building C object src/lib/parameters/flashparams/CMakeFiles/flashparams.dir/flashfs32.c.obj
+[955/1185] Building CXX object src/systemcmds/tune_control/CMakeFiles/systemcmds__tune_control.dir/tune_control.cpp.obj
+[956/1185] Building CXX object src/systemcmds/ver/CMakeFiles/systemcmds__ver.dir/ver.cpp.obj
+[957/1185] Building CXX object src/systemcmds/i2c_launcher/CMakeFiles/systemcmds__i2c_launcher.dir/i2c_launcher.cpp.obj
+[958/1185] Building C object src/systemcmds/hardfault_log/CMakeFiles/systemcmds__hardfault_log.dir/hardfault_log.c.obj
+[959/1185] Building CXX object src/lib/parameters/CMakeFiles/parameters.dir/autosave.cpp.obj
+[960/1185] Building CXX object src/modules/sensors/vehicle_magnetometer/CMakeFiles/vehicle_magnetometer.dir/VehicleMagnetometer.cpp.obj
+[961/1185] Building CXX object src/lib/parameters/flashparams/CMakeFiles/flashparams.dir/flashparams.cpp.obj
+[962/1185] Linking CXX static library src/lib/parameters/flashparams/libflashparams.a
+[963/1185] Building CXX object src/modules/sensors/vehicle_imu/CMakeFiles/vehicle_imu.dir/VehicleIMU.cpp.obj
+[964/1185] Building CXX object src/modules/sensors/vehicle_angular_velocity/CMakeFiles/vehicle_angular_velocity.dir/VehicleAngularVelocity.cpp.obj
+[965/1185] Building CXX object src/lib/parameters/CMakeFiles/parameters.dir/parameters.cpp.obj
+[966/1185] Linking CXX static library src/lib/parameters/libparameters.a
+[967/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink_original.dir/mavlink_messages.cpp.obj
+[968/1185] Linking CXX static library platforms/nuttx/src/px4/stm/stm32h7/board_hw_info/libarch_board_hw_info.a
+[969/1185] Linking CXX static library boards/zeroone/x6/src/libdrivers_board.a
+[970/1185] Linking CXX static library platforms/common/px4_work_queue/libpx4_work_queue.a
+[971/1185] Linking CXX static library platforms/common/libpx4_platform.a
+[972/1185] Linking C static library platforms/nuttx/src/px4/stm/stm32h7/version/libarch_version.a
+[973/1185] Linking CXX static library platforms/nuttx/src/px4/stm/stm32h7/spi/libarch_spi.a
+[974/1185] Linking CXX static library platforms/nuttx/src/px4/stm/stm32h7/io_pins/libarch_io_pins.a
+[975/1185] Linking C static library platforms/nuttx/src/px4/stm/stm32h7/hrt/libarch_hrt.a
+[976/1185] Linking CXX static library platforms/nuttx/src/px4/stm/stm32h7/board_reset/libarch_board_reset.a
+[977/1185] Linking C static library platforms/nuttx/src/px4/stm/stm32h7/board_critmon/libarch_board_critmon.a
+[978/1185] Linking CXX static library platforms/nuttx/src/px4/stm/stm32h7/adc/libarch_adc.a
+[979/1185] Linking CXX static library platforms/nuttx/src/px4/common/libpx4_layer.a
+[980/1185] Linking CXX static library src/lib/drivers/led/libdrivers__led.a
+[981/1185] Linking CXX static library src/lib/drivers/device/libdrivers__device.a
+[982/1185] Linking CXX static library src/lib/cdev/libcdev.a
+[983/1185] Linking CXX static library src/lib/atmosphere/libatmosphere.a
+[984/1185] Linking CXX static library src/lib/drivers/rangefinder/libdrivers_rangefinder.a
+[985/1185] Linking CXX static library src/lib/adsb/libadsb.a
+[986/1185] Linking CXX static library src/lib/button/libbutton_publisher.a
+[987/1185] Linking CXX static library src/lib/circuit_breaker/libcircuit_breaker.a
+[988/1185] Linking CXX static library src/lib/conversion/libconversion.a
+[989/1185] Linking CXX static library src/lib/dataman_client/libdataman_client.a
+[990/1185] Linking CXX static library src/lib/hybrid_control/libhybrid_control.a
+[991/1185] Linking CXX static library src/lib/controllib/libcontrollib.a
+[992/1185] Linking C static library src/lib/heatshrink/libheatshrink.a
+[993/1185] Linking CXX static library src/lib/hx8_servo/libhx8_protocol.a
+[994/1185] Linking CXX static library src/lib/hx8_servo/libhx65_protocol.a
+[995/1185] Linking CXX static library src/lib/battery/libbattery.a
+[996/1185] Linking CXX static library src/lib/airspeed/libairspeed.a
+[997/1185] Linking CXX static library src/lib/l1/libl1.a
+[998/1185] Linking CXX static library src/lib/mathlib/libmathlib.a
+[999/1185] Linking CXX static library src/lib/hysteresis/libhysteresis.a
+[1000/1185] Linking CXX static library src/lib/drivers/magnetometer/libdrivers_magnetometer.a
+[1001/1185] Linking CXX static library src/lib/hx8_servo/libhx65_pair_controller.a
+[1002/1185] Linking CXX static library src/lib/motion_planning/libmotion_planning.a
+[1003/1185] Linking CXX static library src/lib/mixer_module/libmixer_module.a
+[1004/1185] Linking CXX static library src/lib/drivers/gyroscope/libdrivers_gyroscope.a
+[1005/1185] Linking CXX static library src/lib/led/libled.a
+[1006/1185] Linking CXX static library src/lib/pid/libPID.a
+[1007/1185] Linking CXX static library src/lib/drivers/accelerometer/libdrivers_accelerometer.a
+[1008/1185] Linking CXX static library src/lib/ringbuffer/libringbuffer.a
+[1009/1185] Linking CXX static library src/lib/collision_prevention/libCollisionPrevention.a
+[1010/1185] Linking CXX static library src/lib/hx8_servo/libhx8_controller.a
+[1011/1185] Linking CXX static library src/lib/pure_pursuit/libpure_pursuit.a
+[1012/1185] Linking CXX static library src/lib/control_allocation/control_allocation/libControlAllocation.a
+[1013/1185] Linking CXX static library src/lib/rtl/librtl_time_estimator.a
+[1014/1185] Linking CXX static library src/lib/sensor_calibration/libsensor_calibration.a
+[1015/1185] Linking CXX static library src/lib/stick_yaw/libStickYaw.a
+[1016/1185] Linking CXX static library src/lib/slew_rate/libSlewRate.a
+[1017/1185] Linking CXX static library src/lib/timesync/libtimesync.a
+[1018/1185] Linking CXX static library src/lib/control_allocation/actuator_effectiveness/libActuatorEffectiveness.a
+[1019/1185] Linking CXX static library src/lib/rate_control/libRateControl.a
+[1020/1185] Linking CXX static library src/lib/systemlib/libsystemlib.a
+[1021/1185] Linking CXX static library src/lib/rover_control/librover_control.a
+[1022/1185] Linking CXX static library src/lib/tunes/libtunes.a
+[1023/1185] Linking CXX static library src/lib/system_identification/libSystemIdentification.a
+[1024/1185] Linking C static library platforms/nuttx/src/px4/stm/stm32h7/dshot/libarch_dshot.a
+[1025/1185] Linking CXX static library platforms/common/uORB/libuORB.a
+[1026/1185] Linking CXX static library src/lib/weather_vane/libWeatherVane.a
+[1027/1185] Linking CXX static library platforms/nuttx/src/px4/stm/stm32h7/px4io_serial/libarch_px4io_serial.a
+[1028/1185] Linking CXX static library src/modules/commander/Arming/ArmAuthorization/libArmAuthorization.a
+[1029/1185] Linking CXX static library platforms/nuttx/src/px4/stm/stm32h7/tone_alarm/libarch_tone_alarm.a
+[1030/1185] Linking CXX static library src/drivers/osd/msp_osd/MessageDisplay/libmessage_display.a
+[1031/1185] Linking CXX static library src/drivers/uavcan/libuavcan_can_ownership.a
+[1032/1185] Linking CXX static library src/lib/variable_length_ringbuffer/libvariable_length_ringbuffer.a
+[1033/1185] Linking CXX static library src/modules/commander/MulticopterThrowLaunch/libMulticopterThrowLaunch.a
+[1034/1185] Linking CXX static library src/modules/commander/failsafe/libfailsafe.a
+[1035/1185] Linking CXX static library src/modules/commander/failure_detector/libfailure_detector.a
+[1036/1185] Linking CXX static library src/modules/flight_mode_manager/tasks/FlightTask/libFlightTask.a
+[1037/1185] Linking CXX static library src/modules/mc_att_control/AttitudeControl/libAttitudeControl.a
+[1038/1185] Linking CXX static library src/modules/mc_pos_control/GotoControl/libGotoControl.a
+[1039/1185] Linking CXX static library src/modules/control_allocator/VehicleActuatorEffectiveness/libVehicleActuatorEffectiveness.a
+[1040/1185] Linking CXX static library src/modules/flight_mode_manager/tasks/AutoFollowTarget/follow_target_estimator/libfollow_target_estimator.a
+[1041/1185] Linking CXX static library src/modules/mc_pos_control/PositionControl/libPositionControl.a
+[1042/1185] Linking CXX static library src/modules/mc_hover_thrust_estimator/libzero_order_hover_thrust_ekf.a
+[1043/1185] Linking CXX static library src/modules/navigator/GeofenceBreachAvoidance/libgeofence_breach_avoidance.a
+[1044/1185] Linking CXX static library src/modules/mc_pos_control/Takeoff/libTakeoff.a
+[1045/1185] Linking CXX static library src/modules/rover_differential/DifferentialRateControl/libDifferentialRateControl.a
+[1046/1185] Linking CXX static library src/modules/flight_mode_manager/tasks/Failsafe/libFlightTaskFailsafe.a
+[1047/1185] Linking CXX static library src/modules/commander/HealthAndArmingChecks/libhealth_and_arming_checks.a
+[1048/1185] Linking CXX static library src/modules/flight_mode_manager/tasks/Utility/libFlightTaskUtility.a
+[1049/1185] Linking CXX static library src/modules/rover_differential/DifferentialAttControl/libDifferentialAttControl.a
+[1050/1185] Linking CXX static library src/modules/rover_differential/DifferentialVelControl/libDifferentialVelControl.a
+[1051/1185] Linking CXX static library src/modules/sensors/data_validator/libdata_validator.a
+[1052/1185] Linking CXX static library src/modules/mavlink/libmodules__mavlink_original.a
+[1053/1185] Linking CXX static library src/modules/rover_differential/DifferentialPosControl/libDifferentialPosControl.a
+[1054/1185] Linking CXX static library src/modules/sensors/vehicle_imu/libvehicle_imu.a
+[1055/1185] Linking CXX static library src/modules/sensors/vehicle_acceleration/libvehicle_acceleration.a
+[1056/1185] Linking CXX static library src/modules/sensors/vehicle_optical_flow/libvehicle_optical_flow.a
+[1057/1185] Linking CXX static library src/modules/sensors/vehicle_angular_velocity/libvehicle_angular_velocity.a
+[1058/1185] Linking CXX static library src/lib/events/libevents.a
+[1059/1185] Linking CXX static library src/modules/sensors/vehicle_gps_position/libvehicle_gps_position.a
+[1060/1185] Linking CXX static library src/modules/flight_mode_manager/tasks/Auto/libFlightTaskAuto.a
+[1061/1185] Linking CXX static library src/modules/flight_mode_manager/tasks/Descend/libFlightTaskDescend.a
+[1062/1185] Linking CXX static library src/modules/flight_mode_manager/tasks/ManualAltitude/libFlightTaskManualAltitude.a
+[1063/1185] Linking CXX static library src/modules/flight_mode_manager/tasks/Transition/libFlightTaskTransition.a
+[1064/1185] Linking CXX static library src/modules/ekf2/libmodules__ekf2_original.a
+[1065/1185] Linking CXX static library src/modules/sensors/vehicle_air_data/libvehicle_air_data.a
+[1066/1185] Linking CXX static library src/modules/sensors/vehicle_magnetometer/libvehicle_magnetometer.a
+[1067/1185] Linking CXX static library src/drivers/actuators/hx8_uart_servo/libdrivers__actuators__hx8_uart_servo.a
+[1068/1185] Linking CXX static library src/drivers/adc/board_adc/libdrivers__board_adc.a
+[1069/1185] Linking CXX static library src/drivers/adc/ads1115/libdrivers__ads1115.a
+[1070/1185] Linking CXX static library src/drivers/differential_pressure/ms5525dso/libdrivers__differential_pressure__ms5525dso.a
+[1071/1185] Linking CXX static library src/drivers/differential_pressure/ms4525do/libdrivers__differential_pressure__ms4525do.a
+[1072/1185] Linking CXX static library src/drivers/cdcacm_autostart/libdrivers__cdcacm_autostart.a
+[1073/1185] Linking CXX static library src/drivers/distance_sensor/cm8jl65/libdrivers__cm8jl65.a
+[1074/1185] Linking CXX static library src/drivers/distance_sensor/lightware_laser_i2c/libdrivers__distance_sensor__lightware_laser_i2c.a
+[1075/1185] Linking CXX static library src/drivers/barometer/invensense/icp201xx/libdrivers__invensense__icp201xx.a
+[1076/1185] Linking CXX static library src/drivers/differential_pressure/sdp3x/libdrivers__differential_pressure__sdp3x.a
+[1077/1185] Linking CXX static library src/drivers/distance_sensor/lightware_laser_serial/libdrivers__distance_sensor__lightware_laser_serial.a
+[1078/1185] Linking CXX static library src/drivers/distance_sensor/tf02pro/libdrivers__distance_sensor__tf02pro.a
+[1079/1185] Linking CXX static library src/drivers/distance_sensor/ll40ls/libdrivers__ll40ls.a
+[1080/1185] Linking CXX static library src/drivers/distance_sensor/tfmini/libdrivers__tfmini.a
+[1081/1185] Linking CXX static library src/drivers/distance_sensor/vl53l1x/libdrivers__distance_sensor__vl53l1x.a
+[1082/1185] Linking CXX static library src/drivers/distance_sensor/teraranger/libdrivers__distance_sensor__teraranger.a
+[1083/1185] Linking CXX static library src/drivers/distance_sensor/ulanding_radar/libdrivers__distance_sensor__ulanding_radar.a
+[1084/1185] Linking CXX static library src/drivers/distance_sensor/vl53l0x/libdrivers__distance_sensor__vl53l0x.a
+[1085/1185] Linking CXX static library src/drivers/encoder_sensor/as5600/libdrivers__encoder_sensor__as5600.a
+[1086/1185] Linking CXX static library src/drivers/heater/libdrivers__heater.a
+[1087/1185] Linking CXX static library src/drivers/gps/libdrivers__gps.a
+[1088/1185] Linking CXX static library src/drivers/lights/rgbled/libdrivers__rgbled.a
+[1089/1185] Linking CXX static library src/drivers/dshot/libdrivers__dshot.a
+[1090/1185] Linking CXX static library src/drivers/ins/vectornav/libdrivers__ins__vectornav.a
+[1091/1185] Linking CXX static library src/drivers/lights/rgbled_is31fl3195/libdrivers__rgbled_is31fl3195.a
+[1092/1185] Linking CXX static library src/drivers/lights/rgbled_lp5562/libdrivers__rgbled_lp5562.a
+[1093/1185] Linking CXX static library src/drivers/magnetic_sensor/tmag5273/libdrivers__magnetic_sensor__tmag5273.a
+[1094/1185] Linking CXX static library src/drivers/imu/bosch/bmi088/libdrivers__imu__bosch__bmi088.a
+[1095/1185] Linking CXX static library src/drivers/imu/invensense/icm45686/libdrivers__imu__invensense__icm45686.a
+[1096/1185] Linking CXX static library src/drivers/lights/rgbled_ncp5623c/libdrivers__rgbled_ncp5623c.a
+[1097/1185] Linking CXX static library src/drivers/magnetometer/akm/ak09916/libdrivers__magnetometer__akm__ak09916.a
+[1098/1185] Linking CXX static library src/drivers/magnetometer/akm/ak8963/libdrivers__magnetometer__akm__ak8963.a
+[1099/1185] Linking CXX static library src/drivers/magnetometer/bosch/bmm150/libdrivers__magnetometer__bosch__bmm150.a
+[1100/1185] Linking CXX static library src/drivers/magnetometer/hmc5883/libdrivers__hmc5883.a
+[1101/1185] Linking CXX static library src/drivers/magnetometer/isentek/ist8308/libdrivers__magnetometer__isentek__ist8308.a
+[1102/1185] Linking CXX static library src/drivers/magnetometer/isentek/ist8310/libdrivers__magnetometer__isentek__ist8310.a
+[1103/1185] Linking CXX static library src/drivers/magnetometer/lis3mdl/libdrivers__magnetometer__lis3mdl.a
+[1104/1185] Linking CXX static library src/drivers/magnetometer/rm3100/libdrivers__rm3100.a
+[1105/1185] Linking CXX static library src/drivers/magnetometer/memsic/mmc5983ma/libdrivers__magnetometer__memsic__mmc5983ma.a
+[1106/1185] Linking CXX static library src/drivers/magnetometer/lsm303agr/libdrivers__magnetometer__lsm303agr.a
+[1107/1185] Linking CXX static library src/drivers/magnetometer/st/iis2mdc/libdrivers__magnetometer__st__iis2mdc.a
+[1108/1185] Linking CXX static library src/drivers/magnetometer/qmc5883l/libdrivers__magnetometer__qmc5883l.a
+[1109/1185] Linking CXX static library src/drivers/power_monitor/pm_selector_auterion/libdrivers__power_monitor_pm_selector_auterion.a
+[1110/1185] Linking CXX static library src/drivers/osd/msp_osd/libdrivers__osd__msp_osd.a
+[1111/1185] Linking CXX static library src/drivers/px4io/libdrivers__px4io.a
+[1112/1185] Linking CXX static library src/drivers/power_monitor/ina228/libdrivers__ina228.a
+[1113/1185] Linking CXX static library src/drivers/power_monitor/ina226/libdrivers__ina226.a
+[1114/1185] Linking CXX static library src/drivers/pwm_out/libdrivers__pwm_out.a
+[1115/1185] Linking CXX static library src/drivers/power_monitor/ina238/libdrivers__ina238.a
+[1116/1185] Linking CXX static library src/drivers/safety_button/libdrivers__safety_button.a
+[1117/1185] Linking CXX static library src/drivers/rc_input/libdrivers__rc_input.a
+[1118/1185] Linking CXX static library src/modules/battery_status/libmodules__battery_status.a
+[1119/1185] Linking CXX static library src/drivers/tone_alarm/libdrivers__tone_alarm.a
+[1120/1185] Linking CXX static library src/drivers/uavcan/m2006_can/libdrivers__m2006_can.a
+[1121/1185] Linking CXX static library src/modules/control_allocator/libmodules__control_allocator.a
+[1122/1185] Linking CXX static library src/modules/dataman/libmodules__dataman.a
+[1123/1185] Linking CXX static library src/modules/flight_mode_manager/tasks/ManualAltitudeSmoothVel/libFlightTaskManualAltitudeSmoothVel.a
+[1124/1185] Linking CXX static library src/modules/flight_mode_manager/tasks/ManualPosition/libFlightTaskManualPosition.a
+[1125/1185] Linking CXX static library src/modules/esc_battery/libmodules__esc_battery.a
+[1126/1185] Linking CXX static library src/modules/events/libmodules__events.a
+[1127/1185] Linking CXX static library src/modules/gyro_calibration/libmodules__gyro_calibration.a
+[1128/1185] Linking CXX static library src/modules/commander/libmodules__commander.a
+[1129/1185] Linking CXX static library src/modules/flight_mode_manager/tasks/AutoFollowTarget/libFlightTaskAutoFollowTarget.a
+[1130/1185] Linking CXX static library src/modules/hybrid_vehicle_control/libmodules__hybrid_vehicle_control.a
+[1131/1185] Linking CXX static library src/modules/gimbal/libdrivers__gimbal.a
+[1132/1185] Linking CXX static library src/modules/load_mon/libmodules__load_mon.a
+[1133/1185] Linking CXX static library src/modules/mag_bias_estimator/libmodules__mag_bias_estimator.a
+[1134/1185] Linking CXX static library src/modules/flight_mode_manager/tasks/ManualAcceleration/libFlightTaskManualAcceleration.a
+[1135/1185] Linking CXX static library src/modules/flight_mode_manager/tasks/Orbit/libFlightTaskOrbit.a
+[1136/1185] Linking CXX static library src/modules/logger/libmodules__logger.a
+[1137/1185] Linking CXX static library src/modules/land_detector/libmodules__land_detector.a
+[1138/1185] Linking CXX static library src/modules/mc_att_control/libmodules__mc_att_control.a
+[1139/1185] Linking CXX static library src/modules/mc_hover_thrust_estimator/libmodules__mc_hover_thrust_estimator.a
+[1140/1185] Linking CXX static library src/modules/manual_control/libmodules__manual_control.a
+[1141/1185] Linking CXX static library src/modules/mc_autotune_attitude_control/libmc_autotune_attitude_control.a
+[1142/1185] Linking CXX static library src/modules/mc_pos_control/libmodules__mc_pos_control.a
+[1143/1185] Linking CXX static library src/modules/flight_mode_manager/tasks/ManualAccelerationSlow/libFlightTaskManualAccelerationSlow.a
+[1144/1185] Linking CXX static library src/modules/navigator/MissionFeasibility/libmission_feasibility_checker.a
+[1145/1185] Linking CXX static library src/drivers/uavcan/libdrivers__uavcan.a
+[1146/1185] Linking CXX static library src/modules/mc_rate_control/libmodules__mc_rate_control.a
+[1147/1185] Linking CXX static library src/modules/rover_differential/libmodules__rover_differential.a
+[1148/1185] Linking CXX static library src/modules/rc_update/libmodules__rc_update.a
+[1149/1185] Linking CXX static library src/modules/rover_pos_control/libmodules__rover_pos_control.a
+[1150/1185] Linking CXX static library src/modules/temperature_compensation/libmodules__temperature_compensation.a
+[1151/1185] Linking CXX static library src/systemcmds/actuator_test/libsystemcmds__actuator_test.a
+[1152/1185] Linking CXX static library src/modules/sensors/libmodules__sensors.a
+[1153/1185] Linking CXX static library src/systemcmds/dmesg/libsystemcmds__dmesg.a
+[1154/1185] Linking CXX static library src/modules/flight_mode_manager/libmodules__flight_mode_manager.a
+[1155/1185] Linking CXX static library src/systemcmds/hardfault_log/libsystemcmds__hardfault_log.a
+[1156/1185] Linking CXX static library src/systemcmds/gpio/libsystemcmds__gpio.a
+[1157/1185] Linking CXX static library src/systemcmds/bsondump/libsystemcmds__bsondump.a
+[1158/1185] Linking CXX static library src/systemcmds/i2cdetect/libsystemcmds__i2cdetect.a
+[1159/1185] Linking CXX static library src/systemcmds/i2c_launcher/libsystemcmds__i2c_launcher.a
+[1160/1185] Linking CXX static library src/systemcmds/mtd/libsystemcmds__mtd.a
+[1161/1185] Linking CXX static library src/systemcmds/mft/libsystemcmds__mft.a
+[1162/1185] Linking CXX static library src/systemcmds/led_control/libsystemcmds__led_control.a
+[1163/1185] Linking CXX static library src/modules/navigator/libmodules__navigator.a
+[1164/1185] Linking CXX static library src/systemcmds/netman/libmodules__netman.a
+[1165/1185] Linking CXX static library src/systemcmds/nshterm/libsystemcmds__nshterm.a
+[1166/1185] Linking CXX static library src/systemcmds/param/libsystemcmds__param.a
+[1167/1185] Linking CXX static library src/systemcmds/perf/libsystemcmds__perf.a
+[1168/1185] Linking CXX static library src/systemcmds/reboot/libsystemcmds__reboot.a
+[1169/1185] Linking CXX static library src/systemcmds/top/libsystemcmds__top.a
+[1170/1185] Building C object platforms/nuttx/CMakeFiles/px4.dir/__/common/empty.c.obj
+[1171/1185] Linking CXX static library src/systemcmds/ver/libsystemcmds__ver.a
+[1172/1185] Linking CXX static library src/systemcmds/topic_listener/libsystemcmds__topic_listener.a
+[1173/1185] Linking CXX static library src/systemcmds/system_time/libsystemcmds__system_time.a
+[1174/1185] Linking CXX static library src/systemcmds/uorb/libsystemcmds__uorb.a
+[1175/1185] Linking CXX static library src/systemcmds/work_queue/libsystemcmds__work_queue.a
+[1176/1185] Linking CXX static library src/systemcmds/tune_control/libsystemcmds__tune_control.a
+[1177/1185] Building CXX object src/modules/uxrce_dds_client/CMakeFiles/modules__uxrce_dds_client.dir/uxrce_dds_client.cpp.obj
+[1178/1185] Linking CXX static library src/modules/uxrce_dds_client/libmodules__uxrce_dds_client.a
+[1179/1185] Building CXX object src/modules/mavlink/CMakeFiles/modules__mavlink.dir/modules__mavlink_unity.cpp.obj
+[1180/1185] Linking CXX static library src/modules/mavlink/libmodules__mavlink.a
+[1181/1185] Building CXX object src/modules/ekf2/CMakeFiles/modules__ekf2.dir/modules__ekf2_unity.cpp.obj
+[1182/1185] Linking CXX static library src/modules/ekf2/libmodules__ekf2.a
+[1183/1185] Linking CXX executable zeroone_x6_hybrid.elf
+Memory region         Used Size  Region Size  %age Used
+        ITCM_RAM:          0 GB        64 KB      0.00%
+           FLASH:     1879304 B      1920 KB     95.59%
+       DTCM1_RAM:          0 GB        64 KB      0.00%
+       DTCM2_RAM:          0 GB        64 KB      0.00%
+        AXI_SRAM:       99844 B       512 KB     19.04%
+           SRAM1:          0 GB       128 KB      0.00%
+           SRAM2:          0 GB       128 KB      0.00%
+           SRAM3:          0 GB        32 KB      0.00%
+           SRAM4:          2 KB        64 KB      3.12%
+          BKPRAM:          0 GB         4 KB      0.00%
+[1184/1185] Generating ../../zeroone_x6_hybrid.bin
+[1185/1185] Creating /home/crocodile/PX4-Autopilot-hx8-hx65hm/build/zeroone_x6_hybrid/zeroone_x6_hybrid.px4

@@ -45,7 +45,7 @@ The implementation is limited to `zeroone_x6_hybrid`. It does not adapt
     automatic-direction half-duplex TTL adapter;
   - no DIR/OE GPIO;
   - default flight-controller port: EXT2 (`/dev/ttyS3`);
-  - default link: 115200 baud, 8 data bits, no parity, 1 stop bit;
+  - default shared-bus link: 1 Mbps, 8 data bits, no parity, 1 stop bit;
   - no flight-controller-controlled servo power switch.
 - Board LEDs:
   - red, green, and blue GPIO channels exist;
@@ -236,7 +236,7 @@ state, external sensors, propulsion output, or LEDs.
 ### 8.2 Serial configuration
 
 - Standard PX4 port parameter: `HX8_SER_CFG`, default EXT2.
-- Baud parameter: `HX8_BAUD`, default 115200 and restricted to vendor-supported
+- Shared-bus baud parameter: `HX_BAUD`, default 1000000 and restricted to PX4's standard serial-rate enumeration
   values.
 - ID parameter: `HX8_ID`, default 0, range 0--254.
 - The conditional start wrapper checks the selected actuator backend before

@@ -33,6 +33,7 @@ static hybrid_vehicle_status_s makeHybridStatus(uint32_t sequence, uint8_t state
 	status.transition_sequence = sequence;
 	status.current_state = state;
 	status.target_state = target;
+	status.propulsion_ready = true;
 	return status;
 }
 
@@ -54,6 +55,14 @@ TEST(HybridTransitionMission, RejectsOppositeStableTarget)
 	EXPECT_FALSE(hybridTransitionMissionReached(7, hybrid_vehicle_status_s::TARGET_DRIVING,
 			makeHybridStatus(8, hybrid_vehicle_status_s::HYBRID_STATE_FLYING,
 					 hybrid_vehicle_status_s::TARGET_FLYING)));
+}
+
+TEST(HybridTransitionMission, RequiresReadyPropulsionOwner)
+{
+	hybrid_vehicle_status_s status = makeHybridStatus(7, hybrid_vehicle_status_s::HYBRID_STATE_DRIVING,
+					 hybrid_vehicle_status_s::TARGET_DRIVING);
+	status.propulsion_ready = false;
+	EXPECT_FALSE(hybridTransitionMissionReached(7, hybrid_vehicle_status_s::TARGET_DRIVING, status));
 }
 
 TEST(HybridTransitionMission, FaultNeverCompletesItem)

@@ -14,7 +14,7 @@
 - The only required firmware build is `make zeroone_x6_hybrid`; do not adapt or build `zeroone_x6_default`.
 - `HYB_ACT_TYPE=0` is reboot-required PWM compatibility mode; `1` is reboot-required HX8 mode. No runtime fallback.
 - PWM mode does not open EXT2. HX8 mode keeps M8 disabled.
-- HX8 uses EXT2 `/dev/ttyS3`, 115200 8N1 through an automatic-direction half-duplex TTL adapter. No `TIOCSSINGLEWIRE` and no DIR/OE GPIO.
+- HX8 uses EXT2 `/dev/ttyS3` through an automatic-direction half-duplex TTL adapter. The shared bus rate comes from `HX_BAUD` (1 Mbps by default), with 8N1 framing. No `TIOCSSINGLEWIRE` and no DIR/OE GPIO.
 - AS5600 and paired TMAG5273 are auto-selected in PWM sensor mode. Runtime loss faults; it never degrades to timing.
 - `HYB_SENS_EN=0` preserves PWM maximum-time completion. HX8 always requires fresh internal-angle feedback.
 - Healthy endpoints keep holding position. A PWM fault publishes NaN; M8 disarmed/failsafe raw values stay zero.
@@ -562,7 +562,7 @@ git commit -m "feat[hx8]: add protected request scheduler"
 - Create: `src/drivers/actuators/hx8_uart_servo/hx8_uart_servo_main.cpp`
 - Modify: `boards/zeroone/x6/hybrid.px4board`
 
-**Interfaces:** consume `hx8_servo_command`, `actuator_armed`, `vehicle_control_mode`; publish `hx8_servo_status` and critical events. Parameters: `HX8_SER_CFG` EXT2; `HX8_BAUD=115200`; `HX8_ID=0`; `HX8_ANG_QUD=0` and `HX8_ANG_ROV=0` (equal angles are invalid until calibrated); `HX8_MOVE_T=1000`, `HX8_ACC_T=100`, `HX8_DEC_T=100` ms; `HX8_PWR_LIM=0` (uncalibrated/invalid); expected config `HX8_CFG_SPWR/TEMP/PWR/CUR` default 0, `HX8_CFG_VMIN=9000`, `HX8_CFG_VMAX=12600`, `HX8_CFG_STL=1`, `HX8_CFG_RSP=1`, `HX8_CFG_BOOT=0`.
+**Interfaces:** consume `hx8_servo_command`, `actuator_armed`, `vehicle_control_mode`; publish `hx8_servo_status` and critical events. Parameters: `HX8_SER_CFG` EXT2; shared `HX_BAUD=1000000`; `HX8_ID=0`; `HX8_ANG_QUD=0` and `HX8_ANG_ROV=0` (equal angles are invalid until calibrated); `HX8_MOVE_T=1000`, `HX8_ACC_T=100`, `HX8_DEC_T=100` ms; `HX8_PWR_LIM=0` (uncalibrated/invalid); expected config `HX8_CFG_SPWR/TEMP/PWR/CUR` default 0, `HX8_CFG_VMIN=9000`, `HX8_CFG_VMAX=12600`, `HX8_CFG_STL=1`, `HX8_CFG_RSP=1`, `HX8_CFG_BOOT=0`.
 
 - [ ] **Step 1: Add build metadata and schema**
 
