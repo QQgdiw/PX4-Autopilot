@@ -362,3 +362,9 @@ This directory records the status of testing for `debug/testc1-v1.16.1`.
   4 and 2 as symbolic enums without changing message length or CRC. Clients
   must still tolerate future unknown raw enum values and must not use these
   fields as their sole motion gate.
+- `/fmu/out/hybrid_vehicle_status` is now a uXRCE-DDS publication of the full
+  internal `HybridVehicleStatus`, including shape, transformation sequence and
+  completion timestamp, sequence/actuator faults, propulsion owner/readiness,
+  and landing-gear state. The message schema and protected `px4_msgs` r1 tag
+  are unchanged. `/cmd_vel` Rover supervision can therefore be DDS-only;
+  MAVLink remains available for QGC and explicit command-50000/ACK workflows.

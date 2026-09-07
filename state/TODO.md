@@ -512,5 +512,11 @@
       `qgc-hybrid-rover-tuning-v1.16.1-r2` at `ec506d609e`.
 - [x] Update the PX4 MAVLink gitlink, rebuild `zeroone_x6_hybrid`, update and
       rebuild QGC, and refresh the companion protocol guide.
+- [x] Publish the complete `HybridVehicleStatus` as
+      `/fmu/out/hybrid_vehicle_status`, verify generated XRCE serialization,
+      rebuild the target, and update both companion contracts.
 - [ ] Run `colcon build` and end-to-end DDS/MAVLink tests in the actual
       companion ROS 2 environment.
+- [ ] On target hardware, measure `/fmu/out/hybrid_vehicle_status` frequency
+      and XRCE load, then verify DDS-only Quad/Transition/Rover/Fault gating,
+      epoch cache clearing and Offboard-loss behavior.

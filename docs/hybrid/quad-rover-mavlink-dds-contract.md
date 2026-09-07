@@ -208,6 +208,15 @@ The uXRCE-DDS input topics are:
 | `/fmu/in/offboard_control_mode` | `px4_msgs::msg::OffboardControlMode` |
 | `/fmu/in/rover_velocity_setpoint` | `px4_msgs::msg::RoverVelocitySetpoint` |
 
+The matching safety and state feedback topics are:
+
+| Topic | ROS 2 type |
+| --- | --- |
+| `/fmu/out/hybrid_vehicle_status` | `px4_msgs::msg::HybridVehicleStatus` |
+| `/fmu/out/vehicle_status` | `px4_msgs::msg::VehicleStatus` |
+| `/fmu/out/vehicle_control_mode` | `px4_msgs::msg::VehicleControlMode` |
+| `/fmu/out/timesync_status` | `px4_msgs::msg::TimesyncStatus` |
+
 Rover Offboard requires `OffboardControlMode.rover_velocity=true` and `RoverVelocitySetpoint`. `rover_velocity` must be the exact one enabled control
 bit: `position`, `velocity`, `acceleration`, `attitude`, `body_rate`,
 `thrust_and_torque`, and `direct_actuator` must all be false. Both the mode and
@@ -225,8 +234,12 @@ input off.
 `OffboardControlMode.rover_velocity` and `RoverVelocitySetpoint` are project
 extensions. Companion workspaces must regenerate/use `px4_msgs` from this exact
 firmware message set; an upstream or older `px4_msgs` package does not satisfy
-the type contract. `HybridVehicleStatus` is currently internal uORB/MAVLink
-status, not a `/fmu/out/hybrid_vehicle_status` DDS publication.
+the type contract. `/fmu/out/hybrid_vehicle_status` now exposes the complete
+internal status, including sequence, transition-completion epoch, propulsion
+ownership/readiness, fault, actuator-health, and landing-gear fields. A
+companion that only forwards `/cmd_vel` can therefore perform its Rover safety
+gate entirely over DDS; MAVLink remains required only if that process also
+issues Hybrid transition commands or consumes their ACK lifecycle.
 
 For a ROS REP-103 FLU `geometry_msgs/Twist` input, the required mapping is:
 

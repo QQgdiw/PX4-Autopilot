@@ -13,7 +13,7 @@ ROS 2/MAVLink 客户端的 Agent，同时保留足够的人类可读说明。
 | --- | --- |
 | PX4 仓库 | `https://github.com/QQgdiw/PX4-Autopilot.git` |
 | PX4 分支 | `feature/testc4-rover-tuning` |
-| 协议实现基准 PX4 commit | `c64fdd51957884077b30a35b4ad151a11617bbb6` |
+| 协议实现基准 PX4 commit | `fb1fb9bdeacf32e67a4cc168ed87373e6dcbcb7f` |
 | 固件目标 | `zeroone_x6_hybrid` |
 | MAVLink 版本 | MAVLink 2 |
 | MAVLink dialect | `hybrid_vehicle` |
@@ -45,30 +45,34 @@ MAVLink tag 由 GitHub ruleset `22434667`保护；`px4_msgs` tag 由 ruleset
 
 ## 2. 总体架构与职责边界
 
-机载电脑同时使用两条相互独立的通信路径：
+机载电脑的 Rover 控制与安全反馈可以统一使用 DDS；MAVLink 保留给 QGC、显式
+变形命令和可选实时调参：
 
 ```text
-MAVLink 2 Hybrid 客户端
+MAVLink 2 Hybrid 客户端（按需）
   <- HEARTBEAT(type=200)
   <- HYBRID_VEHICLE_STATUS(60000)
   <- COMMAND_ACK(command=50000)
   -> MAV_CMD_DO_HYBRID_TRANSITION(50000)
   -> 可选：MAV_CMD_SET_MESSAGE_INTERVAL(511)
 
-ROS 2 Hybrid Supervisor
-  -> 根据 MAVLink 形态、故障和命令生命周期决定是否允许 Rover Offboard
-  -> 形态变化或状态失效时清空缓存并执行停止策略
-
-uXRCE-DDS Rover Offboard Publisher
+ROS 2 Hybrid Supervisor / uXRCE-DDS Rover Offboard
+  <- /fmu/out/hybrid_vehicle_status
+  <- /fmu/out/vehicle_status
+  <- /fmu/out/vehicle_control_mode
+  <- /fmu/out/timesync_status
   -> /fmu/in/offboard_control_mode
   -> /fmu/in/rover_velocity_setpoint
-  <- /fmu/out/timesync_status
+  -> 根据 DDS 形态、推进许可、故障、epoch 和模式状态决定是否允许 Rover Offboard
+  -> 形态变化或状态失效时清空缓存并执行停止策略
 ```
 
 职责约束：
 
-- MAVLink 负责机型识别、形态/故障监控、显式变形命令、ACK 和可选调参数据。
-- DDS 只负责向 PX4 原生 Rover 控制器输入车体前向速度和偏航角速度。
+- DDS 负责 Rover 形态/故障/推进许可/epoch 反馈、PX4 模式状态，以及向原生
+  Rover 控制器输入车体前向速度和偏航角速度。
+- MAVLink 继续负责 QGC 状态、显式变形命令、ACK 和可选调参数据；只做
+  `/cmd_vel`转发的机载进程不必依赖 MAVLink。
 - PX4 是形态、epoch、解锁、模式、失控保护和最终执行器输出的唯一权威。
 - 机载端不得发布 `RoverThrottleSetpoint`、`RoverSteeringSetpoint`、直接执行器值
   或左右轮命令作为正常 `/cmd_vel` 路径。
@@ -206,9 +210,9 @@ Normal 和 Onboard MAVLink 模式默认以 1 Hz 发送 message 60000。MAVLink 1
 | 6 | 64 | landed |
 | 7 | 128 | land detection fresh |
 
-建议机载端以本地单调时钟记录每次接收时间，并将超过 3 秒未更新的 message
-60000 视为失效。MAVLink 状态失效时，即使 DDS 链路仍连接，也不得继续声明
-Rover Offboard 有效。
+使用 MAVLink 状态的客户端仍应以本地单调时钟记录接收时间，并将超过 3 秒未
+更新的 message 60000 视为失效。DDS-only Rover 控制不以 message 60000 作为
+许可输入，而应使用第 4、5 节规定的 `/fmu/out/hybrid_vehicle_status`新鲜度。
 
 ### 3.5 HX-65HM 枚举定义与兼容策略
 
@@ -286,11 +290,15 @@ commit:     e0f41fb57ed9217ba15730854f6c7c92b0262134
 | --- | --- | --- |
 | `/fmu/in/offboard_control_mode` | `px4_msgs::msg::OffboardControlMode` | 机载到 PX4 |
 | `/fmu/in/rover_velocity_setpoint` | `px4_msgs::msg::RoverVelocitySetpoint` | 机载到 PX4 |
+| `/fmu/out/hybrid_vehicle_status` | `px4_msgs::msg::HybridVehicleStatus` | PX4 到机载 |
+| `/fmu/out/vehicle_status` | `px4_msgs::msg::VehicleStatus` | PX4 到机载 |
+| `/fmu/out/vehicle_control_mode` | `px4_msgs::msg::VehicleControlMode` | PX4 到机载 |
 | `/fmu/out/timesync_status` | `px4_msgs::msg::TimesyncStatus` | PX4 到机载 |
 
-`HybridVehicleStatus`虽然存在于 `px4_msgs`完整消息包中，但当前没有登记为
-`/fmu/out/hybrid_vehicle_status`。仅存在 ROS 类型不代表 PX4 会通过 DDS 发布该
-topic；形态状态仍必须走 MAVLink message 60000。
+`/fmu/out/hybrid_vehicle_status`直接桥接 PX4 内部同名 uORB，包含完整的形态、
+故障、transition sequence/完成时间、推进所有者/许可和起落架状态。当前生产者
+以 20 ms 周期运行并发布状态，因此 DDS 更新率最高约为 50 Hz；机载实测时必须
+记录实际频率和 XRCE 链路负载。
 
 ### 4.3 OffboardControlMode exact-one-bit
 
@@ -367,41 +375,46 @@ stream；模式切换成功与否必须通过 PX4 状态确认，不能以“DDS
 
 | 状态 | 进入条件 | Rover 输出许可 |
 | --- | --- | --- |
-| `WAIT_LINK` | 未识别 type 200、MAVLink2/status 或 DDS 未就绪 | 禁止 |
+| `WAIT_LINK` | Hybrid/Vehicle/ControlMode/Timesync DDS 状态未就绪或过期 | 禁止 |
 | `QUAD` | 新鲜、无故障、可确认的 Quad 状态 | 禁止 |
-| `TRANSITION` | 本机活动请求、ACK/status `IN_PROGRESS`、状态 1 或目标不稳定 | 禁止 |
-| `ROVER_READY` | 新鲜、无故障、稳定 Rover，且没有活动变形生命周期 | 等待新的 `/cmd_vel` |
+| `TRANSITION` | sequence 非稳定态、形态变化、目标不稳定或可选 MAVLink ACK 为 `IN_PROGRESS` | 禁止 |
+| `ROVER_READY` | 新鲜、无故障、稳定 Rover，且 Rover propulsion ready | 等待新的 `/cmd_vel` |
 | `ROVER_ACTIVE` | `ROVER_READY`后收到新命令，DDS/时间戳持续有效且 PX4 接受 Offboard | 允许 |
-| `FAULT` | 状态 3/4、非零故障、MAVLink 状态过期或协议关联失败 | 禁止 |
+| `FAULT` | 状态 3/4、任一故障、执行器异常或 Hybrid DDS 状态过期 | 禁止 |
 
 进入 `ROVER_READY`不得立即重放缓存。每次以下事件发生时必须清空 `/cmd_vel`
 缓存和 DDS 控制 epoch：
 
-- 启动或 MAVLink 重连；
+- 启动、PX4 重启或 DDS 重连；
 - 收到新的变形 sequence；
+- `transition_completed_timestamp`变化；
 - 离开稳定 Rover；
-- command 50000 进入 `IN_PROGRESS`或失败；
+- sequence 离开 `SEQUENCE_STABLE_ROVER`，或可选 command 50000 进入
+  `IN_PROGRESS`/失败；
 - 状态未知、故障或过期；
 - Offboard/DDS 时间戳失效。
 
 恢复 Rover 输出需要全部满足：
 
-1. MAVLink 2 状态新鲜且无故障；
-2. 确认稳定 Rover 且没有活动 command 50000 生命周期；
-3. 观察到该稳定状态之后收到严格更新的 `/cmd_vel`；
-4. 在该观察之后生成新的 DDS 时间戳；
-5. PX4 的模式、解锁和普通 Offboard 检查通过。
+1. Hybrid、Vehicle、ControlMode 和 Timesync DDS 状态新鲜；
+2. `current_state=DRIVING`、`sequence_state=SEQUENCE_STABLE_ROVER`、
+   `propulsion_owner=PROPULSION_ROVER`且`propulsion_ready=true`；
+3. `fault_reason`、`sequence_fault`和执行器保护均为零，执行器在线、健康且配置
+   已验证；
+4. 观察到新的 `transition_completed_timestamp`后收到严格更新的 `/cmd_vel`；
+5. 在该观察之后生成新的 PX4 时间域 DDS 时间戳；
+6. `VehicleStatus`和`VehicleControlMode`共同确认 PX4 已解锁并进入 Offboard。
 
-PX4 内部还会使用 `transition_completed_timestamp`执行最终 epoch 门控。该字段
-当前不在 message 60000 中，外部机载端无法直接比较，所以必须执行上述“观察
-稳定状态后清缓存并等待新命令”的规则。
+PX4 内部仍会使用 `transition_completed_timestamp`执行最终 epoch 门控。DDS
+现在公开同一字段，机载端应重复执行上游缓存隔离；外部检查不能替代 PX4 内部
+门控。
 
 ## 6. 停止与故障处理
 
 | 事件 | 必须动作 |
 | --- | --- |
 | `/cmd_vel`超时或非有限 | 停止声明有效 Rover 控制，触发配置的 PX4 Offboard-loss 行为 |
-| MAVLink status 过期 | 立即退出 `ROVER_ACTIVE`，不得因 DDS 仍在线继续运动 |
+| Hybrid DDS status 过期 | 立即退出 `ROVER_ACTIVE`，停止声明有效 Rover 控制 |
 | 变形开始或收到 `IN_PROGRESS` | 清缓存并停止 Rover Offboard |
 | `FAULT`或非零 `fault_reason` | 停止输出，报告故障，不自动 clear fault |
 | DDS endpoint 丢失 | 停止控制并等待重新建立完整状态机 |
@@ -415,12 +428,13 @@ Rover Offboard，让 PX4 的 `COM_OF_LOSS_T`和失控动作接管。不得在变
 
 ## 7. 建议启动流程
 
-1. 启动 MAVLink 2 客户端，确认 `HEARTBEAT.type=200`。
-2. 加载固定 `hybrid_vehicle` dialect，等待新鲜 message 60000。
-3. 启动 uXRCE-DDS/ROS 2，并确认三个所需 endpoint 匹配。
-4. 验证时间同步和本地单调时钟监控。
+1. 启动 uXRCE-DDS/ROS 2，并确认第 4.2 节六个 endpoint 匹配。
+2. 等待新鲜的 Hybrid、Vehicle、ControlMode 和 Timesync 状态。
+3. 验证当前为 type 200、时间同步有效，并初始化本地单调时钟超时监控。
+4. 若机载端还负责变形，再启动固定 r2 dialect 的 MAVLink 2 客户端；否则该步骤
+   可以省略。
 5. 初始化为 `WAIT_LINK`，清空所有 `/cmd_vel`和变形请求缓存。
-6. 根据 MAVLink 状态进入 `QUAD`、`ROVER_READY`或 `FAULT`。
+6. 根据 DDS Hybrid 状态进入 `QUAD`、`ROVER_READY`或 `FAULT`。
 7. 只有 `ROVER_READY`之后的新命令才能建立至少 20 Hz exact-one-bit stream。
 8. 请求 Offboard/解锁后，通过 PX4 状态确认结果；失败不得直接驱动执行器补偿。
 
@@ -431,13 +445,15 @@ Rover Offboard，让 PX4 的 `COM_OF_LOSS_T`和失控动作接管。不得在变
 1. 四组 FLU 到 FRD/NED 的速度和偏航符号映射。
 2. exact-one-bit：每个错误 bit、mixed bits 和全 false 都被拒绝。
 3. NaN、Inf、零时间戳、未来时间戳、超时输入全部失效。
-4. Quad、Transition、Unknown、Fault 和过期 MAVLink 状态禁止 Rover 输出。
+4. Quad、Transition、Unknown、Fault 和过期 Hybrid DDS 状态禁止 Rover 输出。
 5. 变形前缓存和变形期间输入不能在稳定 Rover 后自动重放。
 6. 稳定 Rover 后第一条新命令可以进入正常发布。
-7. command 50000 的进度、重复请求、终态成功、已稳定、拒绝、失败和相反目标。
+7. 如果机载端实现变形命令：覆盖 command 50000 的进度、重复请求、终态成功、
+   已稳定、拒绝、失败和相反目标。
 8. HX65 的 `4/2` 能解析为 r2 符号，未来未知 raw enum 也不导致整条 message
    60000 被丢弃。
-9. `/cmd_vel`丢失、DDS 断开、MAVLink 断开和时间同步异常均进入停止策略。
+9. `/cmd_vel`丢失、DDS 断开和时间同步异常均进入停止策略；使用 MAVLink 命令时
+   还必须覆盖其断链。
 10. 代码中不存在 `/cmd_vel -> throttle/steering/wheel/direct actuator`旁路。
 
 ## 9. 实机验收证据
@@ -459,14 +475,13 @@ HX 执行器故障路径。
 
 ## 10. 当前已知协议限制
 
-1. `HybridVehicleStatus`及其 sequence/gear 详细字段不是 DDS 输出 topic。
-2. message 60000 尚未传输内部 `sequence_state`、`propulsion_owner/ready`和逐项
+1. message 60000 尚未传输内部 `sequence_state`、`propulsion_owner/ready`和逐项
    起落架状态。
-3. MAVLink r2 只补充 HX65 sensor/backend 符号枚举，没有新增逐舵机、gear 或
+2. MAVLink r2 只补充 HX65 sensor/backend 符号枚举，没有新增逐舵机、gear 或
    sequence 线上字段。
-4. `px4_msgs`仓库已完成消息同一性检查，但尚未在本 WSL 环境完成 ROS 2
+3. `px4_msgs`仓库已完成消息同一性检查，但尚未在本 WSL 环境完成 ROS 2
    `colcon build`；该测试必须在机载 ROS 工作区执行。
-5. 软件构建和单元测试不等于 QGC、ROS 2、无线链路和实机互操作验收。
+4. 软件构建和单元测试不等于 QGC、ROS 2、无线链路和实机互操作验收。
 
 ## 11. 源码与补充文档
 

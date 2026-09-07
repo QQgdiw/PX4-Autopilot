@@ -1549,3 +1549,25 @@
   UI behavior changed. ROS 2 `px4_msgs` r1 remains compatible because the PX4
   uORB schema did not change; companion binding generation and on-aircraft
   interoperability still require acceptance in the actual ROS 2 environment.
+
+## 2026-09-07 HybridVehicleStatus DDS publication
+
+- Firmware commit `fb1fb9bdeacf32e67a4cc168ed87373e6dcbcb7f` contains the
+  publication-map change.
+- Added `/fmu/out/hybrid_vehicle_status` to the uXRCE-DDS publications using
+  the existing `px4_msgs::msg::HybridVehicleStatus`; no `.msg`, MAVLink XML,
+  QGC, controller, or `px4_msgs` release change was required.
+- A standalone run of `generate_dds_topics.py` generated the uORB includes,
+  maximum-size assertion, DDS type name, exact topic name, message version,
+  serialized size and `ucdr_serialize_hybrid_vehicle_status` callback. The
+  target build generated the same table in its build directory.
+- `make zeroone_x6_hybrid` passed. The publication increased FLASH from
+  1,911,928 to 1,912,768 bytes (97.29% of 1,920 KiB); AXI SRAM remains 99,844
+  bytes. The pre-commit `.px4` is 1,794,376 bytes with SHA-256
+  `86b2a2cf54bc9f76a35417585a6720417266d85eab5671be7751e7124158c710`;
+  the `.bin` SHA-256 is
+  `d76915675ac5dd4896bdc4da076c98faf44389ec4d1476dc5f4b0e79b7201efa`.
+- `hybrid_vehicle_control` schedules at 20 ms and publishes status each cycle,
+  so the new DDS topic can update at approximately 50 Hz. Actual XRCE rate,
+  link load, ROS 2 `colcon build`, endpoint discovery and DDS-only safety
+  behavior remain physical companion/target acceptance items.
