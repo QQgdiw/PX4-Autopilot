@@ -497,3 +497,18 @@
       target branch without force, and verify final refs/status.
 - [ ] Perform powered shared-UART, three-servo, landing-gear sequence, fault,
       QGC command/ACK and Rover tuning-stream acceptance tests.
+
+## 2026-09-07 companion protocol release
+
+- [x] Rewrite the companion-computer Hybrid MAVLink/uXRCE-DDS contract in
+      Simplified Chinese with version pins, state machine, exact-one-bit
+      Offboard mapping, HX coordination semantics and acceptance tests.
+- [x] Create public fork `QQgdiw/px4_msgs`, synchronize the complete flattened
+      message/service set from PX4 `7c4fb9e638`, and verify 236/236 messages and
+      1/1 service match byte-for-byte.
+- [x] Publish `px4_msgs` branch `hybrid-rover-v1.16.1` and protected annotated
+      tag `hybrid-rover-v1.16.1-r1` at peeled commit `e0f41fb57e`.
+- [x] Record the current MAVLink HX65 enum compatibility gap: raw values remain
+      wire-readable, but symbolic XML entries require a future MAVLink release.
+- [ ] Run `colcon build` and end-to-end DDS/MAVLink tests in the actual
+      companion ROS 2 environment.

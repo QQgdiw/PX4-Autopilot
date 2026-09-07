@@ -1,5 +1,12 @@
 # Independent Quad/Rover integration contract
 
+> **Current companion implementation:** use
+> `docs/hybrid/ros2-companion-quad-rover-agent-guide.zh-CN.md`. That document
+> pins the current MAVLink and `px4_msgs` releases and describes the
+> HX8/HX-65HM coordinated sequence. The core message-50000/message-60000
+> definitions below remain useful, but pre-HX landed/transition wording must
+> not override the current companion guide.
+
 This document is the external integration contract for the `zeroone_x6_hybrid`
 target. It describes the interfaces implemented by this firmware revision; it
 does not turn the vehicle into a MAVLink VTOL and it does not replace normal PX4

@@ -347,3 +347,18 @@ This directory records the status of testing for `debug/testc1-v1.16.1`.
   (`.bin`); SHA-256 values are
   `080f4c1095c7935068236a4a91608f8bf21f0ea51eadee9981d9e768a7fb91da`
   and `528d8419e6da2ab178a85cc77d60bd8f36e2e46d2bc6d9bfe3f984f1b500f044`.
+- The normative companion implementation guide is
+  `docs/hybrid/ros2-companion-quad-rover-agent-guide.zh-CN.md`. It pins Hybrid
+  MAVLink tag `qgc-hybrid-rover-tuning-v1.16.1-r1` (`21922689c6`) and the
+  matching ROS 2 message tag `QQgdiw/px4_msgs:hybrid-rover-v1.16.1-r1`
+  (`e0f41fb57e`).
+- `QQgdiw/px4_msgs` branch `hybrid-rover-v1.16.1` is a complete flattened sync
+  of 236 PX4 messages and one service from firmware `7c4fb9e638`. GitHub
+  ruleset `22433564` protects the exact release tag from deletion and
+  non-fast-forward update. ROS 2/`colcon` is absent from this WSL environment,
+  so the companion workspace must still perform the actual ROS build.
+- Current MAVLink message 60000 transports `sensor_source` and
+  `actuator_backend` as raw `uint8_t`; firmware HX65 values 4 and 2 therefore
+  remain wire-readable, but the pinned XML does not yet provide symbolic HX65
+  enum entries. Clients must tolerate unknown raw enum values and must not use
+  those fields as their sole motion gate.

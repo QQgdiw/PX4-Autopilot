@@ -1491,3 +1491,26 @@
   Zenoh). The fast-forward summary exposed them before any remote push. They
   were restored exactly to the target baseline pins in a follow-up commit;
   MAVLink was never among those changes and remains at `21922689c6`.
+
+## 2026-09-07 companion protocol and px4_msgs release
+
+- Located the previous detailed companion guide in the old change1 worktree.
+  It was an untracked file and still pinned obsolete PX4/MAVLink baselines, so
+  it was not copied verbatim. A new Simplified-Chinese normative guide was
+  written on the tested target branch and the older contract now points to it.
+- `QQgdiw/px4_msgs` did not exist. A public fork of `PX4/px4_msgs` was created
+  from upstream `release/1.16` commit `392e831c1f659429ca83902e66820d7094591410`.
+  Its message tree was fully replaced using the upstream documented manual
+  synchronization procedure and PX4 source commit `7c4fb9e638`.
+- Verification found 236 expected/actual messages and one expected/actual
+  service, all byte-identical; all referenced message types resolve and
+  `git diff --check` passes. ROS 2 and `colcon` are not installed here, so an
+  actual ROS interface build remains explicitly untested.
+- Message commit `e0f41fb57ed9217ba15730854f6c7c92b0262134` is pinned by annotated
+  tag `hybrid-rover-v1.16.1-r1` in `QQgdiw/px4_msgs`. Active GitHub ruleset
+  `22433564` prohibits deletion and non-fast-forward changes to that exact tag.
+- Auditing the post-HX merge found a formal MAVLink enum gap: uORB defines
+  `SENSOR_HX65=4` and `ACTUATOR_HX65=2`, while the pinned XML still ends at
+  HX8. The fields are `uint8_t`, so wire decoding remains intact; generated
+  clients must temporarily preserve unknown raw values. Adding enum symbols is
+  a future additive MAVLink XML/tag update, not a controller-code change.
