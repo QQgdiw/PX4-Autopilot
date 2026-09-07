@@ -274,10 +274,10 @@ This directory records the status of testing for `debug/testc1-v1.16.1`.
   rebuild and 166/166 test run both pass.
 - Rover realtime tuning is integrated on the independent
   `feature/testc4-rover-tuning` worktree. The PX4 MAVLink gitlink is
-  `21922689c6fb113884df0f66582d8e602286fdc1`; its published branch is
-  `feature/hybrid-rover-tuning-v1.16.1` and its annotated composite tag is
-  `qgc-hybrid-rover-tuning-v1.16.1-r1`.
-- GitHub ruleset `22006870` actively protects that new tag from deletion and
+  `ec506d609e775035b7c8ed37f09ef05774409281`; its published branch is
+  `feature/hybrid-rover-tuning-hx65-v1.16.1` and its annotated composite tag is
+  `qgc-hybrid-rover-tuning-v1.16.1-r2`.
+- GitHub ruleset `22434667` actively protects that current tag from deletion and
   non-fast-forward updates; this was verified through the repository ruleset
   API after publication.
 - The combined `hybrid_vehicle`/`qgc_hybrid` protocol retains command 50000 and
@@ -329,11 +329,11 @@ This directory records the status of testing for `debug/testc1-v1.16.1`.
   servos. `HX_BAUD` is the sole shared-bus baud parameter and defaults to
   1,000,000; `LG_AUTO_EN=0` disables automatic gear-position sequencing but
   does not remove HX8 online/configuration/protection safety gating.
-- The merge preserves the testc4 independent Hybrid protocol and Rover tuning
-  implementation. The MAVLink submodule remains at combined protocol commit
-  `21922689c6fb113884df0f66582d8e602286fdc1`; command 50000/message 60000 and
-  messages 60100--60103 are unchanged. No MAVLink stream-rate or
-  `dds_topics.yaml` change is part of the HX merge.
+- The HX semantic merge preserved the testc4 independent Hybrid protocol and
+  Rover tuning implementation. A later protocol-only update advances the
+  MAVLink submodule to `ec506d609e775035b7c8ed37f09ef05774409281` solely to
+  add HX65 sensor/backend enum symbols; command 50000/message 60000, messages
+  60100--60103, stream rates and `dds_topics.yaml` remain unchanged.
 - Internal uORB is extended with `Hx65ServoCommand`, `Hx65ServoStatus`, HX8
   gear move/hold command types, and Hybrid sequence/propulsion/gear status
   fields. These additions are not exposed to QGC or `/fmu/out` DDS by this
@@ -349,7 +349,7 @@ This directory records the status of testing for `debug/testc1-v1.16.1`.
   and `528d8419e6da2ab178a85cc77d60bd8f36e2e46d2bc6d9bfe3f984f1b500f044`.
 - The normative companion implementation guide is
   `docs/hybrid/ros2-companion-quad-rover-agent-guide.zh-CN.md`. It pins Hybrid
-  MAVLink tag `qgc-hybrid-rover-tuning-v1.16.1-r1` (`21922689c6`) and the
+  MAVLink tag `qgc-hybrid-rover-tuning-v1.16.1-r2` (`ec506d609e`) and the
   matching ROS 2 message tag `QQgdiw/px4_msgs:hybrid-rover-v1.16.1-r1`
   (`e0f41fb57e`).
 - `QQgdiw/px4_msgs` branch `hybrid-rover-v1.16.1` is a complete flattened sync
@@ -358,7 +358,7 @@ This directory records the status of testing for `debug/testc1-v1.16.1`.
   non-fast-forward update. ROS 2/`colcon` is absent from this WSL environment,
   so the companion workspace must still perform the actual ROS build.
 - Current MAVLink message 60000 transports `sensor_source` and
-  `actuator_backend` as raw `uint8_t`; firmware HX65 values 4 and 2 therefore
-  remain wire-readable, but the pinned XML does not yet provide symbolic HX65
-  enum entries. Clients must tolerate unknown raw enum values and must not use
-  those fields as their sole motion gate.
+  `actuator_backend` as `uint8_t`; MAVLink r2 now declares firmware HX65 values
+  4 and 2 as symbolic enums without changing message length or CRC. Clients
+  must still tolerate future unknown raw enum values and must not use these
+  fields as their sole motion gate.

@@ -508,7 +508,9 @@
       1/1 service match byte-for-byte.
 - [x] Publish `px4_msgs` branch `hybrid-rover-v1.16.1` and protected annotated
       tag `hybrid-rover-v1.16.1-r1` at peeled commit `e0f41fb57e`.
-- [x] Record the current MAVLink HX65 enum compatibility gap: raw values remain
-      wire-readable, but symbolic XML entries require a future MAVLink release.
+- [x] Close the MAVLink HX65 enum compatibility gap with protected r2 tag
+      `qgc-hybrid-rover-tuning-v1.16.1-r2` at `ec506d609e`.
+- [x] Update the PX4 MAVLink gitlink, rebuild `zeroone_x6_hybrid`, update and
+      rebuild QGC, and refresh the companion protocol guide.
 - [ ] Run `colcon build` and end-to-end DDS/MAVLink tests in the actual
       companion ROS 2 environment.

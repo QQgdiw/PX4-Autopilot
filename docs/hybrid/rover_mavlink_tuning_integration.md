@@ -5,11 +5,13 @@
 ## 1. 协议版本
 
 - PX4 MAVLink dialect：`hybrid_vehicle`
-- MAVLink 仓库分支：`feature/hybrid-rover-tuning-v1.16.1`
-- MAVLink commit：`21922689c6fb113884df0f66582d8e602286fdc1`
-- 组合协议标签：`qgc-hybrid-rover-tuning-v1.16.1-r1`
+- MAVLink 仓库分支：`feature/hybrid-rover-tuning-hx65-v1.16.1`
+- MAVLink commit：`ec506d609e775035b7c8ed37f09ef05774409281`
+- 组合协议标签：`qgc-hybrid-rover-tuning-v1.16.1-r2`
 
 `hybrid_vehicle.xml` 引入独立的 `rover_tuning.xml`。因此 PX4 的 `hybrid_vehicle` 与 QGC 的 `qgc_hybrid` composite 同时包含原有 command 50000、message 60000 和四条 Rover 调参消息；`qgc_hybrid` 继续排除会与 message 60000 冲突的 Storm32 dialect。
+
+r2 在 r1 基础上只新增 HX65 sensor/backend 符号枚举；下表消息的 ID、Payload LEN 和 CRC Extra 均未改变。
 
 | 消息 | ID | Payload LEN | CRC Extra | 内容 |
 |---|---:|---:|---:|---|

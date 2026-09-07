@@ -1514,3 +1514,38 @@
   HX8. The fields are `uint8_t`, so wire decoding remains intact; generated
   clients must temporarily preserve unknown raw values. Adding enum symbols is
   a future additive MAVLink XML/tag update, not a controller-code change.
+
+## 2026-09-07 HX65 MAVLink enum completion
+
+- Added only `HYBRID_VEHICLE_SENSOR_HX65=4` and
+  `HYBRID_VEHICLE_ACTUATOR_HX65=2` to the combined MAVLink XML. Fresh C and
+  Python generation passed for `hybrid_vehicle`; fresh C generation passed for
+  `qgc_hybrid`. The generated message-60000 header is byte-identical to r1, so
+  its LEN 37 and CRC Extra 57 are unchanged; command 50000 and messages
+  60100--60103 remain present, and QGC still has exactly one message-60000
+  definition.
+- Published QQgdiw/mavlink branch
+  `feature/hybrid-rover-tuning-hx65-v1.16.1` at
+  `ec506d609e775035b7c8ed37f09ef05774409281` and annotated tag
+  `qgc-hybrid-rover-tuning-v1.16.1-r2`. Active ruleset `22434667` protects the
+  exact tag from deletion and non-fast-forward updates; r1 was not moved.
+- PX4 commit `c64fdd51957884077b30a35b4ad151a11617bbb6` pins the r2 gitlink.
+  `make zeroone_x6_hybrid` passed with 1,911,928 / 1,966,080 FLASH bytes
+  (97.25%). The `.px4` is 1,794,124 bytes with SHA-256
+  `8c40ea21c14d5244b34385bdd7452618052e4959947363dac41b4166dc4eb300`;
+  the `.bin` SHA-256 is
+  `b916988921105ad73256757dedd240050b131790f09f93d351ebe9bac9ce580b`.
+- Follow-up commit `17d032792c4e7afb661c55dfbc7822620f95fa89` changes only the
+  MAVLink entry in `.gitmodules` from the upstream repository to the QQgdiw
+  release fork. Without this metadata fix, a fresh recursive clone could not
+  fetch the fork-only r2 gitlink even though the already-configured local
+  worktree could build it.
+- QGC branch `codex/quad-rover-realtime-tuning` commit `232ffa7712103944226a91255a0a34dd2822bab8`
+  pins r2 and verifies the peeled CPM checkout. The Windows Debug build linked
+  `QGroundControl.exe`; all 7 Hybrid MAVLink contract tests and all 29
+  `HybridVehicleStateTest` checks passed. The executable is 100,532,736 bytes,
+  SHA-256 `6687fea78620cd090589c64c73702959c06ceeca0f7e06f64175dec28b15286a`.
+- No uORB message, `dds_topics.yaml`, controller, MAVLink message field, or QGC
+  UI behavior changed. ROS 2 `px4_msgs` r1 remains compatible because the PX4
+  uORB schema did not change; companion binding generation and on-aircraft
+  interoperability still require acceptance in the actual ROS 2 environment.

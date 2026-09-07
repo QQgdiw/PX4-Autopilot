@@ -13,13 +13,13 @@ ROS 2/MAVLink 客户端的 Agent，同时保留足够的人类可读说明。
 | --- | --- |
 | PX4 仓库 | `https://github.com/QQgdiw/PX4-Autopilot.git` |
 | PX4 分支 | `feature/testc4-rover-tuning` |
-| 本文对应 PX4 commit | `7c4fb9e638787435351437c4dfc99e417adffd85` |
+| 协议实现基准 PX4 commit | `c64fdd51957884077b30a35b4ad151a11617bbb6` |
 | 固件目标 | `zeroone_x6_hybrid` |
 | MAVLink 版本 | MAVLink 2 |
 | MAVLink dialect | `hybrid_vehicle` |
 | MAVLink 仓库 | `https://github.com/QQgdiw/mavlink.git` |
-| MAVLink 固定 tag | `qgc-hybrid-rover-tuning-v1.16.1-r1` |
-| MAVLink peeled commit | `21922689c6fb113884df0f66582d8e602286fdc1` |
+| MAVLink 固定 tag | `qgc-hybrid-rover-tuning-v1.16.1-r2` |
+| MAVLink peeled commit | `ec506d609e775035b7c8ed37f09ef05774409281` |
 | ROS 2 消息仓库 | `https://github.com/QQgdiw/px4_msgs.git` |
 | `px4_msgs` 固定 tag | `hybrid-rover-v1.16.1-r1` |
 | `px4_msgs` peeled commit | `e0f41fb57ed9217ba15730854f6c7c92b0262134` |
@@ -27,8 +27,12 @@ ROS 2/MAVLink 客户端的 Agent，同时保留足够的人类可读说明。
 机载端必须固定使用上述两个 tag，不得使用 stock `common.xml`、上游
 `PX4/px4_msgs release/1.16` 或仅凭分支最新状态构建生产版本。
 
-MAVLink tag 由 GitHub ruleset `22006870`保护；`px4_msgs` tag 由 ruleset
+MAVLink tag 由 GitHub ruleset `22434667`保护；`px4_msgs` tag 由 ruleset
 `22433564`保护。两条规则均禁止删除和 non-fast-forward 更新。
+
+本次 PX4 更新只改变 MAVLink gitlink，没有修改 uORB `.msg` 或 DDS topic 清单，
+因此从 PX4 `7c4fb9e638787435351437c4dfc99e417adffd85` 同步生成的上述
+`px4_msgs` r1 tag 仍与当前固件兼容。
 
 兼容性来源的优先级为：
 
@@ -206,33 +210,37 @@ Normal 和 Onboard MAVLink 模式默认以 1 Hz 发送 message 60000。MAVLink 1
 60000 视为失效。MAVLink 状态失效时，即使 DDS 链路仍连接，也不得继续声明
 Rover Offboard 有效。
 
-### 3.5 HX-65HM 枚举兼容限制
+### 3.5 HX-65HM 枚举定义与兼容策略
 
-当前 PX4 内部 uORB 已定义：
+当前 PX4 uORB 与固定 MAVLink r2 tag 均定义：
 
 ```text
 SENSOR_HX65   = 4
 ACTUATOR_HX65 = 2
 ```
 
-但固定 MAVLink tag 的 `hybrid_vehicle.xml` 目前只为这些字段声明到
-`SENSOR_HX8=3` 和 `ACTUATOR_HX8=1`。由于 message 60000 的两个字段都是
-`uint8_t`，MAVLink 帧长度、CRC 和反序列化不会因此失败，客户端仍会收到数值
-`4` 和 `2`；生成的 SDK 只是不具备对应的符号名。
+使用 r2 tag 生成的 C/C++/Python 绑定会提供对应符号名。此次更新只向既有枚举
+追加取值，message 60000 的字段和线格式未变化，Payload LEN 仍为 `37`，CRC
+Extra 仍为 `57`。command 50000、message 60000 和 60100--60103 的 ID、长度与
+CRC 均保持兼容。
 
-当前客户端必须：
+机载客户端必须：
 
+- 生产构建固定使用 r2 tag，不从浮动分支或 stock dialect 生成绑定；
+- 优先使用 `HYBRID_VEHICLE_SENSOR_HX65` 和
+  `HYBRID_VEHICLE_ACTUATOR_HX65` 符号；
 - 接受并保存未知的 `uint8_t` 枚举值；
 - 不因数值 `sensor_source=4` 或 `actuator_backend=2` 丢弃整条状态消息；
 - 不把这两个字段作为唯一的运动许可条件；
 - 使用 `current_state`、`fault_reason`、`flags`、ACK 生命周期和状态新鲜度进行
   安全判断；
-- 在 UI/日志中可显示为 `HX65(raw=4/2)` 或 `unknown(raw=N)`。
+- 在日志中同时保留符号名和原始值，例如 `HX65(raw=4)`；未来未知值显示为
+  `unknown(raw=N)`。
 
-未来可以通过只新增 XML 枚举项发布新 MAVLink tag。该操作不改变 message 60000
-的 LEN/CRC，但所有 PX4/QGC/机载生成绑定都应切换到同一个新 tag。新增内部
-sequence/gear 线上字段则必须使用 MAVLink 2 extension 或新消息，并单独进行协议
-版本设计，不能与简单枚举补全混为一项。
+旧 r1 tag 在数值层面仍能接收 `4/2`，但生成 SDK 没有 HX65 符号，仅作为历史
+兼容说明，不再是机载端生产版本锚点。新增内部 sequence/gear 线上字段仍须使用
+MAVLink 2 extension 或新消息，并单独进行协议版本设计，不能误认为本次枚举补全
+已经传输了这些状态。
 
 ### 3.6 Rover 实时调参消息
 
@@ -427,7 +435,8 @@ Rover Offboard，让 PX4 的 `COM_OF_LOSS_T`和失控动作接管。不得在变
 5. 变形前缓存和变形期间输入不能在稳定 Rover 后自动重放。
 6. 稳定 Rover 后第一条新命令可以进入正常发布。
 7. command 50000 的进度、重复请求、终态成功、已稳定、拒绝、失败和相反目标。
-8. 未知 HX65 raw enum 不导致整条 message 60000 被丢弃。
+8. HX65 的 `4/2` 能解析为 r2 符号，未来未知 raw enum 也不导致整条 message
+   60000 被丢弃。
 9. `/cmd_vel`丢失、DDS 断开、MAVLink 断开和时间同步异常均进入停止策略。
 10. 代码中不存在 `/cmd_vel -> throttle/steering/wheel/direct actuator`旁路。
 
@@ -453,7 +462,8 @@ HX 执行器故障路径。
 1. `HybridVehicleStatus`及其 sequence/gear 详细字段不是 DDS 输出 topic。
 2. message 60000 尚未传输内部 `sequence_state`、`propulsion_owner/ready`和逐项
    起落架状态。
-3. HX65 sensor/backend 数值已经由固件发送，但当前 MAVLink XML 尚无符号枚举。
+3. MAVLink r2 只补充 HX65 sensor/backend 符号枚举，没有新增逐舵机、gear 或
+   sequence 线上字段。
 4. `px4_msgs`仓库已完成消息同一性检查，但尚未在本 WSL 环境完成 ROS 2
    `colcon build`；该测试必须在机载 ROS 工作区执行。
 5. 软件构建和单元测试不等于 QGC、ROS 2、无线链路和实机互操作验收。
