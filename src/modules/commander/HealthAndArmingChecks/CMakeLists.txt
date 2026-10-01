@@ -84,3 +84,11 @@ px4_add_functional_gtest(SRC HealthAndArmingChecksTest.cpp
 px4_add_functional_gtest(SRC checks/hybridCheckTest.cpp
 	LINKLIBS health_and_arming_checks mode_util
 	)
+
+px4_add_functional_gtest(SRC checks/offboardCheckTest.cpp
+	LINKLIBS health_and_arming_checks mode_util
+	)
+
+if(BUILD_TESTING)
+	add_dependencies(functional-offboardCheck parameters_header uorb_headers)
+endif()

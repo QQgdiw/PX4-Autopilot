@@ -1571,3 +1571,109 @@
   so the new DDS topic can update at approximately 50 Hz. Actual XRCE rate,
   link load, ROS 2 `colcon build`, endpoint discovery and DDS-only safety
   behavior remain physical companion/target acceptance items.
+
+## 2026-09-09 Differential Rover yaw sign correction
+
+- Hardware evidence was right steering stick -> physical right turn -> positive
+  `vehicle_angular_velocity.z`, while `rover_rate_status` reported a negative
+  setpoint. The 60100 stream copied both fields without transformation, so this
+  was a controller sign-chain defect rather than a QGC plotting conversion.
+- Commit `285a9d5716` had fixed reversed manual steering by negating only manual
+  roll. The mixer still mapped positive differential to left slower/right
+  faster. That preserved manual feel but left manual setpoints opposite to FRD
+  measurements and made autonomous/Offboard yaw and future P/I feedback unsafe.
+- The correction keeps manual roll unchanged and maps positive differential to
+  left faster/right slower. Physical right-stick/right-turn behavior is
+  preserved, while manual, heading, rate, Offboard and telemetry now share
+  positive-right FRD yaw semantics. No MAVLink XML, uORB schema or QGC change
+  is required.
+- `unit-RoverControl` and `functional-DifferentialOffboardControl` passed.
+  All four touched C/C++ files passed individual AStyle checks and
+  `git diff --check` passed. The repository-wide AStyle scan still reports
+  pre-existing style failures in unrelated files; its evidence is retained in
+  `state/check_rover_yaw_sign_astyle.log`.
+- `make zeroone_x6_hybrid` passed at base `154c614a201a`; FLASH is 1,912,768
+  bytes (97.29%) and AXI SRAM is 99,844 bytes. The uncommitted `.px4` is
+  1,794,372 bytes, SHA-256
+  `4f96ca6062c43d4f89d6e224a9ca8278e1a7f9a752d5a184ed22187c877c7579`;
+  the `.bin` SHA-256 is
+  `a894dea8c6445391d93b0cfffb9b81a4ba09b3f9ba14226d045282d072984996`.
+- Remaining acceptance is powered hardware verification. Do not enable a large
+  yaw-rate P/I gain before confirming same-sign Setpoint/Response and damping
+  with a small P gain.
+
+## 2026-09-10 Hybrid HX feedback freshness parameterization
+
+- Replaced the Hybrid controller's actuator-related fixed 500 ms freshness
+  checks with runtime parameter `HYB_ACT_TO`. The common threshold covers HX8
+  transformation feedback, both HX-65HM transformation channels, the landing-
+  gear sequence input, and the published `gear_online` state. The remaining
+  500 ms constant in `hybrid_vehicle_control.cpp` only rate-limits repeated
+  disarm requests and is intentionally unrelated.
+- `hybrid_vehicle_control` calls `updateParams()` in its 20 ms work cycle, so
+  `HYB_ACT_TO` changes take effect without restarting the driver or aircraft.
+  The helper defensively constrains the value to 0.10--5.00 s; `param save` is
+  needed only to persist a changed value across reboot.
+- This is an upper-layer last-valid-response age limit, not the serial protocol
+  timeout. HX8 and HX-65HM retain a 30 ms response timeout and two retries.
+  Once a request begins, terminal retry failure is nominally about 90 ms, with
+  additional monitor/scheduler/shared-bus delay. A driver-declared offline
+  state therefore faults earlier than a larger `HYB_ACT_TO`; increasing this
+  parameter cannot override driver-level terminal failure.
+- Related timers remain separate: `HYB_SENS_TO` is PWM position-sensor
+  freshness, `HYB_STALL_T` is no-progress detection, and `LG_TIMEOUT` is the
+  landing-gear motion-sequence deadline. None controls HX UART response age.
+- The first filtered `make tests` attempt exposed an existing generated-uORB-
+  header dependency-order defect in `HybridTransitionMissionTest`; explicitly
+  building `uorb_headers` and the three relevant targets resolved the build.
+  `unit-TransformationStateMachine`, `unit-Hx8Controller`, and
+  `unit-Hx65PairController` then all passed.
+- Affected-file AStyle, generated `parameters.json` checks for default/range,
+  and `git diff --check` passed. `make zeroone_x6_hybrid` passed with FLASH
+  1,913,032 bytes (97.30%) and AXI SRAM 99,844 bytes (19.04%). The `.px4` is
+  1,794,536 bytes with SHA-256
+  `cf23f3f8e0aad79305896e741a4e607cb78bbbba5496ce52355fcdd49792bb4c`;
+  the `.bin` is 1,913,032 bytes with SHA-256
+  `bb3c8570a4c01d8cf19b1c9099e765dc77609255630e7d09cda23a07f92d82dd`.
+
+## 2026-10-01 Hybrid Quad Offboard admission repair
+
+- Confirmed the reported failure at `154c614a20`: `is_quad_rover` is permanent
+  aircraft identity, but OffboardChecks used it to require DRIVING and dedicated
+  `rover_velocity` for every shape. A fresh position heartbeat in Quad therefore
+  still produced `offboard_control_signal_lost=true`.
+- Added `HybridOffboardGuard.hpp`, shared by OffboardChecks and Commander output
+  dispatch. Stable Quad permits standard multicopter control bits with the
+  existing position/velocity/acceleration estimator checks and rejects any
+  `rover_velocity` bit. Stable Rover requires exact-one-bit dedicated control
+  and a heartbeat after transition completion. Existing controller-level
+  setpoint epoch checks remain intact.
+- Both paths require fresh heartbeat/status, no transformation/sequence fault,
+  ready propulsion and a matching physical vehicle type. HX65 additionally
+  requires matching propulsion ownership; PWM and legacy HX8 do not publish
+  that ownership and retain their existing readiness semantics. Invalid Hybrid
+  Offboard dispatch disables the existing controller-enable flags. Ordinary
+  aircraft follow their previous checks and dispatch.
+- Five focused CTest targets passed: CommanderHybridStatus,
+  RoverVelocityOffboardPolicy, hybridCheck, offboardCheck and
+  DifferentialOffboardControl. New offboardCheck functional coverage publishes
+  actual uORB inputs and exercises estimator rejection and normal-aircraft
+  compatibility. Existing Commander tests now also exercise real ModeUtil
+  dispatch. AStyle and `git diff --check` passed.
+- `make zeroone_x6_hybrid` passed: FLASH 1,913,816 bytes (97.34%), AXI SRAM
+  99,844 bytes. Firmware `.px4` size is 1,795,508 bytes; SHA-256:
+  `48ea3652d5a529c5eb230a9ea5855666f380efc83f485609364c7b0dbc9d6285`.
+  This working-tree build also includes the preceding uncommitted yaw-sign
+  and HYB_ACT_TO changes. No MAVLink/DDS schema or external binding changed;
+  powered companion/aircraft acceptance remains outstanding. No commit/push.
+
+## 2026-10-02 source checkpoint for companion review
+
+- User authorized committing the current local version for companion analysis.
+  The checkpoint includes all three previously reported changes: Rover yaw sign
+  consistency, HYB_ACT_TO, and shape-aware Hybrid Offboard admission/dispatch.
+- Remote feature/testc4-rover-tuning was verified at 154c614a20 before publication.
+  Build/test logs remain local; their results and the pre-commit firmware hash
+  are recorded above. Publishing source does not mean the aircraft was flashed.
+- No confirmed Issue/PR number was supplied; GitHub CLI is unavailable in this
+  environment. No issue-closing reference was invented.

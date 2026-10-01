@@ -37,7 +37,7 @@ namespace RoverControl
 {
 float manualSteeringInput(const float manual_roll)
 {
-	return -manual_roll;
+	return manual_roll;
 }
 
 float throttleControl(SlewRate<float> &motor_setpoint, const float throttle_setpoint,

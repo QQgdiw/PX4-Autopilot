@@ -368,3 +368,20 @@ This directory records the status of testing for `debug/testc1-v1.16.1`.
   and landing-gear state. The message schema and protected `px4_msgs` r1 tag
   are unchanged. `/cmd_vel` Rover supervision can therefore be DDS-only;
   MAVLink remains available for QGC and explicit command-50000/ACK workflows.
+- Differential Rover yaw now follows the PX4 FRD convention end-to-end:
+  positive manual roll, yaw-rate setpoint, measured yaw rate and tuning status
+  all mean a right turn. Positive `normalized_speed_diff` is mixed as left
+  wheel faster and right wheel slower. This replaces the earlier manual-only
+  sign inversion while preserving the validated physical right-stick/right-turn
+  behavior and makes yaw-rate/heading P/I feedback negative rather than positive.
+- `HYB_ACT_TO` is the Hybrid controller's shared HX actuator-feedback freshness
+  timeout. It applies to the HX8 landing gear and both HX-65HM transformation
+  servos, defaults to 0.50 s, is constrained to 0.10--5.00 s, and updates at
+  runtime. It does not alter the HX driver protocol response timeout or retry
+  count.
+- Hybrid Offboard selection now follows the current stable shape: Quad uses
+  standard multicopter mode bits and estimator checks, Rover requires dedicated
+  exact-one-bit `rover_velocity`. Commander admission and control dispatch share
+  freshness, fault and propulsion-readiness checks; HX65 also requires the
+  matching propulsion owner. These fixes are included in the 2026-10-02
+  checkpoint on `feature/testc4-rover-tuning`, based on `154c614a20`.

@@ -337,6 +337,7 @@ private:
 	param_t _param_rc_map_fltmode{PARAM_INVALID};
 
 	DEFINE_PARAMETERS(
+		(ParamFloat<px4::params::COM_OF_LOSS_T>)   _param_com_of_loss_t,
 		(ParamFloat<px4::params::COM_DISARM_LAND>)  _param_com_disarm_land,
 		(ParamFloat<px4::params::COM_DISARM_PRFLT>) _param_com_disarm_prflt,
 		(ParamBool<px4::params::COM_DISARM_MAN>)    _param_com_disarm_man,

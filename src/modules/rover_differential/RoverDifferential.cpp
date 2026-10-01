@@ -314,9 +314,10 @@ Vector2f RoverDifferential::computeInverseKinematics(float throttle_body_x, cons
 	}
 
 	// Differential controller actuator order: left wheel, then right wheel.
-	// Steering sign conversion is owned by the upstream Rover control stages.
-	return Vector2f(throttle_body_x - speed_diff_normalized,
-			throttle_body_x + speed_diff_normalized);
+	// PX4 uses FRD yaw: positive yaw is a right turn, which requires the left
+	// wheel to run faster than the right wheel.
+	return Vector2f(throttle_body_x + speed_diff_normalized,
+			throttle_body_x - speed_diff_normalized);
 }
 
 int RoverDifferential::task_spawn(int argc, char *argv[])

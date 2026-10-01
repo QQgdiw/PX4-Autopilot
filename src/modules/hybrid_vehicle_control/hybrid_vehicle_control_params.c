@@ -221,6 +221,22 @@ PARAM_DEFINE_FLOAT(HYB_ANG_TOL, 0.05f);
 PARAM_DEFINE_FLOAT(HYB_SENS_TO, 0.30f);
 
 /**
+ * HX actuator feedback timeout
+ *
+ * Maximum age of the last valid HX8 or HX-65HM response before the actuator
+ * is considered offline by the Hybrid controller. This applies to the
+ * transformation actuators and the HX8 landing gear.
+ *
+ * @unit s
+ * @min 0.10
+ * @max 5.00
+ * @decimal 2
+ * @increment 0.05
+ * @group Hybrid Control
+ */
+PARAM_DEFINE_FLOAT(HYB_ACT_TO, 0.50f);
+
+/**
  * Endpoint confirmation time
  *
  * Position feedback must continuously confirm an endpoint for this duration.

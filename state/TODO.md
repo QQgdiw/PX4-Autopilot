@@ -520,3 +520,52 @@
 - [ ] On target hardware, measure `/fmu/out/hybrid_vehicle_status` frequency
       and XRCE load, then verify DDS-only Quad/Transition/Rover/Fault gating,
       epoch cache clearing and Offboard-loss behavior.
+
+## 2026-09-09 Differential Rover yaw sign consistency
+
+- [x] Trace the right-stick/right-turn telemetry mismatch through manual input,
+      yaw-rate control, differential mixing and the 60100 MAVLink stream.
+- [x] Replace the manual-only sign inversion with one FRD yaw convention and
+      reverse the mixer differential signs while preserving physical steering.
+- [x] Add unit coverage for positive manual yaw and positive rate feed-forward.
+- [x] Pass `unit-RoverControl`, `functional-DifferentialOffboardControl`,
+      affected-file AStyle, `git diff --check` and `make zeroone_x6_hybrid`.
+- [ ] Flash the generated firmware and verify right stick still turns right,
+      Rover Rate Setpoint/Response are both positive, and small nonzero
+      `RO_YAW_RATE_P` produces damping rather than divergence.
+
+## 2026-09-10 Hybrid HX feedback freshness timeout
+
+- [x] Add runtime parameter `HYB_ACT_TO` with default 0.50 s and range
+      0.10--5.00 s.
+- [x] Use one threshold for HX8 transformation feedback, both HX-65HM
+      transformation feedback channels, sequence-coordinator landing-gear
+      freshness, and published landing-gear online state.
+- [x] Preserve the independent 30 ms protocol response timeout, two retries,
+      motion timeout, stall timeout and PWM sensor timeout semantics.
+- [x] Pass affected-file AStyle, generated parameter metadata assertions,
+      `unit-TransformationStateMachine`, `unit-Hx8Controller`,
+      `unit-Hx65PairController`, `git diff --check`, and
+      `make zeroone_x6_hybrid`.
+- [ ] Flash the generated firmware and verify runtime parameter changes and
+      HX8/HX-65HM disconnect/recovery behavior on the powered shared bus.
+
+## 2026-10-01 Hybrid Quad Offboard admission
+
+- [x] Confirm `154c614a20` incorrectly routes all `is_quad_rover` vehicles into
+      the dedicated Rover Offboard check, including stable Quad shape.
+- [x] Share shape-aware checks between Offboard admission and Commander control
+      dispatch, retaining normal-aircraft behavior and estimator checks.
+- [x] Cover Quad position routing, Rover exact-bit/epoch rules, unsafe shape,
+      propulsion ownership, and real Offboard health-check behavior with tests.
+- [x] Pass five focused CTest targets, changed-file AStyle, `git diff --check`,
+      and `make zeroone_x6_hybrid`.
+- [ ] Flash and verify companion Position Offboard entry in stable Quad,
+      Rover dedicated velocity control, and shape-transition rejection.
+
+## 2026-10-02 source checkpoint for companion review
+
+- [x] Review and stage the completed yaw-sign, HX freshness and Hybrid Offboard
+      fixes with their tests and documentation, excluding local build logs.
+- [ ] Companion agent reviews the published checkpoint; powered acceptance
+      remains separate from source publication and automated tests.

@@ -8,9 +8,109 @@
 
 #include "commander_helper.h"
 #include "HybridStatusGuard.hpp"
+#include "HybridOffboardGuard.hpp"
+#include "ModeUtil/control_mode.hpp"
 #include <lib/rover_control/RoverVelocityOffboardPolicy.hpp>
 
 using namespace time_literals;
+
+TEST(CommanderHybridStatus, QuadOffboardPositionReachesMulticopterControl)
+{
+	hybrid_vehicle_status_s status{};
+	status.timestamp = 100;
+	status.current_state = hybrid_vehicle_status_s::HYBRID_STATE_FLYING;
+	status.propulsion_ready = true;
+	offboard_control_mode_s mode{};
+	mode.timestamp = 100;
+	mode.position = true;
+	EXPECT_TRUE(commander::hybridOffboardModeAvailable(mode, status,
+			vehicle_status_s::VEHICLE_TYPE_ROTARY_WING, 150, 100));
+	vehicle_control_mode_s control{};
+	mode_util::getVehicleControlMode(vehicle_status_s::NAVIGATION_STATE_OFFBOARD,
+					 vehicle_status_s::VEHICLE_TYPE_ROTARY_WING, mode, control);
+	EXPECT_TRUE(control.flag_control_position_enabled);
+	EXPECT_TRUE(control.flag_control_velocity_enabled);
+	EXPECT_TRUE(control.flag_control_attitude_enabled);
+	EXPECT_TRUE(control.flag_control_rates_enabled);
+	mode.rover_velocity = true;
+	EXPECT_FALSE(commander::hybridOffboardModeAvailable(mode, status,
+			vehicle_status_s::VEHICLE_TYPE_ROTARY_WING, 150, 100));
+}
+
+TEST(CommanderHybridStatus, RoverOffboardRequiresDedicatedPostTransitionMode)
+{
+	hybrid_vehicle_status_s status{};
+	status.timestamp = 100;
+	status.current_state = hybrid_vehicle_status_s::HYBRID_STATE_DRIVING;
+	status.propulsion_ready = true;
+	status.transition_completed_timestamp = 90;
+	offboard_control_mode_s mode{};
+	mode.timestamp = 100;
+	mode.rover_velocity = true;
+	EXPECT_TRUE(commander::hybridOffboardModeAvailable(mode, status,
+			vehicle_status_s::VEHICLE_TYPE_ROVER, 150, 100));
+	vehicle_control_mode_s control{};
+	mode_util::getVehicleControlMode(vehicle_status_s::NAVIGATION_STATE_OFFBOARD,
+					 vehicle_status_s::VEHICLE_TYPE_ROVER, mode, control);
+	EXPECT_TRUE(control.flag_control_velocity_enabled);
+	EXPECT_TRUE(control.flag_control_rates_enabled);
+	EXPECT_FALSE(control.flag_control_position_enabled);
+	EXPECT_FALSE(control.flag_control_attitude_enabled);
+	mode.position = true;
+	EXPECT_FALSE(commander::hybridOffboardModeAvailable(mode, status,
+			vehicle_status_s::VEHICLE_TYPE_ROVER, 150, 100));
+	mode.rover_velocity = false;
+	EXPECT_FALSE(commander::hybridOffboardModeAvailable(mode, status,
+			vehicle_status_s::VEHICLE_TYPE_ROVER, 150, 100));
+	mode.position = false;
+	mode.rover_velocity = true;
+	mode.timestamp = 90;
+	EXPECT_FALSE(commander::hybridOffboardModeAvailable(mode, status,
+			vehicle_status_s::VEHICLE_TYPE_ROVER, 150, 100));
+}
+
+TEST(CommanderHybridStatus, HybridOffboardRejectsUnsafeStateAndOwnership)
+{
+	hybrid_vehicle_status_s status{};
+	status.timestamp = 100;
+	status.current_state = hybrid_vehicle_status_s::HYBRID_STATE_FLYING;
+	status.propulsion_ready = true;
+	status.actuator_backend = hybrid_vehicle_status_s::ACTUATOR_HX65;
+	status.propulsion_owner = hybrid_vehicle_status_s::PROPULSION_QUAD;
+	offboard_control_mode_s mode{};
+	mode.timestamp = 100;
+	mode.position = true;
+	const auto available = [&]() {
+		return commander::hybridOffboardModeAvailable(mode, status,
+				vehicle_status_s::VEHICLE_TYPE_ROTARY_WING, 150, 100);
+	};
+	EXPECT_TRUE(available());
+	status.propulsion_owner = hybrid_vehicle_status_s::PROPULSION_ROVER;
+	EXPECT_FALSE(available());
+	status.propulsion_owner = hybrid_vehicle_status_s::PROPULSION_QUAD;
+	status.propulsion_ready = false;
+	EXPECT_FALSE(available());
+	status.propulsion_ready = true;
+	status.fault_reason = hybrid_vehicle_status_s::TRANSFORM_FAULT_ACTUATOR_COMMUNICATION;
+	EXPECT_FALSE(available());
+	status.fault_reason = hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE;
+	status.timestamp = 0;
+	EXPECT_FALSE(available());
+	status.timestamp = 151;
+	EXPECT_FALSE(available());
+	status.timestamp = 100;
+	mode.timestamp = 49;
+	EXPECT_FALSE(available());
+	mode.timestamp = 100;
+
+	for (const auto state : {
+		     hybrid_vehicle_status_s::HYBRID_STATE_TRANSITIONING,
+		     hybrid_vehicle_status_s::HYBRID_STATE_TRANSITION_FAULT, hybrid_vehicle_status_s::HYBRID_STATE_UNKNOWN
+	     }) {
+		status.current_state = state;
+		EXPECT_FALSE(available());
+	}
+}
 
 TEST(CommanderHybridStatus, IndependentIdentityIsNotVtol)
 {

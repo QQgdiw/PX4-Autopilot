@@ -27,8 +27,8 @@ M2006 转子速度 PID 是两个车轮共同拥有的最内层执行器闭环。
 差速混合公式为：
 
 ```text
-left  = throttle_body_x - normalized_speed_diff
-right = throttle_body_x + normalized_speed_diff
+left  = throttle_body_x + normalized_speed_diff
+right = throttle_body_x - normalized_speed_diff
 ```
 
 当油门与差速叠加超过 `[-1, 1]` 时，混合器优先保留转向差速并削减纵向油门。
@@ -79,7 +79,7 @@ roll  -> rover_steering_setpoint -----------------------> 差速混合
 | 通道 | 输入 | 输出 | 相关参数 |
 |---|---|---|---|
 | 前后 | `manual_control_setpoint.pitch` | `rover_throttle_setpoint.throttle_body_x` | `RO_ACCEL_LIM`、`RO_DECEL_LIM`、`RO_MAX_THR_SPEED` 用于最终归一化油门斜率限制 |
-| 转向 | 反号后的 `manual_control_setpoint.roll` | `rover_steering_setpoint.normalized_speed_diff` | 无 PID 参数 |
+| 转向 | `manual_control_setpoint.roll`（正值为右转） | `rover_steering_setpoint.normalized_speed_diff` | 无 PID 参数 |
 | 混合 | 归一化油门和差速 | `actuator_motors_rover.control[0/1]` | `CA_R_REV` 仅形成 reversible 标志；实际 M2006 方向由 `M2K_L_REV/M2K_R_REV` 处理 |
 
 ## 4. Acro：偏航角速度 PI

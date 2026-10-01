@@ -221,18 +221,25 @@ TransformationConfig HybridVehicleControl::transformation_config() const
 	};
 }
 
+uint64_t HybridVehicleControl::actuator_feedback_timeout_us() const
+{
+	return static_cast<uint64_t>(math::constrain(_param_hyb_act_to.get(), 0.10f, 5.00f) * 1_s);
+}
+
 bool HybridVehicleControl::selected_feedback_fresh(hrt_abstime now, const TransformationConfig &config) const
 {
+	const uint64_t actuator_timeout_us = actuator_feedback_timeout_us();
+
 	if (config.backend == hybrid_control::ActuatorBackend::Hx8) {
-		return timestamp_fresh(_hx8_status.last_valid_response, now, 500_ms)
+		return timestamp_fresh(_hx8_status.last_valid_response, now, actuator_timeout_us)
 		       && hybrid_control::Hx8BackendPolicy::statusUsable(_hx8_status.servo_id,
 				static_cast<uint8_t>(_param_hx8_id.get()), _hx8_status.online, _hx8_status.healthy,
 				_hx8_status.config_verified, _hx8_status.protection_flags, true, _hx8_status.angle_deg);
 	}
 
 	if (config.backend == hybrid_control::ActuatorBackend::Hx65) {
-		const bool fresh = timestamp_fresh(_hx65_status.left_last_valid_response, now, 500_ms)
-				   && timestamp_fresh(_hx65_status.right_last_valid_response, now, 500_ms);
+		const bool fresh = timestamp_fresh(_hx65_status.left_last_valid_response, now, actuator_timeout_us)
+				   && timestamp_fresh(_hx65_status.right_last_valid_response, now, actuator_timeout_us);
 		return _hx65_status.left_position_valid && _hx65_status.right_position_valid
 		       && hybrid_control::Hx65BackendPolicy::statusUsable(_hx65_status.left_online,
 				_hx65_status.right_online, _hx65_status.left_healthy, _hx65_status.right_healthy,
@@ -347,6 +354,7 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 	}
 
 	const uint64_t sensor_timeout_us = static_cast<uint64_t>(config.sensor_timeout_s * 1_s);
+	const uint64_t actuator_timeout_us = actuator_feedback_timeout_us();
 	const bool encoder_valid = timestamp_fresh(_last_encoder_timestamp, now, sensor_timeout_us)
 				   && _encoder_healthy && std::isfinite(_current_mechanism_angle);
 	const bool tmag_quad_valid = _tmag_quad_cache.validFor(config.tmag_quad_device_id, now, sensor_timeout_us);
@@ -363,7 +371,7 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 	actuator.config_verified = true;
 	actuator.command_accepted = true;
 	if (config.backend == hybrid_control::ActuatorBackend::Hx8) {
-		const bool fresh = timestamp_fresh(_hx8_status.last_valid_response, now, 500_ms);
+		const bool fresh = timestamp_fresh(_hx8_status.last_valid_response, now, actuator_timeout_us);
 		const bool valid = hybrid_control::Hx8BackendPolicy::statusUsable(_hx8_status.servo_id,
 				static_cast<uint8_t>(_param_hx8_id.get()), _hx8_status.online, _hx8_status.healthy,
 				_hx8_status.config_verified, _hx8_status.protection_flags, fresh, _hx8_status.angle_deg);
@@ -388,8 +396,8 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 		actuator.protection_flags = _hx8_status.protection_flags;
 
 	} else if (config.backend == hybrid_control::ActuatorBackend::Hx65) {
-		const bool fresh = timestamp_fresh(_hx65_status.left_last_valid_response, now, 500_ms)
-				   && timestamp_fresh(_hx65_status.right_last_valid_response, now, 500_ms);
+		const bool fresh = timestamp_fresh(_hx65_status.left_last_valid_response, now, actuator_timeout_us)
+				   && timestamp_fresh(_hx65_status.right_last_valid_response, now, actuator_timeout_us);
 		const bool status_valid = _hx65_status.left_position_valid && _hx65_status.right_position_valid
 					  && hybrid_control::Hx65BackendPolicy::statusUsable(_hx65_status.left_online,
 				_hx65_status.right_online, _hx65_status.left_healthy, _hx65_status.right_healthy,
@@ -602,7 +610,8 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 		const float gear_stowed = _param_lg_ang_stw.get();
 		const float gear_tolerance = _param_lg_ang_tol.get();
 		const bool gear_config_valid = gear_configuration_valid(gear_down, gear_clear, gear_stowed, gear_tolerance);
-		const bool gear_fresh = timestamp_fresh(_hx8_status.last_valid_response, input.now_us, 500_ms);
+		const bool gear_fresh = timestamp_fresh(_hx8_status.last_valid_response, input.now_us,
+					  actuator_feedback_timeout_us());
 		const bool gear_command_healthy = _gear_sequence == 0 || _hx8_status.command_sequence != _gear_sequence
 						 || _hx8_status.command_result == hx8_servo_status_s::RESULT_NONE
 						 || (_hx8_status.command_accepted
@@ -1126,7 +1135,8 @@ void HybridVehicleControl::publish_status(const TransformationInput &input, hrt_
 				     || _transformation_output.state == HybridState::Driving)
 				  : _sequence_initialized && _sequence_output.propulsion_ready;
 	status.gear_angle_deg = _hx8_status.angle_deg;
-	status.gear_online = timestamp_fresh(_hx8_status.last_valid_response, now, 500_ms) && _hx8_status.online;
+	status.gear_online = timestamp_fresh(_hx8_status.last_valid_response, now, actuator_feedback_timeout_us())
+			     && _hx8_status.online;
 	const bool gear_command_healthy = _gear_sequence == 0 || _hx8_status.command_sequence != _gear_sequence
 					 || _hx8_status.command_result == hx8_servo_status_s::RESULT_NONE
 					 || (_hx8_status.command_accepted

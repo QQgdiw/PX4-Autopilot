@@ -110,6 +110,7 @@ private:
 	void publish_motor_outputs(hrt_abstime now);
 	hybrid_control::TransformationConfig transformation_config() const;
 	int clear_fault();
+	uint64_t actuator_feedback_timeout_us() const;
 	bool selected_feedback_fresh(hrt_abstime now, const hybrid_control::TransformationConfig &config) const;
 	bool transformation_pwm_command_effective() const;
 	void request_transition(hybrid_control::HybridTarget target, hrt_abstime now,
@@ -233,6 +234,7 @@ private:
 		(ParamFloat<px4::params::HYB_SV_ROV>)		_param_hyb_sv_rov,
 		(ParamFloat<px4::params::HYB_ANG_TOL>)		_param_hyb_ang_tol,
 		(ParamFloat<px4::params::HYB_SENS_TO>)		_param_hyb_sens_to,
+		(ParamFloat<px4::params::HYB_ACT_TO>)		_param_hyb_act_to,
 		(ParamFloat<px4::params::HYB_DBNC_T>)		_param_hyb_dbnc_t,
 		(ParamInt<px4::params::HYBRID_MAN_CH>)    	_param_hybrid_man_ch,  // 手动接管机构的 AUX 通道 (1-6)
 		(ParamFloat<px4::params::HYBRID_ANG_ROV>) 	_param_hybrid_ang_rov, // 车模式的机构目标角度 (rad)

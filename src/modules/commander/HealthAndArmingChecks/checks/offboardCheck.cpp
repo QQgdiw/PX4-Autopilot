@@ -33,7 +33,7 @@
 
 #include "offboardCheck.hpp"
 
-#include "../../HybridStatusGuard.hpp"
+#include "../../HybridOffboardGuard.hpp"
 
 #include <lib/rover_control/RoverVelocityOffboardPolicy.hpp>
 
@@ -56,7 +56,14 @@ void OffboardChecks::checkAndReport(const Context &context, Report &reporter)
 					   || offboard_control_mode.thrust_and_torque || offboard_control_mode.direct_actuator
 					   || offboard_control_mode.rover_velocity) && data_is_recent;
 
-		if (context.status().is_quad_rover || offboard_control_mode.rover_velocity) {
+		if (context.status().is_quad_rover) {
+			hybrid_vehicle_status_s status{};
+			_hybrid_vehicle_status_sub.copy(&status);
+			offboard_available = commander::hybridOffboardModeAvailable(offboard_control_mode, status,
+					     context.status().vehicle_type, now, maximum_age);
+		}
+
+		if (offboard_control_mode.rover_velocity) {
 			hybrid_vehicle_status_s hybrid_vehicle_status{};
 			_hybrid_vehicle_status_sub.copy(&hybrid_vehicle_status);
 			const RoverVelocityOffboardMode mode{offboard_control_mode.timestamp,
@@ -69,8 +76,9 @@ void OffboardChecks::checkAndReport(const Context &context, Report &reporter)
 								hybrid_vehicle_status.current_state == hybrid_vehicle_status_s::HYBRID_STATE_DRIVING,
 								hybrid_vehicle_status.fault_reason == hybrid_vehicle_status_s::TRANSFORM_FAULT_NONE};
 
-			offboard_available = roverOffboardModeAvailable(context.status().is_quad_rover, mode, status, now,
-					     maximum_age, commander::HybridStatusTimeoutUs)
+			offboard_available = offboard_available
+					     && roverOffboardModeAvailable(context.status().is_quad_rover, mode, status, now,
+							     maximum_age, commander::HybridStatusTimeoutUs)
 					     && !reporter.failsafeFlags().local_velocity_invalid
 					     && !reporter.failsafeFlags().angular_velocity_invalid;
 

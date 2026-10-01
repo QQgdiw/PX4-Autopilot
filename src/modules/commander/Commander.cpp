@@ -39,6 +39,7 @@
  */
 
 #include "Commander.hpp"
+#include "HybridOffboardGuard.hpp"
 
 /* commander module headers */
 #include "Arming/ArmAuthorization/ArmAuthorization.h"
@@ -2724,7 +2725,12 @@ void Commander::updateControlMode()
 	// ==========================================================
 	if (_vehicle_status.is_quad_rover) {
 
-		if (!commander::hybridStateEnablesControl(_current_hybrid_state)) {
+		const bool invalid_offboard = _vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_OFFBOARD
+					      && !commander::hybridOffboardModeAvailable(_offboard_control_mode_sub.get(),
+							      _hybrid_vehicle_status, _vehicle_status.vehicle_type, hrt_absolute_time(),
+							      static_cast<hrt_abstime>(_param_com_of_loss_t.get() * 1_s));
+
+		if (!commander::hybridStateEnablesControl(_current_hybrid_state) || invalid_offboard) {
 			// 2. 变形中模式：最危险的阶段，强制关闭所有自动化和姿态控制
 			_vehicle_control_mode.flag_control_position_enabled = false;
 			_vehicle_control_mode.flag_control_velocity_enabled = false;

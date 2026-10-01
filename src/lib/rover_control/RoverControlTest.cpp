@@ -39,11 +39,25 @@
 #include <gtest/gtest.h>
 #include "RoverControl.hpp"
 
-TEST(RoverControl, manualSteeringInputReversesOnlyManualSteeringSign)
+TEST(RoverControl, manualSteeringInputUsesPositiveRightYawConvention)
 {
-	EXPECT_FLOAT_EQ(RoverControl::manualSteeringInput(-1.f), 1.f);
+	EXPECT_FLOAT_EQ(RoverControl::manualSteeringInput(-1.f), -1.f);
 	EXPECT_FLOAT_EQ(RoverControl::manualSteeringInput(0.f), 0.f);
-	EXPECT_FLOAT_EQ(RoverControl::manualSteeringInput(1.f), -1.f);
+	EXPECT_FLOAT_EQ(RoverControl::manualSteeringInput(1.f), 1.f);
+}
+
+TEST(RoverControl, positiveYawRateSetpointProducesPositiveDifferentialCommand)
+{
+	SlewRate<float> adjusted_yaw_rate_setpoint;
+	PID pid_yaw_rate;
+	pid_yaw_rate.setGains(0.f, 0.f, 0.f);
+	pid_yaw_rate.setOutputLimit(1.f);
+	pid_yaw_rate.setIntegralLimit(1.f);
+
+	const float normalized_speed_diff = RoverControl::rateControl(adjusted_yaw_rate_setpoint, pid_yaw_rate,
+					    1.f, 0.f, 0.5f, 0.f, 0.f, 0.5f, 0.01f);
+
+	EXPECT_FLOAT_EQ(normalized_speed_diff, 0.5f);
 }
 
 TEST(calcWaypointTransitionAngle, invalidInputs)

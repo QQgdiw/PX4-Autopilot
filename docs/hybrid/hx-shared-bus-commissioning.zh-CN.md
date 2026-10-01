@@ -127,6 +127,7 @@ param set H65_ACC 10
 param set H65_TOL 100
 param set H65_SKEW 0.15
 param set HYBRID_TRANS_T 6
+param set HYB_ACT_TO 0.5
 param set HYB_STALL_T 0.8
 param set HYB_STALL_D 0.02
 reboot
@@ -134,6 +135,8 @@ reboot
 
 `LG_PWR_LIM` 必须非零且不大于 `HX8_CFG_PWR`。`LG_MOVE_T` 必须大于
 `LG_ACC_T + LG_DEC_T`，`LG_TIMEOUT` 应留出大于实际全行程时间的余量。
+`HYB_ACT_TO` 是三台 HX 舵机共用的上层有效反馈新鲜度门限；驱动层单次
+30 ms响应超时和两次重试仍由协议实现固定，不受该参数影响。
 
 ## 4. 最终检查和状态判断
 

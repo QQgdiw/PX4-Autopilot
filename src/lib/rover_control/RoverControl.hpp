@@ -50,13 +50,10 @@ using namespace matrix;
 namespace RoverControl
 {
 /**
- * Convert the manual roll stick convention to the Rover yaw convention used
- * by the differential steering controllers.
- *
- * The installed vehicle's physical steering direction is opposite to the
- * generic manual roll sign, while throttle/pitch and wheel direction remain
- * correct.  Keep this conversion at the manual-input boundary so Offboard
- * and autonomous yaw setpoints are unaffected.
+ * Convert the manual roll stick convention to the PX4 Rover yaw convention.
+ * Positive manual roll and positive yaw rate both command a right turn. The
+ * differential mixer owns the corresponding left/right wheel signs so manual,
+ * autonomous and Offboard control all use the same FRD yaw convention.
  */
 float manualSteeringInput(float manual_roll);
 
