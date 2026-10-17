@@ -56,6 +56,7 @@
 // uORB 发布与订阅
 #include <uORB/Publication.hpp>
 #include <uORB/Subscription.hpp>
+#include <uORB/SubscriptionCallback.hpp>
 #include <uORB/topics/actuator_servos.h>
 #include <uORB/topics/actuator_armed.h>
 #include <uORB/topics/manual_control_setpoint.h>
@@ -91,6 +92,19 @@ public:
 	bool init();
 
 private:
+	friend class HybridOutputTest;
+	static constexpr hrt_abstime OutputWatchdogInterval{4000};
+	static constexpr hrt_abstime ManagementInterval{20000};
+	hrt_abstime _last_management_run{0};
+	bool management_due(hrt_abstime now)
+	{
+		if (_last_management_run != 0 && now - _last_management_run < ManagementInterval) {
+			return false;
+		}
+
+		_last_management_run = now;
+		return true;
+	}
 	/**
 	 * 主循环 (运行在 Work Queue 线程中)
 	 */
@@ -130,9 +144,9 @@ private:
 	uORB::Subscription _hx8_status_sub{ORB_ID(hx8_servo_status)};
 	uORB::Subscription _hx65_status_sub{ORB_ID(hx65_servo_status)};
 	// 监听多旋翼分配器发出的电机指令 (Motor 1-4)
-	uORB::Subscription _actuator_motors_mc_sub{ORB_ID(actuator_motors_mc)};
+	uORB::SubscriptionCallbackWorkItem _actuator_motors_mc_sub{this, ORB_ID(actuator_motors_mc)};
 	// 监听官方差速模块发出的车轮指令 (Motor 5-6)
-	uORB::Subscription _actuator_motors_rover_sub{ORB_ID(actuator_motors_rover)};
+	uORB::SubscriptionCallbackWorkItem _actuator_motors_rover_sub{this, ORB_ID(actuator_motors_rover)};
 
 	// === uORB 发布 (输出控制指令) ===
 	uORB::Publication<actuator_servos_s>      _actuator_servos_pub{ORB_ID(actuator_servos)};

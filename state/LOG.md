@@ -1677,3 +1677,51 @@
   are recorded above. Publishing source does not mean the aircraft was flashed.
 - No confirmed Issue/PR number was supplied; GitHub CLI is unavailable in this
   environment. No issue-closing reference was invented.
+
+## 2026-10-17 Hybrid motor output scheduling
+
+- Current branch is feature/testc4-rover-tuning at 4feadd93f15fa0c09040769009250b2d414cabfe.
+  The actual fault parameter file was found at
+  /mnt/e/PX4/zeroone_hybird_1016_vaild1.params, not inferred from its filename.
+  It records 154c614a20000000 and disables DSHOT_BIDIR_EN/DSHOT_3D_ENABLE.
+  AUX timer requests mix -4 (300) and -3 (600); DShot normalizes conflicting
+  requests to its first selected bit rate. No parameter file was modified.
+- Both fault and current revisions poll Hybrid final motors at 20 ms. DShot
+  sends one DMA frame per updateOutputs/up_dshot_trigger call; MixingOutput
+  wakes on motor callbacks with a 50 ms fallback. This explains the observed
+  20 ms frame spacing. Bluejay upstream's 10-frame/100 ms detection supports
+  the compatibility hypothesis, but field firmware version and restoration
+  after frame-rate correction remain unverified.
+- Hybrid now registers both motor-topic callbacks, unregisters them on exit,
+  and uses a 4 ms watchdog. Mechanism work is time-gated at 20 ms in the same
+  serialized work item. Effective commands keep source timestamps and samples;
+  fault, position, commissioning, epoch, HX65 owner/readiness and kill checks
+  remain enforced. DShot has a 4 ms fallback and motor-only 100 ms stale-input
+  invalidation; QGC explicit test commands retain their independent timeout and
+  lockdown semantics. Other output drivers keep default intervals/retention.
+- Removed i == 4 || i == 5 from the global 3D throttle mapping condition. This
+  was motor-direction mapping, not bidirectional eRPM telemetry configuration.
+- Tests compile the real Hybrid module. SITL test configuration now enables
+  that module and its HX parameter provider, and declares generated-header
+  dependencies. An initial test build identified the missing module/parameter
+  selection; these were fixed instead of stubbing production code. A trial
+  unconditional destructor ScheduleClear blocked the host harness before HRT
+  initialization; it was removed, retaining ScheduledWorkItem's existing
+  conditional cleanup and explicit Run exit cleanup.
+- 10/10 focused CTest targets passed, covering Hybrid outputs, MixingOutput,
+  TransformationStateMachine, HybridSequenceCoordinator, M2006DriveGate,
+  HX8/HX65 controllers, CommanderHybridStatus, offboardCheck and Differential
+  OffboardControl. Logs: state/test_motor_scheduling_regression.log and
+  state/build_motor_scheduling_tests.log. AStyle and git diff --check passed.
+- Final target build passed: FLASH 1,914,288 / 1,966,080 bytes (97.37%),
+  AXI SRAM 99,844 bytes. .px4 is 1,795,964 bytes, SHA-256
+  63e92c035fbc621ffffbae41baef06102f3a8ab5e0b4c586ba33857d04c02520;
+  .bin is 1,914,288 bytes, SHA-256
+  3d485e82398bc4fd2793481a17c9cc8cf70caf3b535899b29608b77dbc245793.
+  No powered testing, four-channel waveform capture, Bluejay cold-start
+  acceptance or CPU/UART load measurement was possible. Changes not committed
+  or pushed during implementation. User subsequently authorized remote
+  publication of this source checkpoint on feature/testc4-rover-tuning.
+  Local build/test logs are excluded; the pre-commit firmware hash above remains
+  the identifier for the previously generated binary. Hardware acceptance is
+  still pending. No confirmed Issue/PR number is available to reference.

@@ -197,6 +197,11 @@ public:
 
 	void setLowrateSchedulingInterval(hrt_abstime interval) { _lowrate_schedule_interval = interval; }
 
+	// Configure before the first updateSubscriptions(). Other output drivers keep
+	// their existing scheduling and motor-command retention defaults.
+	void setBackupSchedulingInterval(hrt_abstime interval) { _backup_schedule_interval = interval; }
+	void setMotorCommandTimeout(hrt_abstime timeout) { _motor_command_timeout = timeout; }
+
 	/**
 	 * Get the bitmask of reversible outputs (motors only).
 	 * This might change at any time (while disarmed), so output drivers requiring this should query this regularly.
@@ -285,6 +290,8 @@ private:
 	ParamHandles _param_handles[MAX_ACTUATORS];
 	param_t _param_handle_rev_range{PARAM_INVALID};
 	hrt_abstime _lowrate_schedule_interval{300_ms};
+	hrt_abstime _backup_schedule_interval{50_ms};
+	hrt_abstime _motor_command_timeout{0};
 	ActuatorTest _actuator_test{_function_assignment};
 	uint32_t _reversible_mask{0}; ///< per-output bits. If set, the output is configured to be reversible (motors only)
 	bool _was_all_disabled{false};

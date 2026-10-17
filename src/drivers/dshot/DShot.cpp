@@ -44,6 +44,12 @@ DShot::DShot() :
 	OutputModuleInterface(MODULE_NAME, px4::wq_configurations::hp_default)
 {
 	_mixing_output.setAllDisarmedValues(DSHOT_DISARM_VALUE);
+	// Keep sending stop/test frames without controller publications. New motor
+	// values still wake us immediately through MixingOutput's subscription.
+	_mixing_output.setBackupSchedulingInterval(4_ms);
+	_mixing_output.setLowrateSchedulingInterval(4_ms);
+	// Repeated frames must not keep a lost producer's nonzero command alive.
+	_mixing_output.setMotorCommandTimeout(100_ms);
 	_mixing_output.setAllMinValues(DSHOT_MIN_THROTTLE);
 	_mixing_output.setAllMaxValues(DSHOT_MAX_THROTTLE);
 
@@ -476,7 +482,7 @@ bool DShot::updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS],
 				// This is in terms of DShot values, code below is in terms of actuator_output
 				// Direction 1) 48 is the slowest, 1047 is the fastest.
 				// Direction 2) 1049 is the slowest, 2047 is the fastest.
-				if ((_param_dshot_3d_enable.get() &&  (i == 4 || i == 5))|| (_reversible_outputs & (1u << i))) {
+				if (_param_dshot_3d_enable.get() || (_reversible_outputs & (1u << i))) {
 					if (output >= _param_dshot_3d_dead_l.get() && output < _param_dshot_3d_dead_h.get()) {
 						output = DSHOT_DISARM_VALUE;
 

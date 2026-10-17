@@ -1,5 +1,20 @@
 # Current Task
 
+## 2026-10-17 Hybrid motor scheduling and Bluejay compatibility
+
+- [x] Read development rules, inspect current branch and locate the actual
+      `zeroone_hybird_1016_vaild1.params` file under `/mnt/e/PX4`.
+- [x] Trace allocation -> Hybrid 20 ms polling -> motor callback -> DShot trigger;
+      distinguish the DShot wire bit rate from frame repetition rate.
+- [x] Implement motor callbacks plus 4 ms watchdog, retain 20 ms mechanism
+      management, and preserve source command/sample timestamps.
+- [x] Give DShot a 4 ms fallback and 100 ms motor-source timeout; restore
+      global/per-motor 3D semantics without physical-channel special cases.
+- [x] Complete 10 focused CTest targets, affected-file AStyle, `git diff --check`
+      and `make zeroone_x6_hybrid`; retain hardware acceptance separately.
+- [ ] Powered propeller-free acceptance: four-channel frame timing, Bluejay
+      cold boot, QGC test, transitions, fault, stale producer and kill.
+
 ## 2026-09-02 landing gear and transformation actuator redesign
 
 - [x] Confirm the requested base branch and commit.

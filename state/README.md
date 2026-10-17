@@ -385,3 +385,11 @@ This directory records the status of testing for `debug/testc1-v1.16.1`.
   freshness, fault and propulsion-readiness checks; HX65 also requires the
   matching propulsion owner. These fixes are included in the 2026-10-02
   checkpoint on `feature/testc4-rover-tuning`, based on `154c614a20`.
+- Hybrid motor arbitration now uses MC/Rover subscription callbacks and a 4 ms
+  watchdog, while mechanism/gear management stays at 20 ms. Forwarded commands
+  retain their original publication/sample timestamps. DShot alone requests a
+  4 ms MixingOutput backup and 100 ms motor-source timeout; other drivers retain
+  defaults. The physical-channel 5/6 exception for global DShot 3D was removed.
+  See `docs/hybrid/motor-output-scheduling.zh-CN.md` for evidence and mandatory
+  propeller-free frame-rate/cold-start/load acceptance. Hardware recovery has
+  not been demonstrated in this environment.

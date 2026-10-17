@@ -137,14 +137,14 @@ public:
 		_actuator_servos_pub.publish(actuator_servos);
 	}
 
-	void sendActuatorMotorTest(int function, float value, bool release_control)
+	void sendActuatorMotorTest(int function, float value, bool release_control, unsigned timeout_ms = 0)
 	{
 		actuator_test_s actuator_test{};
 		actuator_test.timestamp = hrt_absolute_time();
 		actuator_test.function = function;
 		actuator_test.value = value;
 		actuator_test.action = release_control ? actuator_test_s::ACTION_RELEASE_CONTROL : actuator_test_s::ACTION_DO_CONTROL;
-		actuator_test.timeout_ms = 0;
+		actuator_test.timeout_ms = timeout_ms;
 		_actuator_test_pub.publish(actuator_test);
 	}
 
@@ -179,6 +179,57 @@ private:
 	uORB::Publication<actuator_servos_s> _actuator_servos_pub{ORB_ID(actuator_servos)};
 	uORB::Publication<actuator_armed_s> _actuator_armed_pub{ORB_ID(actuator_armed)};
 };
+
+TEST_F(MixerModuleTest, DshotWatchdogStopsLostCommandsButAllowsBoundedDisarmedTest)
+{
+	OutputModuleTest test_module;
+	test_module.configureFunctions({(int)OutputFunction::Motor1});
+	MixingOutput mixing_output{PARAM_PREFIX, MAX_NUM_OUTPUTS, test_module, MixingOutput::SchedulingPolicy::Disabled, false, false};
+	mixing_output.setMotorCommandTimeout(100_ms);
+	mixing_output.setAllDisarmedValues(DISARMED_VALUE);
+	mixing_output.setAllFailsafeValues(FAILSAFE_VALUE);
+	mixing_output.setAllMinValues(MIN_VALUE);
+	mixing_output.setAllMaxValues(MAX_VALUE);
+	mixing_output.updateSubscriptions(false);
+	test_module.sendActuatorArmed(false);
+
+	for (int i = 0; i < 25; ++i) {
+		mixing_output.update();
+		EXPECT_EQ(test_module.outputs[0], DISARMED_VALUE);
+		px4_usleep(4000);
+	}
+
+	// Motor tests must work even when no controller is publishing motors.
+	test_module.sendActuatorMotorTest((int)OutputFunction::Motor1, 0.5f, false, 200);
+	mixing_output.update();
+	EXPECT_GT(test_module.outputs[0], DISARMED_VALUE);
+	px4_usleep(210000);
+	mixing_output.update();
+	EXPECT_EQ(test_module.outputs[0], DISARMED_VALUE);
+
+	test_module.sendActuatorArmed(true);
+	mixing_output.update();
+	px4_usleep(60000); // leave the normal output limiter's initialization state
+	test_module.sendMotors({0.6f});
+	mixing_output.update();
+	EXPECT_GT(test_module.outputs[0], DISARMED_VALUE);
+	px4_usleep(110000);
+	mixing_output.update();
+	EXPECT_EQ(test_module.outputs[0], DISARMED_VALUE);
+	// A fresh source can recover, but kill still overrides it.
+	test_module.sendMotors({0.6f});
+	mixing_output.update();
+	EXPECT_GT(test_module.outputs[0], DISARMED_VALUE);
+	test_module.sendActuatorArmed(true, false, true);
+	mixing_output.update();
+	EXPECT_EQ(test_module.outputs[0], DISARMED_VALUE);
+	test_module.sendActuatorArmed(false, false, true);
+	test_module.sendActuatorMotorTest((int)OutputFunction::Motor1, 0.5f, false, 200);
+	mixing_output.update();
+	EXPECT_EQ(test_module.outputs[0], DISARMED_VALUE);
+	test_module.sendActuatorMotorTest((int)OutputFunction::Motor1, 0.f, true);
+	test_module.sendActuatorArmed(false);
+}
 
 TEST_F(MixerModuleTest, basic)
 {

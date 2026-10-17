@@ -260,7 +260,7 @@ bool MixingOutput::updateSubscriptions(bool allow_wq_switch)
 
 	cleanupFunctions();
 
-	const FunctionProviderBase::Context context{_interface, _param_thr_mdl_fac.reference()};
+	const FunctionProviderBase::Context context{_interface, _param_thr_mdl_fac.reference(), _motor_command_timeout};
 	int provider_indexes[MAX_ACTUATORS] {};
 	int next_provider = 0;
 	int subscription_callback_provider_index = INT_MAX;
@@ -326,7 +326,7 @@ bool MixingOutput::updateSubscriptions(bool allow_wq_switch)
 			if (_subscription_callback->registerCallback()) {
 				PX4_DEBUG("Scheduling via callback");
 				_has_backup_schedule = true;
-				_interface.ScheduleDelayed(50_ms);
+				_interface.ScheduleDelayed(_backup_schedule_interval);
 
 			} else {
 				PX4_ERR("registerCallback failed, scheduling at fixed rate");
@@ -427,7 +427,7 @@ bool MixingOutput::update()
 	}
 
 	if (_has_backup_schedule) {
-		_interface.ScheduleDelayed(50_ms);
+		_interface.ScheduleDelayed(_backup_schedule_interval);
 	}
 
 	// check for actuator test

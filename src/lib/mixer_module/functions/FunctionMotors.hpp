@@ -50,7 +50,8 @@ public:
 
 	FunctionMotors(const Context &context) :
 		_topic(&context.work_item, ORB_ID(actuator_motors)),
-		_thrust_factor(context.thrust_factor)
+		_thrust_factor(context.thrust_factor),
+		_command_timeout(context.motor_command_timeout)
 	{
 		for (int i = 0; i < actuator_motors_s::NUM_CONTROLS; ++i) {
 			_data.control[i] = NAN;
@@ -63,6 +64,15 @@ public:
 	{
 		if (_topic.update(&_data)) {
 			updateValues(_data.reversible_flags, _thrust_factor, _data.control, actuator_motors_s::NUM_CONTROLS);
+		}
+
+		const hrt_abstime now = hrt_absolute_time();
+
+		if (_command_timeout != 0 && (_data.timestamp == 0 || _data.timestamp > now
+					      || now - _data.timestamp > _command_timeout)) {
+			for (float &control : _data.control) {
+				control = NAN;
+			}
 		}
 	}
 
@@ -121,4 +131,5 @@ private:
 	uORB::SubscriptionCallbackWorkItem _topic;
 	actuator_motors_s _data{};
 	const float &_thrust_factor;
+	const hrt_abstime _command_timeout;
 };

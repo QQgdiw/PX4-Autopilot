@@ -127,11 +127,22 @@ HybridVehicleControl::HybridVehicleControl() :
 	updateParams();
 }
 
-HybridVehicleControl::~HybridVehicleControl() = default;
+HybridVehicleControl::~HybridVehicleControl()
+{
+	_actuator_motors_mc_sub.unregisterCallback();
+	_actuator_motors_rover_sub.unregisterCallback();
+}
 
 bool HybridVehicleControl::init()
 {
-	ScheduleOnInterval(20_ms);
+	if (!_actuator_motors_mc_sub.registerCallback() || !_actuator_motors_rover_sub.registerCallback()) {
+		_actuator_motors_mc_sub.unregisterCallback();
+		_actuator_motors_rover_sub.unregisterCallback();
+		PX4_ERR("motor callback registration failed");
+		return false;
+	}
+
+	ScheduleNow();
 	return true;
 }
 
@@ -486,17 +497,27 @@ TransformationInput HybridVehicleControl::update_transformation_input(hrt_abstim
 void HybridVehicleControl::Run()
 {
 	if (should_exit()) {
+		_actuator_motors_mc_sub.unregisterCallback();
+		_actuator_motors_rover_sub.unregisterCallback();
 		ScheduleClear();
 		exit_and_cleanup();
 		return;
 	}
 
-	updateParams();
+	// Motor callbacks forward new controller values without waiting for mechanism
+	// management. The watchdog also expires commands if both controllers stop.
+	ScheduleDelayed(OutputWatchdogInterval);
 	_actuator_armed_sub.update(&_actuator_armed);
+	const hrt_abstime now = hrt_absolute_time();
+
+	if (!management_due(now)) {
+		publish_motor_outputs(now);
+		return;
+	}
+
+	updateParams();
 	_vehicle_land_detected_sub.update(&_vehicle_land_detected);
 	_vehicle_control_mode_sub.update(&_vcontrol_mode);
-
-	const hrt_abstime now = hrt_absolute_time();
 
 	if (_startup_probe_started == 0) {
 		_startup_probe_started = now;
@@ -1455,25 +1476,33 @@ void HybridVehicleControl::publish_motor_outputs(hrt_abstime now)
 				 && hybrid_control::offboardInputFreshAfter(_rover_motors.timestamp, _transition_complete_time, now);
 	const bool mixed_backend = _transformation_config_tracker.active().backend == hybrid_control::ActuatorBackend::Hx65;
 	const bool allow_quad = !mixed_backend || (_sequence_initialized
+				&& _sequence_output.propulsion_ready
 				&& _sequence_output.propulsion_owner == hybrid_control::PropulsionOwner::Quad);
 	const bool allow_rover = !mixed_backend || (_sequence_initialized
+				 && _sequence_output.propulsion_ready
 				 && _sequence_output.propulsion_owner == hybrid_control::PropulsionOwner::Rover);
+	const bool inhibited = !_transformation_config_tracker.hasActive()
+			       || _actuator_armed.lockdown || _actuator_armed.manual_lockdown || _actuator_armed.force_failsafe;
 
-	if (!transformation_faulted && position_safe && !_manual_commissioning_active && mc_fresh && allow_quad
+	if (!inhibited && !transformation_faulted && position_safe && !_manual_commissioning_active && mc_fresh && allow_quad
 	    && _transformation_output.state == HybridState::Flying) {
 		for (int i = 0; i < 4; ++i) {
 			motors.control[i] = _mc_motors.control[i];
 		}
 
 		motors.reversible_flags = _mc_motors.reversible_flags & 0x0f;
+		motors.timestamp = _mc_motors.timestamp;
+		motors.timestamp_sample = _mc_motors.timestamp_sample;
 
-	} else if (!transformation_faulted && position_safe && !_manual_commissioning_active && rover_fresh && allow_rover
+	} else if (!inhibited && !transformation_faulted && position_safe && !_manual_commissioning_active && rover_fresh && allow_rover
 		   && _transformation_output.state == HybridState::Driving) {
 		// RoverDifferential owns mixing: right is source 1 -> final 4, left is source 0 -> final 5.
 		motors.control[4] = _rover_motors.control[1];
 		motors.control[5] = _rover_motors.control[0];
 		motors.reversible_flags = ((_rover_motors.reversible_flags & (1u << 1)) ? (1u << 4) : 0)
 					  | ((_rover_motors.reversible_flags & (1u << 0)) ? (1u << 5) : 0);
+		motors.timestamp = _rover_motors.timestamp;
+		motors.timestamp_sample = _rover_motors.timestamp_sample;
 	}
 
 	_actuator_motors_final_pub.publish(motors);

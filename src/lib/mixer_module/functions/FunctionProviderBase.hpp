@@ -48,6 +48,7 @@ public:
 	struct Context {
 		px4::WorkItem &work_item;
 		const float &thrust_factor;
+		hrt_abstime motor_command_timeout{0}; ///< zero preserves the provider's original retention behavior
 	};
 
 	FunctionProviderBase() = default;
