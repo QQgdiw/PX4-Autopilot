@@ -28,11 +28,15 @@ void encodeSigned(const int16_t value, uint8_t *destination)
 
 } // namespace
 
-C610CommandFrame makeC610Command(const int16_t left, const int16_t right)
+C610CommandFrame makeC610Command(const int16_t left, const int16_t right, const uint8_t left_id, const uint8_t right_id)
 {
 	C610CommandFrame frame{};
-	encodeSigned(left, &frame.data[0]);
-	encodeSigned(right, &frame.data[2]);
+
+	if (left_id >= 1 && left_id <= 4 && right_id >= 1 && right_id <= 4 && left_id != right_id) {
+		encodeSigned(left, &frame.data[2 * (left_id - 1)]);
+		encodeSigned(right, &frame.data[2 * (right_id - 1)]);
+	}
+
 	return frame;
 }
 

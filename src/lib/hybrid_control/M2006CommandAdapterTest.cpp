@@ -40,7 +40,11 @@ TEST(M2006CommandAdapter, RejectsEitherNonFiniteWheelCommand)
 TEST(M2006CommandAdapter, AcceptsOnlyConfiguredPhysicalMotorIds)
 {
 	EXPECT_TRUE(validM2006MotorIds(1, 2));
-	EXPECT_FALSE(validM2006MotorIds(2, 1));
-	EXPECT_FALSE(validM2006MotorIds(1, 3));
+	EXPECT_TRUE(validM2006MotorIds(2, 1));
+	EXPECT_TRUE(validM2006MotorIds(1, 3));
+	EXPECT_TRUE(validM2006MotorIds(4, 3));
+	EXPECT_FALSE(validM2006MotorIds(0, 2));
+	EXPECT_FALSE(validM2006MotorIds(1, 5));
+	EXPECT_FALSE(validM2006MotorIds(-1, 2));
 	EXPECT_FALSE(validM2006MotorIds(1, 1));
 }

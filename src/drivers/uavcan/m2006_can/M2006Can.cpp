@@ -144,7 +144,7 @@ void M2006Can::receiveFeedback()
 
 bool M2006Can::sendCommand(const int16_t left, const int16_t right)
 {
-	const hybrid_control::C610CommandFrame command = hybrid_control::makeC610Command(left, right);
+	const hybrid_control::C610CommandFrame command = hybrid_control::makeC610Command(left, right, _left_id, _right_id);
 	uavcan::CanFrame frame{};
 	frame.id = command.id;
 	frame.dlc = command.dlc;
@@ -316,6 +316,7 @@ void M2006Can::Run()
 	} else {
 		_last_reported_fault_bits = 0;
 	}
+
 	float dt = 0.002f;
 
 	if (_last_run != 0 && now > _last_run) {
@@ -355,16 +356,20 @@ int M2006Can::print_status()
 		 _iface != nullptr ? _iface->getErrorCount() : 0);
 	PX4_INFO("fault=0x%08" PRIx32 " current=%d/%d", _gate.faultBits(),
 		 static_cast<int>(_current_command[0]), static_cast<int>(_current_command[1]));
+
 	if (_last_tx_valid) {
 		PX4_INFO("last TX id=0x%03" PRIx32 " dlc=%u result=%d data=%02x %02x %02x %02x %02x %02x %02x %02x",
-			_last_tx_id, static_cast<unsigned>(_last_tx_dlc), _last_tx_result,
-			_last_tx_data[0], _last_tx_data[1], _last_tx_data[2], _last_tx_data[3],
-			_last_tx_data[4], _last_tx_data[5], _last_tx_data[6], _last_tx_data[7]);
+			 _last_tx_id, static_cast<unsigned>(_last_tx_dlc), _last_tx_result,
+			 _last_tx_data[0], _last_tx_data[1], _last_tx_data[2], _last_tx_data[3],
+			 _last_tx_data[4], _last_tx_data[5], _last_tx_data[6], _last_tx_data[7]);
+
 	} else {
 		PX4_INFO("last TX: none");
 	}
+
 #if defined(UAVCAN_STM32H7_NUTTX)
-	uavcan_stm32h7::CanIface::ErrorSnapshot snapshot{};
+	uavcan_stm32h7::CanIface::ErrorSnapshot snapshot {};
+
 	if (_h7_iface != nullptr) {
 		PX4_INFO("H7 err internal=%" PRIu64 " rx_overflow=%" PRIu32
 			 " cel=%" PRIu32 " busoff=%" PRIu32 " tx_timeout=%" PRIu32
@@ -380,7 +385,8 @@ int M2006Can::print_status()
 		const uint32_t ecr = snapshot.ecr;
 		PX4_INFO("first snapshot kind=0x%02" PRIx32 " t=%" PRIu64 "us",
 			 snapshot.kind, snapshot.monotonic_usec);
-		PX4_INFO("PSR=0x%08" PRIx32 " LEC=%" PRIu32 " DLEC=%" PRIu32 " ACT=%" PRIu32 " EP=%" PRIu32 " EW=%" PRIu32 " BO=%" PRIu32,
+		PX4_INFO("PSR=0x%08" PRIx32 " LEC=%" PRIu32 " DLEC=%" PRIu32 " ACT=%" PRIu32 " EP=%" PRIu32 " EW=%" PRIu32 " BO=%"
+			 PRIu32,
 			 psr,
 			 static_cast<uavcan::uint32_t>((psr & FDCAN_PSR_LEC) >> FDCAN_PSR_LEC_Pos),
 			 static_cast<uavcan::uint32_t>((psr & FDCAN_PSR_DLEC) >> FDCAN_PSR_DLEC_Pos),
@@ -388,6 +394,7 @@ int M2006Can::print_status()
 			 static_cast<uavcan::uint32_t>((psr & FDCAN_PSR_EP) ? 1U : 0U),
 			 static_cast<uavcan::uint32_t>((psr & FDCAN_PSR_EW) ? 1U : 0U),
 			 static_cast<uavcan::uint32_t>((psr & FDCAN_PSR_BO) ? 1U : 0U));
+
 		if (snapshot.ecr_valid) {
 			PX4_INFO("ECR=0x%08" PRIx32 " TEC=%" PRIu32 " REC=%" PRIu32 " CEL=%" PRIu32,
 				 ecr,
@@ -398,6 +405,7 @@ int M2006Can::print_status()
 		} else {
 			PX4_INFO("ECR=not sampled for software-path snapshot");
 		}
+
 		PX4_INFO("IR=0x%08" PRIx32 " TXFQS=0x%08" PRIx32 " TXBRP=0x%08" PRIx32,
 			 snapshot.ir, snapshot.txfqs, snapshot.txbrp);
 		PX4_INFO("TXBTO=0x%08" PRIx32 " TXBCF=0x%08" PRIx32 " CCCR=0x%08" PRIx32,
@@ -406,6 +414,7 @@ int M2006Can::print_status()
 	} else {
 		PX4_INFO("first snapshot=none");
 	}
+
 #endif
 	return 0;
 }

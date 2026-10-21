@@ -1,5 +1,15 @@
 # Test Workspace State
 
+- 2026-10-18 M2006 configurable IDs implemented: distinct IDs 1..4, default 1/2,
+  reboot required. TX slots and RX identities agree; four targeted CTest suites
+  passed. Hybrid firmware build passed; user reported hardware verification passed
+  on 2026-10-21. This is user-reported acceptance, not an agent hardware test.
+
+- Before this change, validation and TX slots restricted the mapping to left 1/right 2.
+
+- Motor 3/4 test-position discrepancy was resolved by the user as a coordinate
+  misunderstanding; no output mapping or firmware change was needed.
+
 - Hardware isolation proved that HX8 is healthy at a centered-switch cold boot
   and that either first landing-gear move triggers power protection. The root
   cause is now identified in code: command `0x0e` encodes its interval as 16

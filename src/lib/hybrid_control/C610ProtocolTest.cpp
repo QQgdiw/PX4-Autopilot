@@ -8,11 +8,49 @@ using namespace hybrid_control;
 
 TEST(C610Protocol, EncodesGroupedCurrentBigEndian)
 {
-	const C610CommandFrame frame = makeC610Command(-10000, 10000);
+	const C610CommandFrame frame = makeC610Command(-10000, 10000, 1, 2);
 	EXPECT_EQ(frame.id, 0x200u);
 	EXPECT_EQ(frame.dlc, 8);
 	const uint8_t expected[8] {0xD8, 0xF0, 0x27, 0x10, 0, 0, 0, 0};
 	EXPECT_EQ(0, memcmp(frame.data, expected, sizeof(expected)));
+}
+
+TEST(C610Protocol, ConfiguredSlotsMatchFeedbackIdentity)
+{
+	const uint8_t raw[8] {};
+
+	for (uint8_t left = 1; left <= 4; ++left) {
+		for (uint8_t right = 1; right <= 4; ++right) {
+			if (left == right) { continue; }
+
+			const auto frame = makeC610Command(-10000, 10000, left, right);
+
+			for (uint8_t id = 1; id <= 4; ++id) {
+				const uint16_t value = (uint16_t(frame.data[2 * (id - 1)]) << 8) | frame.data[2 * (id - 1) + 1];
+				EXPECT_EQ(value, id == left ? 0xD8F0 : (id == right ? 0x2710 : 0));
+			}
+
+			MotorIndex index{};
+			C610Feedback feedback{};
+			ASSERT_TRUE(decodeC610Feedback(0x200 + left, 8, raw, left, right, index, feedback));
+			EXPECT_EQ(index, MotorIndex::Left);
+			ASSERT_TRUE(decodeC610Feedback(0x200 + right, 8, raw, left, right, index, feedback));
+			EXPECT_EQ(index, MotorIndex::Right);
+			const auto stopped = makeC610Command(0, 0, left, right);
+			EXPECT_EQ(0, memcmp(stopped.data, raw, sizeof(raw)));
+		}
+	}
+}
+
+TEST(C610Protocol, InvalidIdsCannotEncodeNonzeroCurrent)
+{
+	const uint8_t zero[8] {};
+	const uint8_t ids[][2] {{0, 2}, {1, 0}, {5, 2}, {1, 5}, {255, 1}, {2, 2}};
+
+	for (const auto &pair : ids) {
+		const auto frame = makeC610Command(-10000, 10000, pair[0], pair[1]);
+		EXPECT_EQ(0, memcmp(frame.data, zero, sizeof(zero)));
+	}
 }
 
 TEST(C610Protocol, DecodesConfiguredFeedbackIds)

@@ -1,5 +1,50 @@
 # Test Log
 
+## 2026-10-21 User acceptance and commit
+
+- User confirmed M2006 configurable IDs work on hardware and requested a commit.
+  Detailed hardware procedure was not provided; do not infer all IDs were tested.
+- Motor 3/4 discrepancy was previously closed by the user as a coordinate
+  misunderstanding. LG_AUTO_EN concern was traced by the user to reversed HX8
+  angle parameters; neither required a firmware change.
+- Commit scope: ID mapping implementation, tests, parameter reference and state
+  records. Local build logs remain untracked; no remote push requested this turn.
+
+## 2026-10-18 Configurable M2006 IDs implementation
+
+- No new parameters or wire schema changes. Initialization caches distinct IDs
+  1..4; TX packs logical left/right into physical ID slots, RX uses same IDs.
+  Invalid encoder inputs return all-zero current; startup rejects invalid IDs.
+- Protocol tests cover all 12 distinct ID pairs, signed packing, matching RX
+  identity, unused zero slots, zero commands and invalid IDs. Protocol, adapter,
+  speed controller and drive gate CTest suites passed (4/4).
+- Evidence: state/m2006_ids_ctest.log and state/m2006_ids_tests_build.log.
+  No hardware test performed; recheck physical directions after ID reassignment.
+- make zeroone_x6_hybrid and git diff --check passed. Firmware .px4 size 1796252
+  bytes; FLASH 1914392 bytes (97.37%). SHA-256:
+  0e084d20b4383c25df4db9ebe52b2d6e237225a982bdaac74d55ac638d58b1d5.
+
+## 2026-10-18 M2006 ID configurability
+
+- At be0cbfa70b, M2K_L_ID/M2K_R_ID metadata restricts values to 1/2;
+  validM2006MotorIds explicitly rejects 2/1. decodeC610Feedback already accepts
+  distinct configured IDs 1..4, while makeC610Command fixes left/right to bytes
+  0..1/2..3. Relaxing parameter bounds alone is unsafe and insufficient.
+- Assessment only; no firmware edits or new test/build claims. No new reversal
+  parameter or MAVLink/DDS schema changes are needed for ID mapping support.
+
+## 2026-10-17 Motor 3/4 test-position discrepancy
+
+- `/mnt/e/PX4/zeroone_hybird_1017_vaild2.params`: AUX1..4 functions
+  103/102/104/101; rotor2 position +1/-1, rotor3 -1/+1.
+- Commander actuator-test function conversion and mixer assignment lookup do not
+  explicitly swap Motor 3/4; Hybrid copies MC indices 0..3 unchanged. Allocator
+  uses CA_ROTOR geometry (CA_AIRFRAME=2 selects StandardVTOL effectiveness).
+- Local QGC ActuatorTesting sends param5=1000+function. Runtime UI-selected
+  function is not yet captured, so neither QGC nor PX4 is confirmed responsible.
+- Normal-flight report conflicts with a simple physical 3/4 swap hypothesis;
+  preserve existing assignments and obtain bounded runtime evidence first.
+
 ## 2026-09-04 persistent HX8 protection diagnosis
 
 - A full cold start with the manual gear switch centered produced

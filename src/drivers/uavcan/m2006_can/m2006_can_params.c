@@ -16,10 +16,11 @@ PARAM_DEFINE_INT32(M2K_EN, 1);
 /**
  * Left motor C610 ID
  *
- * This hardware integration supports only left ID 1 and right ID 2.
+ * Physical C610 ID assigned to the logical left wheel. Must differ from M2K_R_ID.
+ * IDs 1-4 share command 0x200; unassigned slots are sent zero current.
  *
  * @min 1
- * @max 1
+ * @max 4
  * @reboot_required true
  * @group M2006 CAN
  */
@@ -28,10 +29,11 @@ PARAM_DEFINE_INT32(M2K_L_ID, 1);
 /**
  * Right motor C610 ID
  *
- * This hardware integration supports only left ID 1 and right ID 2.
+ * Physical C610 ID assigned to the logical right wheel. Must differ from M2K_L_ID.
+ * IDs 1-4 share command 0x200; unassigned slots are sent zero current.
  *
- * @min 2
- * @max 2
+ * @min 1
+ * @max 4
  * @reboot_required true
  * @group M2006 CAN
  */

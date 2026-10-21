@@ -1,5 +1,19 @@
 # Current Task
 
+## 2026-10-18 M2006 configurable IDs assessment
+
+- [x] Inspect parameter limits, initialization validation, RX mapping and TX slots.
+- [x] User authorized implementation; parameter bounds, validation and TX mapping updated.
+- [x] Four targeted CTest suites passed (protocol, adapter, speed controller, drive gate).
+- [x] make zeroone_x6_hybrid and git diff --check passed.
+- [x] User reported hardware verification passed on 2026-10-21; detailed test
+      procedure was not supplied.
+
+## 2026-10-17 Motor test numbering
+
+- [x] Inspect 1017 parameter export, allocator geometry, Hybrid copying and test routing.
+- [x] Closed: user confirmed coordinate misunderstanding; no remapping required.
+
 ## 2026-10-17 Hybrid motor scheduling and Bluejay compatibility
 
 - [x] Read development rules, inspect current branch and locate the actual

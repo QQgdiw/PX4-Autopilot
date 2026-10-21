@@ -7,7 +7,7 @@ namespace hybrid_control
 
 bool validM2006MotorIds(const int left_id, const int right_id)
 {
-	return left_id == 1 && right_id == 2;
+	return left_id >= 1 && left_id <= 4 && right_id >= 1 && right_id <= 4 && left_id != right_id;
 }
 
 M2006NormalizedCommand adaptM2006Command(const float controls[6], bool reverse_left, bool reverse_right)

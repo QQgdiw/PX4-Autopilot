@@ -19,7 +19,8 @@ struct C610CommandFrame {
 	uint8_t dlc{8};
 };
 
-C610CommandFrame makeC610Command(int16_t left, int16_t right);
+// Invalid IDs produce an all-zero group command. Unassigned slots remain zero.
+C610CommandFrame makeC610Command(int16_t left, int16_t right, uint8_t left_id, uint8_t right_id);
 
 bool decodeC610Feedback(uint32_t id, uint8_t dlc, const uint8_t data[8],
 			uint8_t left_id, uint8_t right_id,
