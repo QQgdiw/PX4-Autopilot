@@ -1,5 +1,11 @@
 # Test Workspace State
 
+- 2026-10-26: Quad-only DShot idle beacon and request-latched landing-gear policy
+  implemented locally. See docs/hybrid/quad-idle-beacon-and-gear-policy.zh-CN.md.
+  No MAVLink/DDS schema change. User must disable autonomous ESC beacon separately.
+  Ten final targeted suites and hybrid build passed. User reported hardware testing
+  passed on 2026-10-28; detailed test procedure was not provided.
+
 - 2026-10-18 M2006 configurable IDs implemented: distinct IDs 1..4, default 1/2,
   reboot required. TX slots and RX identities agree; four targeted CTest suites
   passed. Hybrid firmware build passed; user reported hardware verification passed

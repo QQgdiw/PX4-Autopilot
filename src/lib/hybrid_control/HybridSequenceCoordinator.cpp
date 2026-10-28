@@ -41,6 +41,8 @@ SequenceOutput HybridSequenceCoordinator::initialize(const SequenceConfig &confi
 	_config = config;
 	_output = {};
 	_initialized = true;
+	// Startup/fault recovery adopts measured shape without initiating gear movement.
+	// Keep a previously latched policy across fault clear. Cold boot defaults to false.
 
 	if (_config.gear_motion_timeout_us == 0 || _config.landed_debounce_us == 0
 	    || _config.airborne_debounce_us == 0) {
@@ -72,7 +74,8 @@ void HybridSequenceCoordinator::refresh(const SequenceInput &input)
 	switch (_output.state) {
 	case SequenceState::StableQuad:
 		_output.propulsion_owner = PropulsionOwner::Quad;
-		_output.propulsion_ready = true;
+		// This is a pre-arm requirement, not an airborne motor cutoff on gear movement.
+		_output.propulsion_ready = !_config.automatic_gear || !_retract_before_arm || input.armed || input.gear_stowed;
 		break;
 
 	case SequenceState::QuadToRoverPrepare:
@@ -116,8 +119,8 @@ void HybridSequenceCoordinator::refresh(const SequenceInput &input)
 		break;
 
 	case SequenceState::QuadRetract:
-		_output.propulsion_owner = PropulsionOwner::Quad;
-		_output.propulsion_ready = true;
+		_output.propulsion_owner = _retract_before_arm ? PropulsionOwner::None : PropulsionOwner::Quad;
+		_output.propulsion_ready = !_retract_before_arm;
 		_output.gear_target = _config.automatic_gear ? GearTarget::Stowed : GearTarget::None;
 		break;
 
@@ -141,6 +144,7 @@ SequenceOutput HybridSequenceCoordinator::update(const SequenceInput &input)
 		enter(SequenceState::QuadToRoverPrepare, input.now_us);
 
 	} else if (_output.state == SequenceState::StableRover && input.requested_target == HybridTarget::Flying) {
+		_retract_before_arm = input.retract_before_arm;
 		enter(SequenceState::RoverToQuadPrepare, input.now_us);
 	}
 
@@ -159,7 +163,8 @@ SequenceOutput HybridSequenceCoordinator::update(const SequenceInput &input)
 
 	switch (_output.state) {
 	case SequenceState::QuadToRoverPrepare: {
-			const bool landed = stableFor(input.landed, input.now_us, _config.landed_debounce_us, _landed_started_us);
+			const bool landed = stableFor(input.land_detection_fresh && input.landed, input.now_us,
+						      _config.landed_debounce_us, _landed_started_us);
 
 			if (_config.automatic_gear && !input.gear_down
 			    && input.now_us - _state_started_us >= _config.gear_motion_timeout_us) {
@@ -215,22 +220,29 @@ SequenceOutput HybridSequenceCoordinator::update(const SequenceInput &input)
 
 	case SequenceState::RoverToQuadTransform:
 		if (input.shape_state == HybridState::Flying) {
-			enter(_config.automatic_gear ? SequenceState::QuadWaitAirborne : SequenceState::StableQuad,
+			enter(_config.automatic_gear ? (_retract_before_arm ? SequenceState::QuadRetract : SequenceState::QuadWaitAirborne)
+			      : SequenceState::StableQuad,
 			      input.now_us);
 		}
 
 		break;
 
 	case SequenceState::QuadWaitAirborne:
-		if (stableFor(!input.landed, input.now_us, _config.airborne_debounce_us, _airborne_started_us)) {
+		if (stableFor(input.land_detection_fresh && !input.landed, input.now_us,
+			      _config.airborne_debounce_us, _airborne_started_us)) {
 			enter(SequenceState::QuadRetract, input.now_us);
 		}
 
 		break;
 
 	case SequenceState::QuadRetract:
+		if (_retract_before_arm && input.armed) {
+			fail(SequenceFault::InvalidConfiguration, PropulsionOwner::None);
+			return _output;
+		}
+
 		if (!input.gear_stowed && input.now_us - _state_started_us >= _config.gear_motion_timeout_us) {
-			fail(SequenceFault::GearTimeout, PropulsionOwner::Quad);
+			fail(SequenceFault::GearTimeout, _retract_before_arm ? PropulsionOwner::None : PropulsionOwner::Quad);
 			return _output;
 		}
 

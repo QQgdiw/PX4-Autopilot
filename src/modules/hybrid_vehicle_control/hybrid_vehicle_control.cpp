@@ -647,7 +647,7 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 				&& _hx8_status.protection_flags == 0,
 				gear_at(gear_angle, gear_down, gear_tolerance),
 				gear_at_or_beyond_clear(gear_angle, gear_down, gear_clear, gear_stowed, gear_tolerance),
-				gear_at(gear_angle, gear_stowed, gear_tolerance)};
+				gear_at(gear_angle, gear_stowed, gear_tolerance), _sequence_retract_before_arm, land_fresh};
 	};
 
 	if (mixed_sequence && !_sequence_initialized
@@ -890,6 +890,14 @@ void HybridVehicleControl::update_state_machine(const TransformationInput &input
 	}
 }
 
+int HybridVehicleControl::print_status()
+{
+	PX4_INFO("sequence=%u ready=%d gear_policy=%s", (unsigned)_sequence_output.state,
+		 (int)_sequence_output.propulsion_ready,
+		 _sequence.retractBeforeArm() ? "retract-before-arm" : "airborne-or-startup");
+	return 0;
+}
+
 void HybridVehicleControl::request_transition(HybridTarget target, hrt_abstime now,
 		const vehicle_command_s *command_context)
 {
@@ -941,6 +949,19 @@ void HybridVehicleControl::request_transition(HybridTarget target, hrt_abstime n
 
 		_manual_commissioning_active = false;
 		_sequence_requested_target = target;
+		vehicle_status_s vehicle_status{};
+		_vehicle_status_sub.copy(&vehicle_status);
+		// Use pilot intention before transition mode routing can replace the active mode.
+		const uint8_t mode = vehicle_status.nav_state_user_intention;
+		_sequence_retract_before_arm = timestamp_fresh(vehicle_status.timestamp, now, 1_s)
+					      && (mode == vehicle_status_s::NAVIGATION_STATE_MANUAL
+						  || mode == vehicle_status_s::NAVIGATION_STATE_STAB
+						  || mode == vehicle_status_s::NAVIGATION_STATE_ACRO
+						  || mode == vehicle_status_s::NAVIGATION_STATE_ALTCTL
+						  || mode == vehicle_status_s::NAVIGATION_STATE_POSCTL
+						  || mode == vehicle_status_s::NAVIGATION_STATE_POSITION_SLOW);
+		PX4_INFO("gear policy: %s (mode=%u)", _sequence_retract_before_arm ? "retract before arm" : "retract after airborne",
+			 (unsigned)mode);
 		_active_transition_target = target;
 		_transition_start_time = now;
 		_transition_timing_active = true;

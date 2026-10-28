@@ -44,6 +44,9 @@
 
 using namespace time_literals;
 
+#include <lib/hybrid_control/HybridIdleBeacon.hpp>
+#include "HybridIdleBeaconGate.hpp"
+
 #if !defined(DIRECT_PWM_OUTPUT_CHANNELS)
 #  error "board_config.h needs to define DIRECT_PWM_OUTPUT_CHANNELS"
 #endif
@@ -168,6 +171,9 @@ private:
 	perf_counter_t	_cycle_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};
 
 	Command _current_command{};
+	hybrid_control::HybridIdleBeacon _hybrid_idle_beacon{};
+	uORB::Subscription _hybrid_status_sub{ORB_ID(hybrid_vehicle_status)};
+	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
 
 	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
 	uORB::Subscription _vehicle_command_sub{ORB_ID(vehicle_command)};
@@ -175,6 +181,8 @@ private:
 	uint16_t _esc_status_counter{0};
 
 	DEFINE_PARAMETERS(
+		(ParamInt<px4::params::HYB_BCN_DLY>) _param_hyb_bcn_delay,
+		(ParamInt<px4::params::HYB_BCN_INT>) _param_hyb_bcn_interval,
 		(ParamFloat<px4::params::DSHOT_MIN>)    _param_dshot_min,
 		(ParamBool<px4::params::DSHOT_3D_ENABLE>) _param_dshot_3d_enable,
 		(ParamInt<px4::params::DSHOT_3D_DEAD_H>) _param_dshot_3d_dead_h,

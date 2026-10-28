@@ -6,6 +6,28 @@ serial_config:
         group: DShot
 
 parameters:
+    - group: Hybrid Control
+      definitions:
+        HYB_BCN_DLY:
+            description:
+                short: Quad disarmed idle beacon delay
+                long: |
+                    DShot beep only for healthy stable Quad-Rover in Quad shape,
+                    disarmed with all four rotor outputs stopped. Disable the ESC's
+                    autonomous beacon separately. Zero disables PX4 idle beeping.
+            type: int32
+            unit: s
+            min: 0
+            max: 3600
+            default: 300
+        HYB_BCN_INT:
+            description:
+                short: Quad idle beacon repeat interval
+            type: int32
+            unit: s
+            min: 1
+            max: 60
+            default: 3
     - group: DShot
       definitions:
         DSHOT_MIN:

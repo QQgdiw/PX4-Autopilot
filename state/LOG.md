@@ -1,5 +1,37 @@
 # Test Log
 
+## 2026-10-28 User acceptance and publication
+
+- User reported beacon/landing-gear changes tested without issues and requested
+  commit plus remote push to feature/testc4-rover-tuning. Detailed hardware test
+  procedure was not supplied; do not infer individual checklist steps completed.
+- Scope remains the previously built/tested implementation, tests and documentation.
+  Build logs remain untracked. No protocol dependency updates or unrelated files.
+
+## 2026-10-26 Beacon and request-latched gear strategy
+
+- User selected ESC autonomous beacon disabled externally (AP passthrough) plus
+  PX4 Quad-only idle beep. Do not implement Rover signal suppression.
+- DShot checks actual stopped rotor outputs and fresh shape/arming state at send
+  time; automatic beep is not queued and cannot outlive its eligibility snapshot.
+- Accepted transition snapshots nav_state_user_intention before transition routing;
+  fresh manual modes select ground retraction, others retain airborne policy.
+- QuadRetract in manual policy has no propulsion authority/readiness until stowed;
+  health checks and final transition ACK already use these fields. Stable airborne
+  gear movement must not become a new motor cutoff condition.
+- Found existing stale land feedback mapped to landed=false. Added explicit fresh
+  flag to internal sequence input so stale reports cannot satisfy airborne debounce.
+- Fault clear retains the latched policy but does not issue motion; cold Quad boot
+  retains original startup semantics. No protocol message layouts changed.
+- Final verification: state/beacon_gear_ctest_final.log (10/10 suites),
+  state/beacon_gear_tests_build_last.log, state/beacon_gear_firmware_build_last.log;
+  AStyle applied to affected C++ files; git diff --check passed. No hardware test.
+- .px4 1797780 bytes, SHA-256
+  6f4b20f95a05b81460ad1dd519d472d352c148e589c339225052effe658fdc0c.
+  .bin 1916016 bytes, SHA-256
+  4dccdac290082a8c00a03db7864dc6f9061f64024bf669695b3bb9004f9e8f48.
+  FLASH 1916016 bytes / 1920 KB = 97.45%; AXI SRAM 99844 bytes.
+
 ## 2026-10-21 User acceptance and commit
 
 - User confirmed M2006 configurable IDs work on hardware and requested a commit.

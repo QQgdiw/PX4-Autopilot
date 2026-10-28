@@ -423,8 +423,36 @@ bool DShot::updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS],
 			  unsigned num_outputs, unsigned num_control_groups_updated)
 {
 	if (!_outputs_on) {
+		_hybrid_idle_beacon.update(hrt_absolute_time(), false, 0, 0);
 		return false;
 	}
+
+	const hrt_abstime now = hrt_absolute_time();
+	hybrid_vehicle_status_s hybrid{};
+	vehicle_status_s vehicle{};
+	_hybrid_status_sub.copy(&hybrid);
+	_vehicle_status_sub.copy(&vehicle);
+	const auto &armed = _mixing_output.armed();
+	uint32_t rotor_mask = 0;
+	uint8_t rotor_functions = 0;
+	bool rotors_stopped = true;
+
+	for (unsigned i = 0; i < num_outputs; ++i) {
+		const int motor = (int)_mixing_output.outputFunction(i) - (int)OutputFunction::Motor1;
+
+		if (motor >= 0 && motor < 4) {
+			rotor_mask |= 1u << i;
+			rotor_functions |= 1u << motor;
+			rotors_stopped &= outputs[i] == DSHOT_DISARM_VALUE;
+		}
+	}
+
+	const bool idle_quad = hybridIdleBeaconEligible(now, vehicle, hybrid, armed, stop_motors,
+			       rotors_stopped, rotor_functions,
+			       _current_command.valid() || _request_esc_info.load() != nullptr || _waiting_for_esc_info);
+	const bool idle_beep = _hybrid_idle_beacon.update(now, idle_quad,
+			       _param_hyb_bcn_delay.get() > 0 ? (uint64_t)_param_hyb_bcn_delay.get() * 1000000 : 0,
+			       _param_hyb_bcn_interval.get() > 0 ? (uint64_t)_param_hyb_bcn_interval.get() * 1000000 : 0);
 
 	int requested_telemetry_index = -1;
 
@@ -448,6 +476,9 @@ bool DShot::updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS],
 			if (_current_command.valid() && (_current_command.motor_mask & (1 << i))) {
 				// for some reason we need to always request telemetry when sending a command
 				up_dshot_motor_command(i, _current_command.command, true);
+
+			} else if (idle_beep && (rotor_mask & (1u << i))) {
+				up_dshot_motor_command(i, DShot_cmd_beacon1, true);
 
 			} else {
 				up_dshot_motor_command(i, DShot_cmd_motor_stop, telemetry_index == requested_telemetry_index);

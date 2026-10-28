@@ -43,6 +43,9 @@ struct SequenceInput {
 	bool gear_down{false};
 	bool gear_clear{false};
 	bool gear_stowed{false};
+	// Sampled only when accepting a new Rover -> Quad request, never on mode changes.
+	bool retract_before_arm{false};
+	bool land_detection_fresh{true};
 };
 
 struct SequenceOutput {
@@ -61,6 +64,7 @@ public:
 	SequenceOutput initialize(const SequenceConfig &config, const SequenceInput &input);
 	SequenceOutput update(const SequenceInput &input);
 	const SequenceOutput &output() const { return _output; }
+	bool retractBeforeArm() const { return _retract_before_arm; }
 
 private:
 	bool stableFor(bool condition, uint64_t now_us, uint64_t duration_us, uint64_t &started_us);
@@ -74,6 +78,7 @@ private:
 	uint64_t _landed_started_us{0};
 	uint64_t _airborne_started_us{0};
 	bool _initialized{false};
+	bool _retract_before_arm{false};
 };
 
 } // namespace hybrid_control

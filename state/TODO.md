@@ -1,5 +1,17 @@
 # Current Task
 
+## 2026-10-26 Quad idle beacon and landing gear policy
+
+- [x] Read rules and audit current sequence, arming, command lifecycle and DShot paths.
+- [x] Add gated Quad-only beep timer without interrupting DShot stop frames.
+- [x] Sample pilot intention at accepted transition; manual retracts before arming,
+      auto keeps airborne retraction; mode changes do not trigger gear action.
+- [x] Preserve policy across fault clear; reject stale land evidence as airborne evidence.
+- [x] Ten final targeted CTest suites passed, including automatic Quad takeoff-wait eligibility.
+- [x] AStyle, git diff --check, hybrid build and firmware artifact verification completed.
+- [x] User reported testing passed on 2026-10-28; individual test steps were not supplied.
+- [x] User authorized commit and remote push on 2026-10-28.
+
 ## 2026-10-18 M2006 configurable IDs assessment
 
 - [x] Inspect parameter limits, initialization validation, RX mapping and TX slots.

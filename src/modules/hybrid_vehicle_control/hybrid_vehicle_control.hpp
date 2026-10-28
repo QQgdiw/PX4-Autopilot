@@ -62,6 +62,7 @@
 #include <uORB/topics/manual_control_setpoint.h>
 #include <uORB/topics/manual_control_switches.h>
 #include <uORB/topics/vehicle_land_detected.h>
+#include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/hybrid_vehicle_status.h>
 #include <uORB/topics/vehicle_control_mode.h>
@@ -90,6 +91,7 @@ public:
 	static int print_usage(const char *reason = nullptr);
 
 	bool init();
+	int print_status() override;
 
 private:
 	friend class HybridOutputTest;
@@ -138,6 +140,7 @@ private:
 	uORB::Subscription _manual_control_setpoint_sub{ORB_ID(manual_control_setpoint)};
 	uORB::Subscription _manual_control_switches_sub{ORB_ID(manual_control_switches)};
 	uORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
+	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
 	uORB::Subscription _vehicle_control_mode_sub{ORB_ID(vehicle_control_mode)};
 	uORB::Subscription _encoder_sub{ORB_ID(sensor_encoder)};
 	uORB::SubscriptionMultiArray<magnetic_sensor_s, 2> _magnetic_subs{ORB_ID::magnetic_sensor};
@@ -216,6 +219,7 @@ private:
 	hybrid_control::SequenceOutput _sequence_output{};
 	bool _sequence_initialized{false};
 	hybrid_control::HybridTarget _sequence_requested_target{hybrid_control::HybridTarget::None};
+	bool _sequence_retract_before_arm{false};
 	hybrid_control::HybridTarget _active_transition_target{hybrid_control::HybridTarget::None};
 	uint32_t _gear_sequence{0};
 	hybrid_control::GearTarget _last_gear_target{hybrid_control::GearTarget::None};

@@ -20,6 +20,139 @@ SequenceInput quadInput(uint64_t now = 1)
 
 } // namespace
 
+TEST(HybridSequenceCoordinator, ManualFlightRetractsOnGroundBeforeArmingAndIgnoresModeChanges)
+{
+	HybridSequenceCoordinator coordinator;
+	SequenceInput input = quadInput();
+	input.shape_state = HybridState::Driving;
+	input.landed = true;
+	coordinator.initialize({}, input);
+	input.requested_target = HybridTarget::Flying;
+	input.retract_before_arm = true;
+	coordinator.update(input);
+	ASSERT_TRUE(coordinator.retractBeforeArm());
+	input.requested_target = HybridTarget::None;
+	input.retract_before_arm = false; // Switch to Offboard after acceptance.
+	input.gear_down = true;
+	input.gear_stowed = false;
+	coordinator.update(input);
+	input.shape_state = HybridState::Flying;
+	auto output = coordinator.update(input);
+	EXPECT_EQ(output.state, SequenceState::QuadRetract);
+	EXPECT_EQ(output.gear_target, GearTarget::Stowed);
+	EXPECT_FALSE(output.propulsion_ready);
+	EXPECT_EQ(output.propulsion_owner, PropulsionOwner::None);
+	input.gear_stowed = true;
+	output = coordinator.update(input);
+	EXPECT_EQ(output.state, SequenceState::StableQuad);
+	EXPECT_TRUE(output.propulsion_ready);
+	EXPECT_EQ(output.propulsion_owner, PropulsionOwner::Quad);
+	input.requested_target = HybridTarget::Flying; // Duplicate cannot reselect policy.
+	output = coordinator.update(input);
+	EXPECT_TRUE(coordinator.retractBeforeArm());
+	EXPECT_EQ(output.gear_target, GearTarget::None);
+	input.armed = true;
+	input.gear_stowed = false; // Gear movement after takeoff must not remove Quad authority.
+	output = coordinator.update(input);
+	EXPECT_TRUE(output.propulsion_ready);
+	EXPECT_EQ(output.propulsion_owner, PropulsionOwner::Quad);
+}
+
+TEST(HybridSequenceCoordinator, AutomaticPolicyIgnoresModeChangeAndRequiresFreshAirborneEvidence)
+{
+	HybridSequenceCoordinator coordinator;
+	SequenceInput input = quadInput();
+	input.shape_state = HybridState::Driving;
+	coordinator.initialize({}, input);
+	input.requested_target = HybridTarget::Flying;
+	coordinator.update(input);
+	input.requested_target = HybridTarget::None;
+	input.retract_before_arm = true; // Now manual, but policy must remain automatic.
+	input.gear_down = true;
+	input.gear_stowed = false;
+	coordinator.update(input);
+	input.shape_state = HybridState::Flying;
+	ASSERT_EQ(coordinator.update(input).state, SequenceState::QuadWaitAirborne);
+	input.land_detection_fresh = false;
+	input.landed = false;
+
+	for (unsigned i = 0; i < 5; ++i) {
+		input.now_us += 1000000;
+		EXPECT_EQ(coordinator.update(input).state, SequenceState::QuadWaitAirborne);
+	}
+
+	input.land_detection_fresh = true;
+	coordinator.update(input);
+	input.now_us += 1000001;
+	auto output = coordinator.update(input);
+	EXPECT_EQ(output.state, SequenceState::QuadRetract);
+	EXPECT_TRUE(output.propulsion_ready);
+	EXPECT_FALSE(coordinator.retractBeforeArm());
+}
+
+TEST(HybridSequenceCoordinator, ManualRetractionTimeoutAndFaultClearDoNotPermitArming)
+{
+	HybridSequenceCoordinator coordinator;
+	SequenceInput input = quadInput();
+	input.shape_state = HybridState::Driving;
+	coordinator.initialize({}, input);
+	input.requested_target = HybridTarget::Flying;
+	input.retract_before_arm = true;
+	coordinator.update(input);
+	input.requested_target = HybridTarget::None;
+	input.gear_down = true;
+	input.gear_stowed = false;
+	coordinator.update(input);
+	input.shape_state = HybridState::Flying;
+	coordinator.update(input);
+	input.now_us += 8000001;
+	auto output = coordinator.update(input);
+	EXPECT_EQ(output.fault, SequenceFault::GearTimeout);
+	EXPECT_FALSE(output.propulsion_ready);
+	input.retract_before_arm = false;
+	output = coordinator.initialize({}, input); // No movement implicit in recovery.
+	EXPECT_EQ(output.gear_target, GearTarget::None);
+	EXPECT_FALSE(output.propulsion_ready);
+	input.gear_stowed = true;
+	EXPECT_TRUE(coordinator.update(input).propulsion_ready);
+}
+
+TEST(HybridSequenceCoordinator, ColdQuadBootDoesNotChoosePolicyOrMoveGear)
+{
+	HybridSequenceCoordinator coordinator;
+	SequenceInput input = quadInput();
+	input.retract_before_arm = true;
+	input.gear_stowed = false;
+	auto output = coordinator.initialize({}, input);
+	EXPECT_FALSE(coordinator.retractBeforeArm());
+	EXPECT_EQ(output.gear_target, GearTarget::None);
+	input.requested_target = HybridTarget::Flying;
+	output = coordinator.update(input);
+	EXPECT_FALSE(coordinator.retractBeforeArm());
+	EXPECT_EQ(output.gear_target, GearTarget::None);
+}
+
+TEST(HybridSequenceCoordinator, AutoGearDisabledIgnoresManualFlightRetractionPolicy)
+{
+	HybridSequenceCoordinator coordinator;
+	SequenceConfig config{};
+	config.automatic_gear = false;
+	SequenceInput input = quadInput();
+	input.shape_state = HybridState::Driving;
+	input.gear_down = false;
+	input.gear_stowed = false;
+	coordinator.initialize(config, input);
+	input.requested_target = HybridTarget::Flying;
+	input.retract_before_arm = true;
+	coordinator.update(input);
+	input.requested_target = HybridTarget::None;
+	input.shape_state = HybridState::Flying;
+	auto output = coordinator.update(input);
+	EXPECT_EQ(output.state, SequenceState::StableQuad);
+	EXPECT_EQ(output.gear_target, GearTarget::None);
+	EXPECT_TRUE(output.propulsion_ready);
+}
+
 TEST(HybridSequenceCoordinator, QuadToRoverPreservesQuadUntilLandedAndGearDown)
 {
 	HybridSequenceCoordinator coordinator;
