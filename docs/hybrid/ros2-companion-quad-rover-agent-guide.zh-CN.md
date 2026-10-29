@@ -13,7 +13,7 @@ ROS 2/MAVLink 客户端的 Agent，同时保留足够的人类可读说明。
 | --- | --- |
 | PX4 仓库 | `https://github.com/QQgdiw/PX4-Autopilot.git` |
 | PX4 分支 | `feature/testc4-rover-tuning` |
-| PX4 固定版本要求 | 本次 FRD AUTO_LAND 修复提交；须记录实际 `ver all`，旧 `fb1fb9bd` 不包含 v1 局部航向资格 |
+| PX4 固件源码 commit | `2f04e0cf2aa7b6c4a2a8588d6fd1b8d4b9a92512`（FRD AUTO_LAND 修复） |
 | 固件目标 | `zeroone_x6_hybrid` |
 | MAVLink 版本 | MAVLink 2 |
 | MAVLink dialect | `hybrid_vehicle` |

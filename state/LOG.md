@@ -1,5 +1,21 @@
 # Test Log
 
+## 2026-10-29 FRD local-heading release publication
+
+- Pushed firmware source 2f04e0cf2aa7b6c4a2a8588d6fd1b8d4b9a92512 to
+  feature/testc4-rover-tuning; no history rewrite. Reconfigured/rebuilt that
+  committed tree so both PX4_GIT_VERSION_STR and descriptive tag identify it.
+- .px4 1,798,320 bytes, SHA-256
+  5c0b5f346413f367bb9cefb4afd3231cc578062fd7f8b0b7055faff4abb70d31.
+  .bin 1,916,728 bytes, SHA-256
+  b641232cfc3958e9bd3fe6590ccb1f786e36a9c1939f2d111b2b1566de0700d2.
+- px4_msgs new branch/tag pushed atomically. r2 tag object
+  fe374609fd5bd3dadb9823090c956b7240351e5b peels to 3b569db54de24ff3e7311ccb407693975f5601f6.
+  Both new remote refs and unchanged r1 e0f41fb57e verified via ls-remote.
+- Message versioning CI check passed against a672224f4e; no MAVLink gitlink or
+  QGC schema change. Companion must rebuild dependencies and subscribe to _v1.
+- This follow-up records release evidence only; no additional control changes.
+
 ## 2026-10-29 FRD EV landing heading implementation
 
 - User authorized independent local qualification and versioned DDS/px4_msgs

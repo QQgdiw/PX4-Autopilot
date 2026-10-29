@@ -5,7 +5,9 @@
 目标：`feature/testc4-rover-tuning`，`zeroone_x6_hybrid`。
 修复前基线为 `a672224f4e2571ad386fa988de6c5de8e7e7d53b`；日志中的
 `75f6a8081e9631b3679739ae7c3e21d185ae7ca5` 同样包含此问题。
-具体固件提交以本次发布记录及 `ver all` 为准，不以分支名称代替版本锁定。
+固定固件源码提交为 `2f04e0cf2aa7b6c4a2a8588d6fd1b8d4b9a92512`，已经推送。
+后续发布记录是纯文档提交；此处固件包对应上述源码提交，不以分支最新名称
+代替版本锁定，刷写后用 `ver all` 核对。
 
 配套消息：`QQgdiw/px4_msgs` 分支 `hybrid-rover-local-heading-v1.16.1`，
 固定 tag `hybrid-rover-v1.16.1-r2`，提交
@@ -96,6 +98,20 @@ EKF 每次发布时计算新标志：
 推荐直接升级依赖和话题，不把未经验证的转换节点当作本次上线前提。
 
 ## 验证与待完成实机项目
+
+已从固定提交重新配置并执行 `make zeroone_x6_hybrid`：
+
+| 项目 | 发布值 |
+| --- | --- |
+| 文件 | `build/zeroone_x6_hybrid/zeroone_x6_hybrid.px4` |
+| 大小 | 1,798,320 bytes |
+| SHA-256 | `5c0b5f346413f367bb9cefb4afd3231cc578062fd7f8b0b7055faff4abb70d31` |
+| `.bin` 大小 / FLASH | 1,916,728 bytes / 1,966,080 bytes（97.49%） |
+| `.bin` SHA-256 | `b641232cfc3958e9bd3fe6590ccb1f786e36a9c1939f2d111b2b1566de0700d2` |
+
+固件及 px4_msgs 分支、r2 annotated tag 的远程引用已回读核验；旧 r1 保持
+`e0f41fb57ed9217ba15730854f6c7c92b0262134` 未移动。新 r2 的服务器端 tag
+保护尚未核验，不将 annotated tag 本身描述为已强制防移动。
 
 已完成：修复前失败复现；EKF 合成传感器测试；Auto 与选择器功能测试；
 148 个单元/功能 CTest 套件全部通过；消息布局及双向转换静态检查；消息仓库

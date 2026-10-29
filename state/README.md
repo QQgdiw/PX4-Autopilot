@@ -9,6 +9,9 @@
   build passed. Full make tests blocked by pre-existing HX8 Linux EAGAIN/EWOULDBLOCK
   -Werror=logical-op. No real ROS/DDS, flight or closed-loop vehicle sim verification.
   See docs/hybrid/frd-auto-land-heading.zh-CN.md for semantics and migration.
+  Published firmware commit 2f04e0cf2aa7b6c4a2a8588d6fd1b8d4b9a92512 and px4_msgs
+  r2 verified remotely. Build artifacts retain this firmware commit; subsequent
+  release-record commit changes documentation only.
 
 - 2026-10-26: Quad-only DShot idle beacon and request-latched landing-gear policy
   implemented locally. See docs/hybrid/quad-idle-beacon-and-gear-policy.zh-CN.md.

@@ -15,7 +15,8 @@
       git diff --check and zeroone_x6_hybrid build passed.
 - [ ] Full make tests: blocked by existing HX8 Linux equal errno warning;
       do not describe the 148 separate suites as a full make tests pass.
-- [ ] Publish fixed firmware/px4_msgs revisions and r2 tag, verify remote refs.
+- [x] Published firmware 2f04e0cf2a and px4_msgs r2 / 3b569db; remote refs
+      and unchanged old r1 verified. Release document records exact artifacts.
 - [ ] Companion ROS build and actual DDS/optional translation-node validation.
 - [ ] Hardware validation with companion logs; no PID changes inferred.
 
