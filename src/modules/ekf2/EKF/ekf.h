@@ -257,6 +257,32 @@ public:
 #endif
 	}
 
+	// Local yaw may be controlled without knowing north (e.g. world-fixed FRD vision).
+	// This does NOT relax the absolute alignment contract of isYawFinalAlignComplete().
+	bool isLocalHeadingValid() const
+	{
+		const float yaw_variance = getYawVar();
+
+		if (!_filter_initialised || !_control_status.flags.tilt_align || _fault_status.flags.bad_hdg
+		    || !_state.quat_nominal.isAllFinite() || !PX4_ISFINITE(yaw_variance) || yaw_variance < 0.f) {
+			return false;
+		}
+
+		if (isYawFinalAlignComplete()) {
+			return true;
+		}
+
+#if defined(CONFIG_EKF2_EXTERNAL_VISION)
+		// Require an accepted fusion/reset, not just configuration or intended aiding.
+		// Use the EV data-loss horizon (400 ms), not the much longer reset timeout.
+		return _control_status.flags.ev_yaw && !_control_status.flags.ev_yaw_fault
+		       && _aid_src_ev_yaw.time_last_fuse <= _time_delayed_us
+		       && isRecent(_aid_src_ev_yaw.time_last_fuse, 2 * EV_MAX_INTERVAL);
+#else
+		return false;
+#endif
+	}
+
 	// fuse single direct state measurement (eg NED velocity, NED position, mag earth field, etc)
 	void fuseDirectStateMeasurement(const float innov, const float innov_var, const float R, const int state_index);
 

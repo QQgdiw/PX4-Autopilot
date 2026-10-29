@@ -1,5 +1,24 @@
 # Current Task
 
+## 2026-10-29 FRD external-vision AUTO_LAND heading
+
+- [x] Confirm reported source chain persists at a672224f4e: FRD EV yaw clears
+      absolute yaw_align, Auto yaw qualification rejects it, land caches NaN.
+- [x] Confirm heading reset adjusts _yaw_sp_prev only, not _land_heading.
+- [x] Authorized independent local-heading validity, versioned VehicleLocalPosition,
+      matched px4_msgs release and companion migration; no implicit old compatibility.
+- [x] Failing reproduction (NaN vs 0.7 rad) captured before production changes.
+- [x] Implement estimator-owned local qualification, selector-consistent forwarding,
+      land capture/reset/loss/recovery and non-EKF producer compatibility.
+- [x] Versioned message/archive/conversion and paired px4_msgs r2 commit prepared.
+- [x] 148 unit/functional CTest suites, message contract tests, AStyle,
+      git diff --check and zeroone_x6_hybrid build passed.
+- [ ] Full make tests: blocked by existing HX8 Linux equal errno warning;
+      do not describe the 148 separate suites as a full make tests pass.
+- [ ] Publish fixed firmware/px4_msgs revisions and r2 tag, verify remote refs.
+- [ ] Companion ROS build and actual DDS/optional translation-node validation.
+- [ ] Hardware validation with companion logs; no PID changes inferred.
+
 ## 2026-10-26 Quad idle beacon and landing gear policy
 
 - [x] Read rules and audit current sequence, arming, command lifecycle and DShot paths.

@@ -13,7 +13,7 @@ ROS 2/MAVLink 客户端的 Agent，同时保留足够的人类可读说明。
 | --- | --- |
 | PX4 仓库 | `https://github.com/QQgdiw/PX4-Autopilot.git` |
 | PX4 分支 | `feature/testc4-rover-tuning` |
-| 协议实现基准 PX4 commit | `fb1fb9bdeacf32e67a4cc168ed87373e6dcbcb7f` |
+| PX4 固定版本要求 | 本次 FRD AUTO_LAND 修复提交；须记录实际 `ver all`，旧 `fb1fb9bd` 不包含 v1 局部航向资格 |
 | 固件目标 | `zeroone_x6_hybrid` |
 | MAVLink 版本 | MAVLink 2 |
 | MAVLink dialect | `hybrid_vehicle` |
@@ -21,18 +21,18 @@ ROS 2/MAVLink 客户端的 Agent，同时保留足够的人类可读说明。
 | MAVLink 固定 tag | `qgc-hybrid-rover-tuning-v1.16.1-r2` |
 | MAVLink peeled commit | `ec506d609e775035b7c8ed37f09ef05774409281` |
 | ROS 2 消息仓库 | `https://github.com/QQgdiw/px4_msgs.git` |
-| `px4_msgs` 固定 tag | `hybrid-rover-v1.16.1-r1` |
-| `px4_msgs` peeled commit | `e0f41fb57ed9217ba15730854f6c7c92b0262134` |
+| `px4_msgs` 固定 tag | `hybrid-rover-v1.16.1-r2` |
+| `px4_msgs` peeled commit | `3b569db54de24ff3e7311ccb407693975f5601f6` |
 
 机载端必须固定使用上述两个 tag，不得使用 stock `common.xml`、上游
 `PX4/px4_msgs release/1.16` 或仅凭分支最新状态构建生产版本。
 
-MAVLink tag 由 GitHub ruleset `22434667`保护；`px4_msgs` tag 由 ruleset
-`22433564`保护。两条规则均禁止删除和 non-fast-forward 更新。
+MAVLink tag 保持不变，原 ruleset `22434667` 不变。旧 px4_msgs r1 的
+`22433564` 保护不能推断为保护新 r2；新 tag 的服务器端防移动规则需独立核验。
 
-本次 PX4 更新只改变 MAVLink gitlink，没有修改 uORB `.msg` 或 DDS topic 清单，
-因此从 PX4 `7c4fb9e638787435351437c4dfc99e417adffd85` 同步生成的上述
-`px4_msgs` r1 tag 仍与当前固件兼容。
+2026-10-29 更新：VehicleLocalPosition 升级为 MESSAGE_VERSION=1，新增
+`heading_good_for_local_control`，DDS 输出改为 `/fmu/out/vehicle_local_position_v1`。
+旧 r1 对该接口不自动兼容，必须更新消息依赖并重编译节点。本次不改 MAVLink。
 
 兼容性来源的优先级为：
 
@@ -270,11 +270,11 @@ NaN 的终止帧。
 
 ```text
 repository: https://github.com/QQgdiw/px4_msgs.git
-tag:        hybrid-rover-v1.16.1-r1
-commit:     e0f41fb57ed9217ba15730854f6c7c92b0262134
+tag:        hybrid-rover-v1.16.1-r2
+commit:     3b569db54de24ff3e7311ccb407693975f5601f6
 ```
 
-该 tag 的 236 个消息和 1 个服务由 PX4 commit `7c4fb9e638`完整同步。禁止用
+该版本保留原完整消息集，仅升级 VehicleLocalPosition；已逐文件与修复固件核对。禁止用
 上游 `PX4/px4_msgs release/1.16`替代，否则 `rover_velocity`字段和项目扩展消息
 不匹配。
 
@@ -294,6 +294,20 @@ commit:     e0f41fb57ed9217ba15730854f6c7c92b0262134
 | `/fmu/out/vehicle_status` | `px4_msgs::msg::VehicleStatus` | PX4 到机载 |
 | `/fmu/out/vehicle_control_mode` | `px4_msgs::msg::VehicleControlMode` | PX4 到机载 |
 | `/fmu/out/timesync_status` | `px4_msgs::msg::TimesyncStatus` | PX4 到机载 |
+| `/fmu/out/vehicle_local_position_v1` | `px4_msgs::msg::VehicleLocalPosition`（MESSAGE_VERSION=1） | PX4 到机载 |
+
+位置消息订阅建议根据生成类型选择后缀：Python 中使用
+`suffix = f"_v{VehicleLocalPosition.MESSAGE_VERSION}" if VehicleLocalPosition.MESSAGE_VERSION else ""`，
+订阅 `"/fmu/out/vehicle_local_position" + suffix`。必须同步升级类型，不能仅把
+旧 v0 类型订阅重命名成 `_v1`。其余消息版本未变，不给所有话题统一添加 `_v1`。
+
+`heading_good_for_control` 继续表示绝对航向资格；新
+`heading_good_for_local_control` 可在有效世界固定 FRD 视觉下为真，即使前者为假。
+它不是形态/位置/Offboard/解锁许可，不得据此绕过其他安全检查。公共 AUTO_LAND
+使用局部资格捕获并保持固定航向，视觉失效后不沿用旧锁定目标。
+完整判定、EKF 重置及可选旧版转换说明见
+[FRD AUTO_LAND 航向说明](frd-auto-land-heading.zh-CN.md)。转换源已提供，但未在本环境
+完成 ROS 构建与运行验收；v0 → v1 保守置新标志 false，不能恢复旧固件不存在的证据。
 
 `/fmu/out/hybrid_vehicle_status`直接桥接 PX4 内部同名 uORB，包含完整的形态、
 故障、transition sequence/完成时间、推进所有者/许可和起落架状态。当前生产者

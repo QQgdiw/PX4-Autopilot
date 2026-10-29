@@ -522,6 +522,8 @@ void EKF2Selector::PublishVehicleLocalPosition()
 
 		if (publish) {
 			// republish with total reset count and current timestamp
+			// Heading qualifications stay with this selected sample and timestamp_sample.
+			// A switch also gets the coherent delta_heading/reset counter below.
 			local_position.xy_reset_counter = _xy_reset_counter;
 			local_position.z_reset_counter = _z_reset_counter;
 			local_position.vxy_reset_counter = _vxy_reset_counter;

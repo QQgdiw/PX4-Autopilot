@@ -62,6 +62,7 @@ publications:
   - topic: /fmu/out/vehicle_gps_position
     type: px4_msgs::msg::SensorGps
 
+  # VehicleLocalPosition MESSAGE_VERSION=1 adds _v1 to the DDS topic at runtime.
   - topic: /fmu/out/vehicle_local_position
     type: px4_msgs::msg::VehicleLocalPosition
 

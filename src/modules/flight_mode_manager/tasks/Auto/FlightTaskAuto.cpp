@@ -43,6 +43,8 @@ using namespace matrix;
 bool FlightTaskAuto::activate(const trajectory_setpoint_s &last_setpoint)
 {
 	bool ret = FlightTask::activate(last_setpoint);
+	_land_heading = NAN;
+	_type_previous = WaypointType::idle;
 
 	_position_setpoint = _position;
 	_velocity_setpoint = _velocity;
@@ -240,9 +242,22 @@ void FlightTaskAuto::_prepareLandSetpoints()
 
 	if (_type_previous != WaypointType::land) {
 		// initialize yaw and xy-position
-		_land_heading = _yaw_setpoint;
+		_land_heading = NAN;
 		_stick_acceleration_xy.resetPosition(Vector2f(_target(0), _target(1)));
 		_initial_land_position = Vector3f(_target(0), _target(1), NAN);
+	}
+
+	const bool heading_valid = _is_local_yaw_good_for_control && PX4_ISFINITE(_yaw);
+
+	if (!heading_valid) {
+		// Never keep an old heading lock through loss of its reference. Recovery
+		// captures a new target once, instead of commanding the pre-loss heading.
+		_land_heading = NAN;
+
+	} else if (!PX4_ISFINITE(_land_heading) && !_weathervane.isActive()) {
+		// Absolute yaw targets retain their meaning only with north alignment.
+		// FRD landing captures measured local yaw, not a global triplet yaw.
+		_land_heading = _is_yaw_good_for_control && PX4_ISFINITE(_yaw_setpoint) ? _yaw_setpoint : _yaw;
 	}
 
 	// Update xy-position in case of landing position changes (etc. precision landing)
@@ -295,6 +310,17 @@ void FlightTaskAuto::_prepareLandSetpoints()
 	}
 
 	_position_setpoint = _land_position; // The last element of the land position has to stay NAN
+
+	if (!heading_valid) {
+		// RC assistance can still request yaw rate; it must not restore an invalid
+		// fixed heading via StickYaw or the horizontal-stick previous target.
+		_land_heading = NAN;
+
+		if (!PX4_ISFINITE(_yawspeed_setpoint)) {
+			_yawspeed_setpoint = 0.f;
+		}
+	}
+
 	_yaw_setpoint = _land_heading;
 	_velocity_setpoint(2) = vertical_speed;
 	_gear.landing_gear = landing_gear_s::GEAR_DOWN;
@@ -494,10 +520,15 @@ bool FlightTaskAuto::_evaluateTriplets()
 		}
 
 	} else {
-		if (!_is_yaw_good_for_control) {
+		if (_type == WaypointType::land && (!_is_local_yaw_good_for_control || !PX4_ISFINITE(_yaw))) {
 			_yaw_lock = false;
 			_yaw_setpoint = NAN;
 			_yawspeed_setpoint = 0.f;
+
+		} else if (!_is_yaw_good_for_control) {
+			_yaw_lock = false;
+			_yaw_setpoint = _type == WaypointType::land ? _yaw : NAN;
+			_yawspeed_setpoint = _type == WaypointType::land ? NAN : 0.f;
 
 		} else if (PX4_ISFINITE(_sub_triplet_setpoint.get().current.yaw)) {
 			_yaw_setpoint = _sub_triplet_setpoint.get().current.yaw;
@@ -725,7 +756,8 @@ void FlightTaskAuto::_ekfResetHandlerVelocityZ(float delta_vz)
 
 void FlightTaskAuto::_ekfResetHandlerHeading(float delta_psi)
 {
-	_yaw_sp_prev += delta_psi;
+	_yaw_sp_prev = wrap_pi(_yaw_sp_prev + delta_psi);
+	_land_heading = wrap_pi(_land_heading + delta_psi);
 }
 
 void FlightTaskAuto::_checkEmergencyBraking()

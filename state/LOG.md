@@ -1,5 +1,51 @@
 # Test Log
 
+## 2026-10-29 FRD EV landing heading implementation
+
+- User authorized independent local qualification and versioned DDS/px4_msgs
+  migration. Production Auto test before modification failed twice: yaw NaN
+  instead of 0.7 rad. EKF sensor simulation independently confirmed FRD ev_yaw
+  active with absolute yaw alignment false (logs state/frd_*).
+- EKF local qualification checks initialization/tilt/numeric health and existing
+  absolute qualification OR accepted EV yaw fusion/reset within 2*EV_MAX_INTERVAL
+  (400 ms at delayed fusion horizon), no ev_yaw_fault. Neither FRD config nor
+  intended aiding alone suffices. Absolute qualification remains unchanged.
+- Selector forwards the sample's qualification with its position/heading/sample
+  timestamp and reset bookkeeping. Real selector test checks instance changes,
+  stale/out-of-order samples and ignores unselected-instance changes.
+- Public Auto LAND captures local heading, preserves it through disturbances,
+  updates it on heading resets, discards it on loss and recaptures on recovery or
+  reentry. Other Auto qualification, RC assistance, weathervane, failsafe and
+  landing/disarm semantics remain. LPE/VectorNav/HIL/SIH fill the new field too.
+- VehicleLocalPosition v0 archived; v1 DDS topic gains _v1. Optional conversion
+  copies old fields, drops new flag for v0, sets it false converting v0 to v1.
+  Static completeness tests passed, not ROS translation runtime acceptance.
+- Full make tests hit baseline Hx8UartServo.cpp:406, equal EAGAIN/EWOULDBLOCK on
+  Linux with -Werror=logical-op. No warning or test was disabled. All 148 separate
+  unit/functional targets built and passed (state/frd_gtests_final.log).
+- New selector fixture initially blocked in hrt_cancel at destruction because
+  functional main does not initialize HRT. Backtrace identified uninitialized
+  _hrt_lock; fixture now calls real hrt_init, not a mocked/destructor bypass.
+- AStyle, diff check, three static message-contract checks and hybrid build
+  passed; FLASH 1,916,728 B / 1,966,080 B (97.49%). Post-commit artifact digest
+  is supplied at handoff. No closed-loop flight simulation, ROS/DDS or hardware
+  result is claimed. No known Issue/PR number supplied; do not invent a footer.
+- Paired px4_msgs commit 3b569db54de24ff3e7311ccb407693975f5601f6, release tag r2.
+  Firmware and message release are coordinated; old r1 tag must not move.
+
+## 2026-10-29 FRD EV land heading investigation
+
+- Reviewed EV yaw startup, isYawFinalAlignComplete, EKF2 local-position publication,
+  FlightTask yaw qualification, Auto triplet evaluation, land heading capture,
+  yaw-rate fallback and reset handler at a672224f4e. Reported mechanism is present.
+- VehicleLocalPosition MESSAGE_VERSION=0 is published over DDS. Adding a local
+  heading validity bit requires matching companion definitions; existing pinned
+  px4_msgs tag must not silently be described as compatible after a layout change.
+- Existing estimator_status_flags/aiding-source topics could avoid a schema change
+  but require selected-instance, fusion-recency and reset coherence handling in the
+  consumer. Prefer producer-owned validity in the selected local-position sample,
+  pending user decision. No reproduction test/build/fix claim yet.
+
 ## 2026-10-28 User acceptance and publication
 
 - User reported beacon/landing-gear changes tested without issues and requested

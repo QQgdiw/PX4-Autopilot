@@ -73,6 +73,81 @@ public:
 	}
 };
 
+TEST_F(EkfExternalVisionTest, FrdYawDoesNotClaimAbsoluteAlignment)
+{
+	EXPECT_FALSE(_ekf->isLocalHeadingValid());
+	_ekf->getParamHandle()->mag_fusion_type = MagFuseType::NONE;
+	_ekf_wrapper.enableExternalVisionHeadingFusion();
+	_sensor_simulator._vio.setPositionFrameToLocalFRD();
+	_sensor_simulator.startExternalVision();
+	_sensor_simulator.runSeconds(_tilt_align_time + 2.f);
+	ASSERT_TRUE(_ekf->control_status_flags().ev_yaw);
+	EXPECT_FALSE(_ekf->isYawFinalAlignComplete());
+	EXPECT_TRUE(_ekf->isLocalHeadingValid());
+
+	_sensor_simulator.stopExternalVision();
+	_sensor_simulator.runSeconds(0.7f);
+	EXPECT_FALSE(_ekf->isLocalHeadingValid());
+	_sensor_simulator.startExternalVision();
+	_sensor_simulator.runSeconds(2.f);
+	EXPECT_TRUE(_ekf->isLocalHeadingValid());
+	EXPECT_FALSE(_ekf->isYawFinalAlignComplete());
+}
+
+TEST_F(EkfExternalVisionTest, LocalYawRequiresAcceptedFusionAndRecoversAfterReset)
+{
+	_ekf->getParamHandle()->mag_fusion_type = MagFuseType::NONE;
+	_ekf->getParamHandle()->ev_quality_minimum = 50;
+	_ekf_wrapper.enableExternalVisionHeadingFusion();
+	auto data = _sensor_simulator._vio.dataAtRest();
+	data.quality = 0;
+	_sensor_simulator._vio.setData(data);
+	_sensor_simulator.startExternalVision();
+	_sensor_simulator.runSeconds(_tilt_align_time + 2.f);
+	EXPECT_FALSE(_ekf->isLocalHeadingValid()); // configured, but never accepted
+	data.quality = 100;
+	_sensor_simulator._vio.setData(data);
+	_sensor_simulator.runSeconds(2.f);
+	ASSERT_TRUE(_ekf->isLocalHeadingValid());
+
+	data.quality = 0;
+	_sensor_simulator._vio.setData(data);
+	_sensor_simulator.runSeconds(0.7f);
+	EXPECT_FALSE(_ekf->control_status_flags().ev_yaw); // low-quality data expires aiding
+	EXPECT_FALSE(_ekf->isLocalHeadingValid());
+	data.quality = 100;
+	data.reset_counter++;
+	data.quat = Quatf(Eulerf(0.f, 0.f, 0.6f));
+	_sensor_simulator._vio.setData(data);
+	_sensor_simulator.runSeconds(0.5f);
+	EXPECT_TRUE(_ekf->isLocalHeadingValid());
+	EXPECT_FALSE(_ekf->isYawFinalAlignComplete());
+}
+
+TEST_F(EkfExternalVisionTest, RejectedYawDoesNotKeepLocalQualificationAlive)
+{
+	_ekf->getParamHandle()->mag_fusion_type = MagFuseType::NONE;
+	_ekf_wrapper.enableExternalVisionHeadingFusion();
+	_sensor_simulator.startExternalVision();
+	_sensor_simulator.runSeconds(_tilt_align_time + 2.f);
+	ASSERT_TRUE(_ekf->isLocalHeadingValid());
+	_sensor_simulator._vio.setOrientation(Quatf(Eulerf(0.f, 0.f, 2.f)));
+	_sensor_simulator.runSeconds(0.7f);
+	EXPECT_TRUE(_ekf->control_status_flags().ev_yaw);
+	EXPECT_FALSE(_ekf->isLocalHeadingValid());
+}
+
+TEST_F(EkfExternalVisionTest, NedYawPreservesAbsoluteAndLocalQualifications)
+{
+	_ekf->getParamHandle()->mag_fusion_type = MagFuseType::NONE;
+	_ekf_wrapper.enableExternalVisionHeadingFusion();
+	_sensor_simulator._vio.setPositionFrameToLocalNED();
+	_sensor_simulator.startExternalVision();
+	_sensor_simulator.runSeconds(_tilt_align_time + 2.f);
+	EXPECT_TRUE(_ekf->isYawFinalAlignComplete());
+	EXPECT_TRUE(_ekf->isLocalHeadingValid());
+}
+
 TEST_F(EkfExternalVisionTest, checkVisionFusionLogic)
 {
 	_sensor_simulator.runSeconds(_tilt_align_time); // Let the tilt align

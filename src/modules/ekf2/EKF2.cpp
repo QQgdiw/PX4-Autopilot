@@ -1596,6 +1596,7 @@ void EKF2::PublishLocalPosition(const hrt_abstime &timestamp)
 	lpos.heading_var = _ekf.getYawVar();
 	lpos.delta_heading = Eulerf(delta_q_reset).psi();
 	lpos.heading_good_for_control = _ekf.isYawFinalAlignComplete();
+	lpos.heading_good_for_local_control = _ekf.isLocalHeadingValid() && PX4_ISFINITE(lpos.heading);
 	lpos.tilt_var = _ekf.getTiltVariance();
 
 #if defined(CONFIG_EKF2_TERRAIN)

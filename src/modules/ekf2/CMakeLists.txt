@@ -286,4 +286,7 @@ px4_add_module(
 
 if(BUILD_TESTING)
 	add_subdirectory(test)
+	px4_add_functional_gtest(SRC EKF2SelectorTest.cpp EXTRA_SRCS EKF2Selector.cpp LINKLIBS hysteresis)
+	add_dependencies(functional-EKF2Selector parameters_header uorb_headers)
+	target_compile_definitions(functional-EKF2Selector PRIVATE MODULE_NAME="ekf2_selector_test")
 endif()

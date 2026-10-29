@@ -306,6 +306,7 @@ void VectorNav::sensorCallback(VnUartPacket *packet)
 			matrix::Quatf q{attitude.q};
 			local_position.heading = matrix::Eulerf{q}.psi();
 			local_position.heading_good_for_control = mode_tracking;
+			local_position.heading_good_for_local_control = mode_tracking && PX4_ISFINITE(local_position.heading);
 
 			if (_pos_ref.isInitialized()) {
 				local_position.xy_global = true;

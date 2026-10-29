@@ -124,14 +124,18 @@ void FlightTask::_evaluateVehicleLocalPosition()
 	_velocity.setAll(NAN);
 	_yaw = NAN;
 	_dist_to_bottom = NAN;
+	_is_yaw_good_for_control = false;
+	_is_local_yaw_good_for_control = false;
 
 	// Only use vehicle-local-position topic fields if the topic is received within a certain timestamp
-	if ((_time_stamp_current - _sub_vehicle_local_position.get().timestamp) < _timeout) {
+	if (_sub_vehicle_local_position.get().timestamp != 0
+	    && (_time_stamp_current - _sub_vehicle_local_position.get().timestamp) < _timeout) {
 
 		// yaw
 		_yaw = _sub_vehicle_local_position.get().heading;
 		_unaided_yaw = _sub_vehicle_local_position.get().unaided_heading;
 		_is_yaw_good_for_control = _sub_vehicle_local_position.get().heading_good_for_control;
+		_is_local_yaw_good_for_control = _sub_vehicle_local_position.get().heading_good_for_local_control;
 
 		// position
 		if (_sub_vehicle_local_position.get().xy_valid) {

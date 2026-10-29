@@ -611,6 +611,7 @@ void BlockLocalPositionEstimator::publishLocalPos()
 		const float heading = matrix::Eulerf(matrix::Quatf(_sub_att.get().q)).psi();
 		_pub_lpos.get().heading = heading;
 		_pub_lpos.get().heading_good_for_control = PX4_ISFINITE(heading);
+		_pub_lpos.get().heading_good_for_local_control = _pub_lpos.get().heading_good_for_control;
 		_pub_lpos.get().unaided_heading = NAN;
 
 		_pub_lpos.get().vx = xLP(X_vx);		// north

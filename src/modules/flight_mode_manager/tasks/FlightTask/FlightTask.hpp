@@ -205,6 +205,7 @@ protected:
 	float _yaw{}; /**< current vehicle yaw heading */
 	float _unaided_yaw{};
 	bool _is_yaw_good_for_control{}; /**< true if the yaw estimate can be used for yaw control */
+	bool _is_local_yaw_good_for_control{}; /**< usable world-fixed local yaw, not necessarily north aligned */
 	float _dist_to_bottom{}; /**< current height above ground level if dist_bottom is valid */
 	float _dist_to_ground{}; /**< equals _dist_to_bottom if available, height above home otherwise */
 

@@ -1,5 +1,15 @@
 # Test Workspace State
 
+- 2026-10-29: FRD EV AUTO_LAND fixed-heading repair implemented and reproduced
+  before modification. VehicleLocalPosition v1 adds heading_good_for_local_control;
+  DDS topic is /fmu/out/vehicle_local_position_v1. Matched px4_msgs r2 commit is
+  3b569db54de24ff3e7311ccb407693975f5601f6; rebuild companion dependencies.
+  Absolute yaw qualification is unchanged; LAND captures local heading once and
+  resets/invalidates it coherently. 148 unit/functional suites and hybrid firmware
+  build passed. Full make tests blocked by pre-existing HX8 Linux EAGAIN/EWOULDBLOCK
+  -Werror=logical-op. No real ROS/DDS, flight or closed-loop vehicle sim verification.
+  See docs/hybrid/frd-auto-land-heading.zh-CN.md for semantics and migration.
+
 - 2026-10-26: Quad-only DShot idle beacon and request-latched landing-gear policy
   implemented locally. See docs/hybrid/quad-idle-beacon-and-gear-policy.zh-CN.md.
   No MAVLink/DDS schema change. User must disable autonomous ESC beacon separately.
